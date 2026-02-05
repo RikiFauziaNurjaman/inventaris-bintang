@@ -1,8 +1,9 @@
+import { Column, DataTable } from '@/components/data-table';
 import { PERMISSIONS } from '@/constants/permission';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import axios from 'axios';
-import debounce from 'lodash.debounce';
+import { debounce } from 'lodash';
 import { Edit3, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -158,7 +159,6 @@ export default function Index({ auth, modelBarang, kategori, merek, jenis, flash
         setFilteredJenis([]);
     };
 
-    // Handle kategori change - reset jenis_id when kategori changes
     const handleKategoriChange = (newKategoriId: string) => {
         form.setData((data) => ({
             ...data,
@@ -186,35 +186,63 @@ export default function Index({ auth, modelBarang, kategori, merek, jenis, flash
         debouncedSearch(value);
     };
 
+    const columns: Column<ModelBarang>[] = [
+        {
+            header: 'Model Barang',
+            accessorKey: 'nama',
+            cell: (item) => (
+                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {item.merek?.nama} {item.nama}
+                </div>
+            ),
+        },
+        {
+            header: 'Kategori',
+            accessorKey: 'kategori',
+            cell: (item) => item.kategori?.nama,
+        },
+        {
+            header: 'Jenis',
+            accessorKey: 'jenis',
+            cell: (item) => item.jenis?.nama || '-',
+        },
+        {
+            header: 'Label',
+            accessorKey: 'label',
+            cell: (item) =>
+                item.label ? (
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                        {item.label}
+                    </span>
+                ) : (
+                    <span className="text-sm text-gray-400">-</span>
+                ),
+        },
+    ];
+
     return (
         <AppLayout>
-            <div className="bg-gray-50 p-4 sm:p-6 dark:bg-zinc-950">
+            <div className="min-h-screen bg-gray-50 p-4 sm:p-6 dark:bg-zinc-950">
                 <Head title="Model Barang" />
                 <div className="mx-auto max-w-7xl space-y-6">
                     <div className="flex items-center justify-between">
-                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Model Barang</h1>
-                        <div className="flex items-center gap-4">
-                            <input
-                                type="text"
-                                placeholder="Cari..."
-                                value={search}
-                                onChange={(e) => handleSearch(e.target.value)}
-                                className="rounded-md border-gray-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                            />
-                            {canCreateModel && (
-                                <button
-                                    onClick={() => (showForm ? handleCancel() : setShowForm(true))}
-                                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                                >
-                                    {showForm ? 'Tutup' : '+ Tambah Model'}
-                                </button>
-                            )}
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Model Barang</h1>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Kelola daftar model barang, kategori, dan jenis.</p>
                         </div>
                     </div>
 
                     {showForm && (
-                        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                            <h2 className="mb-5 text-xl font-semibold dark:text-white">{editing ? 'Edit Model' : 'Tambah Model Baru'}</h2>
+                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="mb-5 flex items-center justify-between">
+                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                                    {editing ? 'Edit Model' : 'Tambah Model Baru'}
+                                </h2>
+                                <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600">
+                                    <span className="sr-only">Close</span>
+                                </button>
+                            </div>
+
                             <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium dark:text-gray-200">Nama Model</label>
@@ -308,14 +336,14 @@ export default function Index({ auth, modelBarang, kategori, merek, jenis, flash
                                     <button
                                         type="submit"
                                         disabled={form.processing}
-                                        className="rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+                                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
                                     >
-                                        {editing ? 'Update' : 'Simpan'}
+                                        {editing ? 'Simpan Perubahan' : 'Simpan Model'}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={handleCancel}
-                                        className="rounded-md bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300 dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-600"
+                                        className="rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-gray-50 hover:text-slate-900"
                                     >
                                         Batal
                                     </button>
@@ -324,95 +352,47 @@ export default function Index({ auth, modelBarang, kategori, merek, jenis, flash
                         </div>
                     )}
 
-                    {/* --- DATA TABLE --- */}
-                    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
-                            <thead className="bg-gray-50 dark:bg-zinc-800">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                        No
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                        Model Barang
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                        Kategori
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                        Jenis
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                        Label
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                        Aksi
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
-                                {modelBarang.data.map((item, index) => (
-                                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{index + 1}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {item.merek?.nama} {item.nama}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{item.kategori?.nama}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{item.jenis?.nama || '-'}</td>
-                                        <td className="px-6 py-4">
-                                            {item.label ? (
-                                                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                                    {item.label}
-                                                </span>
-                                            ) : (
-                                                <span className="text-sm text-gray-400">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm">
-                                            <div className="flex items-center gap-4">
-                                                {canEditModel && (
-                                                    <button
-                                                        onClick={() => handleEdit(item)}
-                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                                                    >
-                                                        <Edit3 size={16} />
-                                                    </button>
-                                                )}
-                                                {canDeleteModel && (
-                                                    <button
-                                                        onClick={() => handleDelete(item.id)}
-                                                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* --- PAGINATION --- */}
-                    {modelBarang.links && (
-                        <div className="flex flex-wrap justify-center gap-2">
-                            {modelBarang.links.map((link, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => link.url && router.get(link.url)}
-                                    className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                                        link.active
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700'
-                                    } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                    disabled={!link.url}
-                                />
-                            ))}
-                        </div>
-                    )}
+                    <DataTable
+                        data={modelBarang.data}
+                        columns={columns}
+                        links={modelBarang.links}
+                        searchPlaceholder="Cari model..."
+                        onSearch={handleSearch}
+                        initialSearch={search}
+                        onCreate={
+                            canCreateModel
+                                ? () => {
+                                      setShowForm(true);
+                                      setEditing(null);
+                                      form.reset();
+                                  }
+                                : undefined
+                        }
+                        createLabel="Tambah Model"
+                        actionWidth="w-[100px]"
+                        actions={(item) => (
+                            <div className="flex items-center justify-end gap-2">
+                                {canEditModel && (
+                                    <button
+                                        onClick={() => handleEdit(item)}
+                                        className="group hover:bg-opacity-100 rounded-full p-2 text-blue-600 transition-all hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                        title="Edit"
+                                    >
+                                        <Edit3 size={16} />
+                                    </button>
+                                )}
+                                {canDeleteModel && (
+                                    <button
+                                        onClick={() => handleDelete(item.id)}
+                                        className="group hover:bg-opacity-100 rounded-full p-2 text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                        title="Hapus"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    />
                 </div>
             </div>
         </AppLayout>

@@ -49,10 +49,8 @@ export default function SuratPinjamLegal({ data }: { data: any }) {
                         <p>Website : http://www.bintangsims.com</p>
                     </div>
                 </div>
-
                 {/* Garis Pemisah */}
                 <hr className="my-6 border-black" />
-
                 {/* Judul Surat dan Nomor dengan Garis Bawah */}
                 <div className="my-4 text-center">
                     {/* Judul langsung dengan border */}
@@ -65,7 +63,6 @@ export default function SuratPinjamLegal({ data }: { data: any }) {
                     {/* Nomor langsung dengan border */}
                     <p className="mt-1 inline-block border-black text-[12pt] leading-none">NO: {data?.nomor || '007/SKKP/BINTEK/VIII/2025'}</p>
                 </div>
-
                 {/* Item Details */}
                 {data.barang.map((item, index) => (
                     <div key={index} className={index > 0 ? 'mt-4' : ''}>
@@ -101,8 +98,11 @@ export default function SuratPinjamLegal({ data }: { data: any }) {
                         </table>
                     </div>
                 ))}
-
-                {/* Borrower Details */}
+                {/* Transition Text */}
+                <div className="mt-4 mb-2">
+                    <p>Dengan ini kami pinjamkan barang tersebut kepada :</p>
+                </div>
+                {/* Borrower Details */}\n
                 <div className="mb-4">
                     <table className="table-fixed text-[13px] leading-relaxed">
                         <tbody>
@@ -127,7 +127,6 @@ export default function SuratPinjamLegal({ data }: { data: any }) {
                         </tbody>
                     </table>
                 </div>
-
                 {/* Terms and Conditions */}
                 <div className="mb-4">
                     <p>Sehubungan dengan hal tersebut maka pihak peminjam dan pemilik, bersedia mematuhi beberapa ketentuan berikut ini :</p>
@@ -151,7 +150,6 @@ export default function SuratPinjamLegal({ data }: { data: any }) {
                         </li>
                     </ul>
                 </div>
-
                 {/* Date and Signatures */}
                 <div className="mt-8 flex justify-between">
                     {/* Pemilik */}
@@ -183,7 +181,6 @@ export default function SuratPinjamLegal({ data }: { data: any }) {
                         </div>
                     </div>
                 </div>
-
                 {/* Footer */}
                 <div className="mt-16 border-t pt-2 text-center text-xs uppercase">
                     <p className="font-bold">SPECIALIST IDENTITY OF PATIENTS & PVC CARD PRINTING</p>

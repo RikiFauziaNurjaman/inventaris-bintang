@@ -25,6 +25,7 @@ type DataTableProps<T> = {
     actions?: (item: T) => React.ReactNode; // Optional custom actions column
     actionWidth?: string; // Optional width for action column
     initialSearch?: string;
+    customFilters?: React.ReactNode;
 };
 
 export function DataTable<T extends { id: number | string }>({
@@ -38,6 +39,7 @@ export function DataTable<T extends { id: number | string }>({
     actions,
     actionWidth = 'w-[100px]',
     initialSearch = '',
+    customFilters,
 }: DataTableProps<T>) {
     const [search, setSearch] = useState(initialSearch);
 
@@ -72,15 +74,18 @@ export function DataTable<T extends { id: number | string }>({
         <div className="space-y-4">
             {/* Header / Controls */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="relative">
-                    <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder={searchPlaceholder}
-                        value={search}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        className="h-9 w-full rounded-md border border-gray-200 bg-white pr-4 pl-9 text-sm outline-none placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:w-[300px] dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:placeholder:text-gray-400"
-                    />
+                <div className="flex flex-1 items-center gap-2">
+                    <div className="relative flex-1 sm:max-w-[300px]">
+                        <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder={searchPlaceholder}
+                            value={search}
+                            onChange={(e) => handleSearch(e.target.value)}
+                            className="h-9 w-full rounded-md border border-gray-200 bg-white pr-4 pl-9 text-sm outline-none placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:placeholder:text-gray-400"
+                        />
+                    </div>
+                    {customFilters}
                 </div>
 
                 {onCreate && (
@@ -97,8 +102,8 @@ export function DataTable<T extends { id: number | string }>({
             {/* Table Container */}
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <Table>
-                    <TableHeader className="bg-slate-50 dark:bg-zinc-800/50">
-                        <TableRow className="hover:bg-slate-50 dark:hover:bg-zinc-800/50">
+                    <TableHeader className="bg-slate-100 dark:bg-zinc-800/50">
+                        <TableRow className="hover:bg-slate-100 dark:hover:bg-zinc-800/50">
                             {/* Auto Numbering Header */}
                             <TableHead className="w-[50px] text-xs font-semibold tracking-wider text-slate-500 uppercase">No</TableHead>
 
@@ -120,7 +125,7 @@ export function DataTable<T extends { id: number | string }>({
                     <TableBody>
                         {data.length > 0 ? (
                             data.map((item, index) => (
-                                <TableRow key={item.id} className="transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-zinc-800/50">
+                                <TableRow key={item.id} className="transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                                     <TableCell className="font-medium text-slate-700 dark:text-slate-300">{index + 1}</TableCell>
 
                                     {columns.map((col, colIndex) => (

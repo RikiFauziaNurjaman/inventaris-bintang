@@ -140,22 +140,6 @@ export default function SubLokasiIndex({ subLokasi, lokasiList, filters, flash }
                         </div>
                     </div>
 
-                    {/* Filter Lokasi - kept separate as it is a specific filter */}
-                    <div className="flex items-center gap-2">
-                        <select
-                            value={filters.lokasi_id || ''}
-                            onChange={(e) => handleLokasiFilter(e.target.value)}
-                            className="rounded-md border-gray-200 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                        >
-                            <option value="">Semua Lokasi</option>
-                            {lokasiList.map((l) => (
-                                <option key={l.id} value={l.id}>
-                                    {l.nama}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
                     {showForm && (
                         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
                             <div className="mb-5 flex items-center justify-between">
@@ -252,6 +236,20 @@ export default function SubLokasiIndex({ subLokasi, lokasiList, filters, flash }
                         searchPlaceholder="Cari sub-lokasi..."
                         onSearch={handleSearch}
                         initialSearch={search}
+                        customFilters={
+                            <select
+                                value={filters.lokasi_id || ''}
+                                onChange={(e) => handleLokasiFilter(e.target.value)}
+                                className="h-9 w-full rounded-md border border-gray-200 bg-white text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:w-[200px] dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
+                            >
+                                <option value="">Semua Lokasi</option>
+                                {lokasiList.map((l) => (
+                                    <option key={l.id} value={l.id}>
+                                        {l.nama}
+                                    </option>
+                                ))}
+                            </select>
+                        }
                         onCreate={() => {
                             setShowForm(true);
                             setEditing(null);

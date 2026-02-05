@@ -1,10 +1,22 @@
+import { Column, DataTable } from '@/components/data-table';
 import { PERMISSIONS } from '@/constants/permission';
 import AppLayout from '@/layouts/app-layout';
+import { Menu, Transition } from '@headlessui/react';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
-import { ArrowBigLeft, PlusCircleIcon, TrainFrontTunnelIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { debounce } from 'lodash';
+import {
+    ChevronDownIcon,
+    ChevronUpIcon,
+    EllipsisVerticalIcon,
+    EyeIcon,
+    FileTextIcon,
+    PencilIcon,
+    PlusIcon,
+    PrinterIcon,
+    TrashIcon,
+} from 'lucide-react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import BarangKeluarDetailModal from './BarangKeluarDetail';
-import AksiDropdown from './aksi-dropdown';
 
 interface KategoriOption {
     id: number;
@@ -56,10 +68,14 @@ interface PageProps {
         lokasi_id?: string;
         sort?: 'terbaru' | 'terlama';
         per_page?: number | string;
+        search?: string;
     };
     barangKeluar: {
         data: BarangKeluarTransaksi[];
         from: number;
+        to: number;
+        total: number;
+        links: any[];
     };
     kategoriOptions: KategoriOption[];
     lokasiOptions: LokasiOption[];
@@ -73,7 +89,10 @@ export default function BarangKeluarIndex() {
     const { auth, filters, barangKeluar, kategoriOptions, lokasiOptions } = usePage<PageProps>().props;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
-    const [showFilters, setShowFilters] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(true);
+
+    const items = barangKeluar.data || [];
+    const links = barangKeluar.links || [];
 
     // Fungsi untuk membuka modal
     const handleOpenModal = (transaksi) => {
@@ -88,9 +107,8 @@ export default function BarangKeluarIndex() {
     };
 
     const userPermissions = auth.permissions || [];
-    const isInitialMount = useRef(true);
 
-    const { data, setData } = useForm({
+    const { data, setData, reset } = useForm({
         tanggal: filters?.tanggal || '',
         kategori_id: filters?.kategori_id || '',
         lokasi_id: filters?.lokasi_id || '',
@@ -99,292 +117,320 @@ export default function BarangKeluarIndex() {
         per_page: filters?.per_page || 10,
     });
 
-    function handleFilter() {
+    const debouncedSearch = useCallback(
+        debounce((query) => {
+            router.get(
+                route('barang-keluar.index'),
+                { ...data, search: query },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 400),
+        [data],
+    );
+
+    const handleFilter = useCallback(() => {
         router.get(route('barang-keluar.index'), data, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
         });
-    }
-
-    function handleResetFilters() {
-        router.get(
-            route('barang-keluar.index'),
-            {},
-            {
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
-
-    // ## 2. BUAT PENGECEKAN APAKAH ADA FILTER YANG AKTIF ##
-    const isFilterActive = useMemo(() => {
-        return (
-            data.search !== '' ||
-            data.tanggal !== '' ||
-            data.kategori_id !== '' ||
-            data.lokasi_id !== '' ||
-            data.sort !== 'terbaru' ||
-            String(data.per_page) !== '10'
-        );
     }, [data]);
 
-    useEffect(() => {
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            return;
-        }
-
-        const timeout = setTimeout(() => {
-            handleFilter();
-        }, 500);
-
-        return () => clearTimeout(timeout);
-    }, [data.search]);
+    const debouncedFilter = useCallback(
+        debounce(() => {
+            router.get(route('barang-keluar.index'), data, {
+                preserveState: true,
+                preserveScroll: true,
+            });
+        }, 400),
+        [data],
+    );
 
     useEffect(() => {
-        if (!isInitialMount.current) {
-            handleFilter();
-        }
-    }, [data.tanggal, data.kategori_id, data.lokasi_id, data.sort, data.per_page]);
+        debouncedFilter();
+    }, [data.tanggal, data.kategori_id, data.lokasi_id, data.sort, data.per_page, data.search, debouncedFilter]);
 
     const canCreateBarangKeluar = userPermissions.includes(PERMISSIONS.CREATE_BARANG_KELUAR);
     const canEditBarangKeluar = userPermissions.includes(PERMISSIONS.EDIT_BARANG_KELUAR);
     const canDeleteBarangKeluar = userPermissions.includes(PERMISSIONS.DELETE_BARANG_KELUAR);
 
+    const columns: Column<BarangKeluarTransaksi>[] = [
+        {
+            header: 'Tanggal',
+            accessorKey: 'tanggal',
+            className: 'w-[150px]',
+        },
+        {
+            header: 'Merek/Model',
+            cell: (item) => {
+                const firstItem = item.details[0];
+                return (
+                    <div>
+                        <div className="font-medium text-slate-900 dark:text-white">
+                            {firstItem?.barang?.model_barang?.merek?.nama || ''} {firstItem?.barang?.model_barang?.nama || '(Tidak ada barang)'}
+                        </div>
+                        {item.details.length > 1 && <span className="text-[10px] text-slate-500 italic">(+{item.details.length - 1} lainnya)</span>}
+                    </div>
+                );
+            },
+        },
+        {
+            header: 'Kategori',
+            cell: (item) => item.details[0]?.barang?.model_barang?.kategori?.nama || '-',
+        },
+        {
+            header: 'Tujuan',
+            accessorKey: 'lokasi',
+            cell: (item) => item.lokasi?.nama || '-',
+        },
+    ];
+
     return (
         <AppLayout>
-            <div className="p-4">
-                {/* Simplified Header */}
-                <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                    <div>
-                        <h1 className="text-xl font-semibold">Barang Keluar</h1>
-                        <p className="text-xs text-gray-500">Daftar barang yang keluar dari inventori</p>
-                    </div>
-                    {canCreateBarangKeluar && (
-                        <Link
-                            href="/barang-keluar/create"
-                            className="flex items-center gap-1 rounded bg-green-600 px-3 py-1.5 text-xs text-white hover:bg-green-700"
-                        >
-                            <PlusCircleIcon className="h-3 w-3" />
-                            <span>Tambah Barang Keluar</span>
-                        </Link>
-                    )}
-                </div>
-
-                {/* Streamlined Filter Card */}
-                <div className="mb-4 rounded border bg-white p-3">
-                    {/* Bagian yang selalu tampil */}
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex-grow">
-                            <label className="mb-1 block text-xs text-gray-600">Pencarian</label>
-                            <input
-                                type="text"
-                                value={data.search || ''}
-                                onChange={(e) => setData('search', e.target.value)}
-                                className="w-full rounded border p-1.5 text-xs"
-                                placeholder="Cari serial/merek/model..."
-                            />
+            <div className="min-h-screen bg-slate-50 p-4 sm:p-6 dark:bg-zinc-950">
+                {/* Header Section */}
+                <div className="mx-auto max-w-7xl space-y-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Barang Keluar</h1>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Daftar barang yang keluar dari inventori</p>
                         </div>
-                        <div className="flex h-max items-center gap-2 self-end">
-                            {/* ## 3. TAMBAHKAN TOMBOL RESET DI UI ## */}
-                            {isFilterActive && (
-                                <button
-                                    onClick={handleResetFilters}
-                                    className="flex items-center gap-2 rounded border p-1.5 text-xs text-red-600 hover:bg-gray-50"
-                                >
-                                    <ArrowBigLeft className="h-3 w-3" />
-                                    <span>Reset</span>
-                                </button>
-                            )}
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className="flex items-center gap-2 rounded border p-1.5 text-xs hover:bg-gray-50"
+                        {canCreateBarangKeluar && (
+                            <Link
+                                href="/barang-keluar/create"
+                                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950"
                             >
-                                <TrainFrontTunnelIcon className="h-3 w-3" />
-                                <span>Filter</span>
+                                <PlusIcon className="h-4 w-4" />
+                                Tambah Barang Keluar
+                            </Link>
+                        )}
+                    </div>
+
+                    {/* Filter Section - Separate Card */}
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 className="inline-block rounded bg-slate-100 px-2 py-1 text-sm font-semibold tracking-wide text-slate-900 dark:bg-zinc-800 dark:text-white">
+                                    FILTERS
+                                </h2>
+                            </div>
+                            <button
+                                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-zinc-800 dark:hover:text-slate-300"
+                            >
+                                {isFilterOpen ? (
+                                    <>
+                                        <ChevronUpIcon className="h-4 w-4" />
+                                        <span className="sr-only">Sembunyikan</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ChevronDownIcon className="h-4 w-4" />
+                                        <span className="sr-only">Tampilkan</span>
+                                    </>
+                                )}
                             </button>
                         </div>
-                    </div>
 
-                    {/* Bagian yang bisa disembunyikan */}
-                    {showFilters && (
-                        <div className="mt-4 grid grid-cols-1 gap-3 border-t pt-4 sm:grid-cols-2 md:grid-cols-4">
-                            <div>
-                                <label className="mb-1 block text-xs text-gray-600">Tanggal</label>
-                                <input
-                                    type="date"
-                                    value={data.tanggal}
-                                    onChange={(e) => setData('tanggal', e.target.value)}
-                                    className="w-full rounded border p-1.5 text-xs"
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs text-gray-600">Kategori</label>
-                                <select
-                                    value={data.kategori_id}
-                                    onChange={(e) => setData('kategori_id', e.target.value)}
-                                    className="w-full rounded border p-1.5 text-xs"
-                                >
-                                    <option value="">Semua Kategori</option>
-                                    {kategoriOptions.map((k) => (
-                                        <option key={k.id} value={k.id}>
-                                            {k.nama}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs text-gray-600">Urutkan</label>
-                                <select
-                                    value={data.sort}
-                                    onChange={(e) => setData('sort', e.target.value)}
-                                    className="w-full rounded border p-1.5 text-xs"
-                                >
-                                    <option value="terbaru">Terbaru</option>
-                                    <option value="terlama">Terlama</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs text-gray-600">Item per Halaman</label>
-                                <select
-                                    value={data.per_page}
-                                    onChange={(e) => setData('per_page', e.target.value)}
-                                    className="w-full rounded border p-1.5 text-xs"
-                                >
-                                    <option value={10}>10</option>
-                                    <option value={25}>25</option>
-                                    <option value={50}>50</option>
-                                    <option value={100}>100</option>
-                                    <option value="all">Semua</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                        {isFilterOpen && (
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Tanggal</label>
+                                    <input
+                                        type="date"
+                                        value={data.tanggal}
+                                        onChange={(e) => setData('tanggal', e.target.value)}
+                                        className="block w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                                    />
+                                </div>
 
-                {/* Optimized Table */}
-                <div className="overflow-hidden rounded border bg-white">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 text-xs">
-                            <thead className="bg-gray-100">
-                                <tr>
-                                    <th className="p-2 text-left">No</th>
-                                    <th className="p-2 text-left">Tanggal</th>
-                                    <th className="p-2 text-left">Merek/Model</th>
-                                    <th className="p-2 text-left">Kategori</th>
-                                    <th className="p-2 text-left">Tujuan</th>
-                                    <th className="p-2 text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {barangKeluar.data.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="p-4 text-center">
-                                            {/* ... (kode untuk "tidak ada data") ... */}
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    barangKeluar.data.map((transaksi, idx) => {
-                                        const nomor = barangKeluar.from + idx;
-                                        // Ambil item pertama sebagai perwakilan data
-                                        const firstItem = transaksi.details[0];
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Kategori</label>
+                                    <select
+                                        value={data.kategori_id}
+                                        onChange={(e) => setData('kategori_id', e.target.value)}
+                                        className="block w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                                    >
+                                        <option value="">Semua Kategori</option>
+                                        {kategoriOptions.map((k) => (
+                                            <option key={k.id} value={k.id}>
+                                                {k.nama}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                                        return (
-                                            <tr key={transaksi.id} className="hover:bg-gray-50">
-                                                <td className="p-2">{nomor}</td>
-                                                <td className="p-2">{transaksi.tanggal}</td>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Lokasi / Tujuan</label>
+                                    <select
+                                        value={data.lokasi_id}
+                                        onChange={(e) => setData('lokasi_id', e.target.value)}
+                                        className="block w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                                    >
+                                        <option value="">Semua Lokasi</option>
+                                        {lokasiOptions.map((l) => (
+                                            <option key={l.id} value={l.id}>
+                                                {l.nama}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                                                {/* KOLOM MEREK/MODEL */}
-                                                <td className="p-2">
-                                                    <span>
-                                                        {/* Tampilkan data dari item pertama */}
-                                                        {firstItem?.barang?.model_barang?.merek?.nama || ''}{' '}
-                                                        {firstItem?.barang?.model_barang?.nama || '(Tidak ada barang)'}
-                                                    </span>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Urutkan</label>
+                                    <select
+                                        value={data.sort}
+                                        onChange={(e) => setData('sort', e.target.value as 'terbaru' | 'terlama')}
+                                        className="block w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                                    >
+                                        <option value="terbaru">Terbaru</option>
+                                        <option value="terlama">Terlama</option>
+                                    </select>
+                                </div>
 
-                                                    {/* Tambahkan indikator jika ada lebih dari 1 barang */}
-                                                    {transaksi.details.length > 1 && (
-                                                        <span className="ml-2 text-[10px] text-gray-500 italic">
-                                                            (+{transaksi.details.length - 1} lainnya)
-                                                        </span>
-                                                    )}
-                                                </td>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Item per Halaman</label>
+                                    <select
+                                        value={data.per_page}
+                                        onChange={(e) => setData('per_page', e.target.value)}
+                                        className="block w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                                    >
+                                        <option value={10}>10 Data</option>
+                                        <option value={25}>25 Data</option>
+                                        <option value={50}>50 Data</option>
+                                        <option value={100}>100 Data</option>
+                                    </select>
+                                </div>
 
-                                                {/* KOLOM KATEGORI */}
-                                                <td className="p-2">
-                                                    {/* Tampilkan kategori dari item pertama */}
-                                                    {firstItem?.barang?.model_barang?.kategori?.nama || '-'}
-                                                </td>
-
-                                                <td className="p-2">{transaksi.lokasi?.nama || '-'}</td>
-                                                <td className="p-2 text-right">
-                                                    <AksiDropdown
-                                                        transaksi={transaksi}
-                                                        handleOpenModal={handleOpenModal}
-                                                        can={{
-                                                            edit: canEditBarangKeluar,
-                                                            delete: canDeleteBarangKeluar, // asumsikan ada permission ini
-                                                        }}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Compact Pagination */}
-                    {barangKeluar.links && barangKeluar.links.length > 1 && (
-                        <div className="border-t px-3 py-2">
-                            <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
-                                <p className="text-xs text-gray-600">
-                                    Menampilkan {barangKeluar.from}-{barangKeluar.to} dari {barangKeluar.total}
-                                </p>
-                                <div className="flex">
-                                    {barangKeluar.links.map((link, index) => (
-                                        <button
-                                            key={index}
-                                            disabled={!link.url}
-                                            onClick={() => link.url && router.get(link.url)}
-                                            className={`px-2 py-1 text-xs ${
-                                                link.active ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
-                                            } ${index === 0 ? 'rounded-l' : ''} ${index === barangKeluar.links.length - 1 ? 'rounded-r' : ''}`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
+                                <div className="flex items-end sm:col-span-1 lg:col-span-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            reset();
+                                            router.get(route('barang-keluar.index'));
+                                        }}
+                                        className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                                    >
+                                        Reset Filter
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+
+                    {/* Table Section */}
+                    <DataTable
+                        data={items}
+                        columns={columns}
+                        links={links}
+                        searchPlaceholder="Cari serial, brand, model..."
+                        initialSearch={data.search}
+                        onSearch={(val) => setData('search', val)}
+                        actionWidth="w-[100px]"
+                        actions={(item) => (
+                            <div className="flex justify-center">
+                                <Menu as="div" className="relative inline-block text-left">
+                                    <Menu.Button className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 hover:text-slate-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-slate-300">
+                                        <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+                                    </Menu.Button>
+
+                                    <Transition
+                                        as={Fragment}
+                                        enter="transition ease-out duration-100"
+                                        enterFrom="transform opacity-0 scale-95"
+                                        enterTo="transform opacity-100 scale-100"
+                                        leave="transition ease-in duration-75"
+                                        leaveFrom="transform opacity-100 scale-100"
+                                        leaveTo="transform opacity-0 scale-95"
+                                    >
+                                        <Menu.Items className="ring-opacity-5 absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black focus:outline-none dark:bg-zinc-900 dark:ring-zinc-800">
+                                            <div className="py-1">
+                                                <Menu.Item>
+                                                    {({ active }) => (
+                                                        <a
+                                                            href={route('barang-keluar.cetak-surat', item.id)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`${active ? 'bg-slate-50 text-slate-900 dark:bg-zinc-800 dark:text-white' : 'text-slate-700 dark:text-slate-300'} group flex w-full items-center px-4 py-2 text-xs`}
+                                                        >
+                                                            <FileTextIcon className="mr-3 h-4 w-4 text-slate-400" />
+                                                            Cetak Surat
+                                                        </a>
+                                                    )}
+                                                </Menu.Item>
+                                                <Menu.Item>
+                                                    {({ active }) => (
+                                                        <a
+                                                            href={route('barang-keluar.cetak-label', item.id)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`${active ? 'bg-slate-50 text-slate-900 dark:bg-zinc-800 dark:text-white' : 'text-slate-700 dark:text-slate-300'} group flex w-full items-center px-4 py-2 text-xs`}
+                                                        >
+                                                            <PrinterIcon className="mr-3 h-4 w-4 text-slate-400" />
+                                                            Cetak Label
+                                                        </a>
+                                                    )}
+                                                </Menu.Item>
+
+                                                <div className="my-1 border-t border-slate-100 dark:border-zinc-700"></div>
+
+                                                <Menu.Item>
+                                                    {({ active }) => (
+                                                        <button
+                                                            onClick={() => handleOpenModal(item)}
+                                                            className={`${active ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'} flex w-full items-center gap-2 px-4 py-2 text-sm`}
+                                                        >
+                                                            <EyeIcon className="h-4 w-4" />
+                                                            Lihat Detail
+                                                        </button>
+                                                    )}
+                                                </Menu.Item>
+
+                                                {canEditBarangKeluar && (
+                                                    <Menu.Item>
+                                                        {({ active }) => (
+                                                            <Link
+                                                                href={route('barang-keluar.edit', item.id)}
+                                                                className={`${active ? 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' : 'text-slate-700 dark:text-slate-300'} flex w-full items-center gap-2 px-4 py-2 text-sm`}
+                                                            >
+                                                                <PencilIcon className="h-4 w-4" />
+                                                                Edit Data
+                                                            </Link>
+                                                        )}
+                                                    </Menu.Item>
+                                                )}
+
+                                                {canDeleteBarangKeluar && (
+                                                    <Menu.Item>
+                                                        {({ active }) => (
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+                                                                        router.delete(route('barang-keluar.destroy', item.id));
+                                                                    }
+                                                                }}
+                                                                className={`${active ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'text-red-600 dark:text-red-400'} flex w-full items-center gap-2 px-4 py-2 text-sm`}
+                                                            >
+                                                                <TrashIcon className="h-4 w-4" />
+                                                                Hapus Data
+                                                            </button>
+                                                        )}
+                                                    </Menu.Item>
+                                                )}
+                                            </div>
+                                        </Menu.Items>
+                                    </Transition>
+                                </Menu>
+                            </div>
+                        )}
+                    />
                 </div>
             </div>
             <BarangKeluarDetailModal show={isModalOpen} onClose={handleCloseModal} barangKeluar={selectedItem} />
         </AppLayout>
-    );
-}
-
-// You'll need to import these icons (assuming you're using Heroicons)
-function PlusIcon(props) {
-    return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-    );
-}
-
-function PrinterIcon(props) {
-    return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-            />
-        </svg>
     );
 }
