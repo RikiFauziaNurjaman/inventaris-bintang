@@ -24,17 +24,32 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
 
     // Filter merek berdasarkan kategori yang dipilih di baris ini
     const selectedKategoriId = lists.kategoriList.find((k) => k.nama === item.kategori)?.id;
-    const filteredMerekList = lists.merekList.filter((merek) => merek.model_barang.some((model) => model.jenis?.kategori_id === selectedKategoriId));
+    const filteredMerekList = selectedKategoriId
+        ? lists.merekList.filter((merek) => merek.model_barang?.some((model) => model.kategori_id === selectedKategoriId))
+        : lists.merekList;
 
     // Filter model berdasarkan merek dan kategori yang dipilih
     const selectedMerekId = lists.merekList.find((m) => m.nama === item.merek)?.id;
-    const filteredModelList = lists.modelList.filter(
-        (model) => model.merek_id === selectedMerekId && model.jenis?.kategori_id === selectedKategoriId,
-    );
+    const filteredModelList = lists.modelList.filter((model) => model.merek_id === selectedMerekId && model.kategori_id === selectedKategoriId);
 
-    // Dapatkan serial number yang tersedia untuk model yang dipilih
-    const selectedKey = `${item.merek}|${item.model}`;
-    const allAvailableSerials = lists.serialNumberList[selectedKey] || [];
+    // Dapatkan serial number berdasarkan level filter yang dipilih
+    let allAvailableSerials: string[] = [];
+    if (item.model && item.merek) {
+        // Level 3: Model spesifik dipilih
+        const key = `${item.merek}|${item.model}`;
+        allAvailableSerials = lists.serialNumberList[key] || [];
+    } else if (item.merek) {
+        // Level 2: Hanya merek dipilih — tampilkan semua serial untuk merek ini
+        allAvailableSerials = Object.entries(lists.serialNumberList)
+            .filter(([key]) => key.startsWith(`${item.merek}|`))
+            .flatMap(([, serials]) => serials as string[]);
+    } else if (item.kategori && selectedKategoriId) {
+        // Level 1: Hanya kategori dipilih — tampilkan semua serial untuk merek di kategori ini
+        const merekNamesInKategori = filteredMerekList.map((m) => m.nama);
+        allAvailableSerials = Object.entries(lists.serialNumberList)
+            .filter(([key]) => merekNamesInKategori.includes(key.split('|')[0]))
+            .flatMap(([, serials]) => serials as string[]);
+    }
     const usedSerialsInRow = item.keluar_info.map((info) => info.serial_number);
     const availableSerialsForSuggestions = allAvailableSerials.filter((sn) => !usedSerialsInRow.includes(sn));
 
@@ -97,57 +112,56 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                 {/* Kategori */}
                 <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Kategori</label>
-                    <input
-                        type="text"
-                        list="kategori-suggest"
+                    <select
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
                         value={item.kategori}
                         onChange={(e) => handleFieldChange('kategori', e.target.value)}
-                        placeholder="Pilih atau ketik kategori..."
-                    />
-                    <datalist id="kategori-suggest">
+                    >
+                        <option value="">-- Pilih Kategori --</option>
                         {lists.kategoriList.map((k) => (
-                            <option key={k.id} value={k.nama} />
+                            <option key={k.id} value={k.nama}>
+                                {k.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                     {errors.kategori && <p className="text-xs text-red-500">{errors.kategori}</p>}
                 </div>
 
                 {/* Merek */}
                 <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Merek</label>
-                    <input
-                        type="text"
-                        list={`merek-suggest-${index}`}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                    <select
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:disabled:bg-zinc-700"
                         value={item.merek}
                         onChange={(e) => handleFieldChange('merek', e.target.value)}
-                        placeholder="Pilih atau ketik merek..."
-                    />
-                    <datalist id={`merek-suggest-${index}`}>
+                        disabled={!item.kategori}
+                    >
+                        <option value="">-- Pilih Merek --</option>
                         {filteredMerekList.map((m) => (
-                            <option key={m.id} value={m.nama} />
+                            <option key={m.id} value={m.nama}>
+                                {m.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                     {errors.merek && <p className="text-xs text-red-500">{errors.merek}</p>}
                 </div>
 
                 {/* Model */}
                 <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Model</label>
-                    <input
-                        type="text"
-                        list={`model-suggest-${index}`}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                    <select
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:disabled:bg-zinc-700"
                         value={item.model}
                         onChange={(e) => handleFieldChange('model', e.target.value)}
-                        placeholder="Pilih atau ketik model..."
-                    />
-                    <datalist id={`model-suggest-${index}`}>
+                        disabled={!item.merek}
+                    >
+                        <option value="">-- Pilih Model --</option>
                         {filteredModelList.map((m) => (
-                            <option key={m.id} value={m.nama} />
+                            <option key={m.id} value={m.nama}>
+                                {m.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                     {errors.model && <p className="text-xs text-red-500">{errors.model}</p>}
                 </div>
             </div>
@@ -333,22 +347,21 @@ export default function BarangKeluarCreate() {
                             </div>
                             <div className="space-y-1">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tujuan Distribusi</label>
-                                <input
-                                    type="text"
-                                    list="lokasi-suggest"
+                                <select
                                     className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
                                     value={data.lokasi}
                                     onChange={(e) => {
                                         setData('lokasi', e.target.value);
                                         setData('sub_lokasi', '');
                                     }}
-                                    placeholder="Pilih lokasi tujuan..."
-                                />
-                                <datalist id="lokasi-suggest">
+                                >
+                                    <option value="">-- Pilih Lokasi Tujuan --</option>
                                     {lokasiList.map((l) => (
-                                        <option key={l.id} value={l.nama} />
+                                        <option key={l.id} value={l.nama}>
+                                            {l.nama}
+                                        </option>
                                     ))}
-                                </datalist>
+                                </select>
                                 {errors.lokasi && <p className="text-xs text-red-500">{errors.lokasi}</p>}
                             </div>
                             <div className="space-y-1">

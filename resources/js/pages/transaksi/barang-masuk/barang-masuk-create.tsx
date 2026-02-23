@@ -132,38 +132,36 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                 {/* Kategori */}
                 <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Kategori</label>
-                    <input
-                        type="text"
-                        list="kategori-suggest"
+                    <select
                         className={`w-full rounded-lg border px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-white ${kategoriError ? 'border-red-500 bg-red-50 dark:bg-red-900/10' : 'border-gray-300 dark:border-zinc-600'}`}
                         value={item.kategori}
                         onChange={(e) => handleFieldChange('kategori', e.target.value)}
-                        placeholder="Pilih atau ketik kategori..."
-                    />
-                    <datalist id="kategori-suggest">
+                    >
+                        <option value="">-- Pilih Kategori --</option>
                         {lists.kategoriList.map((k) => (
-                            <option key={k.id} value={k.nama} />
+                            <option key={k.id} value={k.nama}>
+                                {k.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                     {kategoriError && <p className="text-xs text-red-500">{kategoriError}</p>}
                 </div>
 
                 {/* Merek */}
                 <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Merek</label>
-                    <input
-                        type="text"
-                        list="merek-suggest"
+                    <select
                         className={`w-full rounded-lg border px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-white ${merekError ? 'border-red-500 bg-red-50 dark:bg-red-900/10' : 'border-gray-300 dark:border-zinc-600'}`}
                         value={item.merek}
                         onChange={(e) => handleFieldChange('merek', e.target.value)}
-                        placeholder="Pilih atau ketik merek..."
-                    />
-                    <datalist id="merek-suggest">
+                    >
+                        <option value="">-- Pilih Merek --</option>
                         {lists.merekList.map((m) => (
-                            <option key={m.id} value={m.nama} />
+                            <option key={m.id} value={m.nama}>
+                                {m.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                     {merekError && <p className="text-xs text-red-500">{merekError}</p>}
                 </div>
 
@@ -173,19 +171,19 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                         Jenis Barang
                         {loadingJenis && <span className="ml-2 text-xs text-gray-400">(memuat...)</span>}
                     </label>
-                    <input
-                        type="text"
-                        list={`jenis-suggest-${index}`}
+                    <select
                         className={`w-full rounded-lg border px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-white ${jenisBarangError ? 'border-red-500 bg-red-50 dark:bg-red-900/10' : 'border-gray-300 dark:border-zinc-600'}`}
                         value={item.jenis_barang}
                         onChange={(e) => handleFieldChange('jenis_barang', e.target.value)}
-                        placeholder="Pilih atau ketik jenis..."
-                    />
-                    <datalist id={`jenis-suggest-${index}`}>
+                        disabled={!item.kategori}
+                    >
+                        <option value="">-- Pilih Jenis --</option>
                         {jenisOptions.map((j) => (
-                            <option key={j} value={j} />
+                            <option key={j} value={j}>
+                                {j}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                     {jenisBarangError && <p className="text-xs text-red-500">{jenisBarangError}</p>}
                 </div>
 
@@ -195,19 +193,19 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                         Model
                         {loadingModel && <span className="ml-2 text-xs text-gray-400">(memuat...)</span>}
                     </label>
-                    <input
-                        type="text"
-                        list={`model-suggest-${index}`}
+                    <select
                         className={`w-full rounded-lg border px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-white ${modelError ? 'border-red-500 bg-red-50 dark:bg-red-900/10' : 'border-gray-300 dark:border-zinc-600'}`}
                         value={item.model}
                         onChange={(e) => handleFieldChange('model', e.target.value)}
-                        placeholder="Pilih atau ketik model..."
-                    />
-                    <datalist id={`model-suggest-${index}`}>
+                        disabled={!item.jenis_barang}
+                    >
+                        <option value="">-- Pilih Model --</option>
                         {availableModelOptions.map((m) => (
-                            <option key={m} value={m} />
+                            <option key={m} value={m}>
+                                {m}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                     {modelError && <p className="text-xs text-red-500">{modelError}</p>}
                 </div>
 

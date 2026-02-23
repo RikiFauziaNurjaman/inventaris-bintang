@@ -41,17 +41,32 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
     const serialNumberOptions = lists?.serialNumberList || {};
     // Filter merek berdasarkan kategori yang dipilih di baris ini
     const selectedKategoriId = lists.kategoriList.find((k) => k.nama === item.kategori)?.id;
-    const filteredMerekList = lists.merekList.filter((merek) => merek.model_barang.some((model) => model.jenis?.kategori_id === selectedKategoriId));
+    const filteredMerekList = selectedKategoriId
+        ? lists.merekList.filter((merek) => merek.model_barang?.some((model) => model.kategori_id === selectedKategoriId))
+        : lists.merekList;
 
     // Filter model berdasarkan merek dan kategori yang dipilih
     const selectedMerekId = lists.merekList.find((m) => m.nama === item.merek)?.id;
-    const filteredModelList = lists.modelList.filter(
-        (model) => model.merek_id === selectedMerekId && model.jenis?.kategori_id === selectedKategoriId,
-    );
+    const filteredModelList = lists.modelList.filter((model) => model.merek_id === selectedMerekId && model.kategori_id === selectedKategoriId);
 
-    // Dapatkan serial number yang tersedia untuk model yang dipilih
-    const selectedKey = `${item.merek}|${item.model}`;
-    const allAvailableSerials = lists.serialNumberList[selectedKey] || [];
+    // Dapatkan serial number berdasarkan level filter yang dipilih
+    let allAvailableSerials: string[] = [];
+    if (item.model && item.merek) {
+        // Level 3: Model spesifik dipilih
+        const key = `${item.merek}|${item.model}`;
+        allAvailableSerials = lists.serialNumberList[key] || [];
+    } else if (item.merek) {
+        // Level 2: Hanya merek dipilih — tampilkan semua serial untuk merek ini
+        allAvailableSerials = Object.entries(lists.serialNumberList)
+            .filter(([key]) => key.startsWith(`${item.merek}|`))
+            .flatMap(([, serials]) => serials as string[]);
+    } else if (item.kategori && selectedKategoriId) {
+        // Level 1: Hanya kategori dipilih — tampilkan semua serial untuk merek di kategori ini
+        const merekNamesInKategori = filteredMerekList.map((m) => m.nama);
+        allAvailableSerials = Object.entries(lists.serialNumberList)
+            .filter(([key]) => merekNamesInKategori.includes(key.split('|')[0]))
+            .flatMap(([, serials]) => serials as string[]);
+    }
     const usedSerialsInRow = item.keluar_info.map((info) => info.serial_number);
     const availableSerialsForSuggestions = allAvailableSerials.filter((sn) => !usedSerialsInRow.includes(sn));
 
@@ -98,50 +113,52 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
                 {/* Kategori */}
                 <div>
                     <label>Kategori</label>
-                    <input
-                        type="text"
-                        list="kategori-suggest"
+                    <select
                         className="mt-1 w-full rounded border p-2"
                         value={item.kategori}
                         onChange={(e) => handleFieldChange('kategori', e.target.value)}
-                    />
-                    <datalist id="kategori-suggest">
+                    >
+                        <option value="">-- Pilih Kategori --</option>
                         {kategoriOptions.map((k) => (
-                            <option key={k.id} value={k.nama} />
+                            <option key={k.id} value={k.nama}>
+                                {k.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
                 {/* Merek */}
                 <div>
                     <label>Merek</label>
-                    <input
-                        type="text"
-                        list={`merek-suggest-${index}`}
+                    <select
                         className="mt-1 w-full rounded border p-2"
                         value={item.merek}
                         onChange={(e) => handleFieldChange('merek', e.target.value)}
-                    />
-                    <datalist id={`merek-suggest-${index}`}>
-                        {merekOptions.map((m) => (
-                            <option key={m.id} value={m.nama} />
+                        disabled={!item.kategori}
+                    >
+                        <option value="">-- Pilih Merek --</option>
+                        {filteredMerekList.map((m) => (
+                            <option key={m.id} value={m.nama}>
+                                {m.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
                 {/* Model */}
                 <div>
                     <label>Model</label>
-                    <input
-                        type="text"
-                        list={`model-suggest-${index}`}
+                    <select
                         className="mt-1 w-full rounded border p-2"
                         value={item.model}
                         onChange={(e) => handleFieldChange('model', e.target.value)}
-                    />
-                    <datalist id={`model-suggest-${index}`}>
-                        {modelOptions.map((m) => (
-                            <option key={m.id} value={m.nama} />
+                        disabled={!item.merek}
+                    >
+                        <option value="">-- Pilih Model --</option>
+                        {filteredModelList.map((m) => (
+                            <option key={m.id} value={m.nama}>
+                                {m.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
             </div>
 

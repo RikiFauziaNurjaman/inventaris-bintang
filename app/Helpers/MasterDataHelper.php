@@ -47,7 +47,7 @@ class MasterDataHelper
     public static function getMerekWithModel(): \Illuminate\Support\Collection
     {
         return Cache::remember('master_merek_with_model', self::CACHE_TTL, function () {
-            return MerekBarang::with('modelBarang:id,merek_id,nama,jenis_id')
+            return MerekBarang::with('modelBarang:id,merek_id,nama,jenis_id,kategori_id')
                 ->select('id', 'nama')
                 ->orderBy('nama')
                 ->get();

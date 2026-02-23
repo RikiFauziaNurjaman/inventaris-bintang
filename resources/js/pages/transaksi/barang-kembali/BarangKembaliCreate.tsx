@@ -126,20 +126,19 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
                         Kategori
                         {loadingKategori && <span className="ml-2 text-xs text-gray-400">(memuat...)</span>}
                     </label>
-                    <input
-                        type="text"
-                        list={`kategori-suggest-${index}`}
+                    <select
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:disabled:bg-zinc-700"
                         value={item.kategori}
                         onChange={(e) => handleFieldChange('kategori', e.target.value)}
                         disabled={!lokasiId}
-                        placeholder={lokasiId ? 'Pilih kategori...' : 'Pilih lokasi dulu'}
-                    />
-                    <datalist id={`kategori-suggest-${index}`}>
+                    >
+                        <option value="">{lokasiId ? '-- Pilih Kategori --' : 'Pilih lokasi dulu'}</option>
                         {kategoriOptions.map((k) => (
-                            <option key={k.id} value={k.nama} />
+                            <option key={k.id} value={k.nama}>
+                                {k.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
 
                 {/* Merek */}
@@ -148,20 +147,19 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
                         Merek
                         {loadingMerek && <span className="ml-2 text-xs text-gray-400">(memuat...)</span>}
                     </label>
-                    <input
-                        type="text"
-                        list={`merek-suggest-${index}`}
+                    <select
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:disabled:bg-zinc-700"
                         value={item.merek}
                         onChange={(e) => handleFieldChange('merek', e.target.value)}
                         disabled={!item.kategori}
-                        placeholder={item.kategori ? 'Pilih merek...' : 'Pilih kategori dulu'}
-                    />
-                    <datalist id={`merek-suggest-${index}`}>
+                    >
+                        <option value="">{item.kategori ? '-- Pilih Merek --' : 'Pilih kategori dulu'}</option>
                         {merekOptions.map((m) => (
-                            <option key={m.id} value={m.nama} />
+                            <option key={m.id} value={m.nama}>
+                                {m.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
 
                 {/* Model */}
@@ -170,20 +168,19 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
                         Model
                         {loadingModel && <span className="ml-2 text-xs text-gray-400">(memuat...)</span>}
                     </label>
-                    <input
-                        type="text"
-                        list={`model-suggest-${index}`}
+                    <select
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:disabled:bg-zinc-700"
                         value={item.model}
                         onChange={(e) => handleFieldChange('model', e.target.value)}
                         disabled={!item.merek}
-                        placeholder={item.merek ? 'Pilih model...' : 'Pilih merek dulu'}
-                    />
-                    <datalist id={`model-suggest-${index}`}>
+                    >
+                        <option value="">{item.merek ? '-- Pilih Model --' : 'Pilih merek dulu'}</option>
                         {modelOptions.map((m) => (
-                            <option key={m.id} value={m.nama} />
+                            <option key={m.id} value={m.nama}>
+                                {m.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
             </div>
 
@@ -344,19 +341,18 @@ export default function BarangKembaliCreate() {
                             </div>
                             <div className="space-y-1">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Lokasi Asal Barang</label>
-                                <input
-                                    type="text"
-                                    list="lokasi-suggest"
+                                <select
                                     className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
                                     value={data.lokasi}
                                     onChange={(e) => setData('lokasi', e.target.value)}
-                                    placeholder="Pilih lokasi asal barang..."
-                                />
-                                <datalist id="lokasi-suggest">
+                                >
+                                    <option value="">-- Pilih Lokasi Asal --</option>
                                     {lokasiList.map((l) => (
-                                        <option key={l.id} value={l.nama} />
+                                        <option key={l.id} value={l.nama}>
+                                            {l.nama}
+                                        </option>
                                     ))}
-                                </datalist>
+                                </select>
                                 {errors.lokasi && <p className="text-xs text-red-500">{errors.lokasi}</p>}
                             </div>
                         </div>

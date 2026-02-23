@@ -94,69 +94,71 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
                 {/* Kategori */}
                 <div>
                     <label>Kategori</label>
-                    <input
-                        type="text"
-                        list="kategori-suggest"
+                    <select
                         className="mt-1 w-full rounded border p-2"
                         value={item.kategori}
                         onChange={(e) => handleFieldChange('kategori', e.target.value)}
-                    />
-                    <datalist id="kategori-suggest">
+                    >
+                        <option value="">-- Pilih Kategori --</option>
                         {lists.kategoriList.map((k) => (
-                            <option key={k.id} value={k.nama} />
+                            <option key={k.id} value={k.nama}>
+                                {k.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
 
                 {/* Merek */}
                 <div>
                     <label>Merek</label>
-                    <input
-                        type="text"
-                        list="merek-suggest"
+                    <select
                         className="mt-1 w-full rounded border p-2"
                         value={item.merek}
                         onChange={(e) => handleFieldChange('merek', e.target.value)}
-                    />
-                    <datalist id="merek-suggest">
+                    >
+                        <option value="">-- Pilih Merek --</option>
                         {lists.merekList.map((m) => (
-                            <option key={m.id} value={m.nama} />
+                            <option key={m.id} value={m.nama}>
+                                {m.nama}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
 
                 {/* Jenis Barang */}
                 <div>
                     <label>Jenis Barang</label>
-                    <input
-                        type="text"
-                        list={`jenis-suggest-${index}`}
+                    <select
                         className="mt-1 w-full rounded border p-2"
                         value={item.jenis_barang}
                         onChange={(e) => handleFieldChange('jenis_barang', e.target.value)}
-                    />
-                    <datalist id={`jenis-suggest-${index}`}>
+                        disabled={!item.kategori}
+                    >
+                        <option value="">-- Pilih Jenis --</option>
                         {jenisOptions.map((j) => (
-                            <option key={j} value={j} />
+                            <option key={j} value={j}>
+                                {j}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
 
                 {/* Model */}
                 <div>
                     <label>Model</label>
-                    <input
-                        type="text"
-                        list={`model-suggest-${index}`}
+                    <select
                         className="mt-1 w-full rounded border p-2"
                         value={item.model}
                         onChange={(e) => handleFieldChange('model', e.target.value)}
-                    />
-                    <datalist id={`model-suggest-${index}`}>
+                        disabled={!item.jenis_barang}
+                    >
+                        <option value="">-- Pilih Model --</option>
                         {modelOptions.map((m) => (
-                            <option key={m} value={m} />
+                            <option key={m} value={m}>
+                                {m}
+                            </option>
                         ))}
-                    </datalist>
+                    </select>
                 </div>
 
                 {/* Rak & Baris */}
