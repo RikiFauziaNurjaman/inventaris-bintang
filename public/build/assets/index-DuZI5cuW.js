@@ -1,0 +1,11 @@
+import{j as a,L as r}from"./app-VvS81JxI.js";import{P as i,A as n}from"./app-layout-D0lnv8Ek.js";import{U as c}from"./upload-CVcbwSs9.js";import{c as l}from"./createLucideIcon-x6yJZ9bi.js";/* empty css            */import"./button-A29U8nDh.js";import"./index-CqZ_KBYw.js";import"./index-BqCsahQl.js";import"./x-S7Jl8CPI.js";/**
+ * @license lucide-react v0.475.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const d=[["path",{d:"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8",key:"v9h5vc"}],["path",{d:"M21 3v5h-5",key:"1q7to0"}],["path",{d:"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16",key:"3uifl3"}],["path",{d:"M8 16H3v5",key:"1cv678"}]],p=l("RefreshCw",d);/**
+ * @license lucide-react v0.475.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const m=[["path",{d:"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8",key:"1357e3"}],["path",{d:"M3 3v5h5",key:"1xhq8a"}]],h=l("RotateCcw",m);function w({summary:t}){const s=[{title:"Barang Masuk",value:t.barang_masuk,icon:a.jsx(i,{className:"h-6 w-6"}),url:"/laporan/masuk",color:"bg-blue-50 text-blue-600"},{title:"Barang Keluar",value:t.barang_keluar,icon:a.jsx(c,{className:"h-6 w-6"}),url:"/laporan/keluar",color:"bg-green-50 text-green-600"},{title:"Barang Kembali",value:t.barang_kembali,icon:a.jsx(h,{className:"h-6 w-6"}),url:"/laporan/kembali",color:"bg-purple-50 text-purple-600"},{title:"Mutasi Barang",value:t.mutasi_barang,icon:a.jsx(p,{className:"h-6 w-6"}),url:"/laporan/mutasi",color:"bg-orange-50 text-orange-600"}];return a.jsx(n,{children:a.jsx("div",{className:"grid grid-cols-1 gap-6 p-4 sm:grid-cols-2 lg:grid-cols-4",children:s.map((e,o)=>a.jsx(r,{href:e.url,className:`rounded-xl border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md ${e.color}`,children:a.jsxs("div",{className:"flex items-center justify-between",children:[a.jsxs("div",{children:[a.jsx("h2",{className:"text-lg font-semibold",children:e.title}),a.jsx("p",{className:"mt-2 text-2xl font-bold",children:e.value}),a.jsx("p",{className:"mt-1 text-sm opacity-70",children:"barang"})]}),a.jsx("div",{className:"bg-opacity-50 rounded-lg bg-white p-3",children:e.icon})]})},o))})})}export{w as default};

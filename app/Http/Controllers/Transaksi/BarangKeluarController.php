@@ -143,7 +143,6 @@ class BarangKeluarController extends Controller
         $request->validate([
             'tanggal' => 'required|date',
             'lokasi' => 'required|string|max:100',
-            'sub_lokasi' => 'nullable|string|max:100',
             'pic' => 'nullable|string|max:100',
             'items' => 'required|array|min:1',
             // Validasi opsional untuk master data di setiap item
@@ -162,6 +161,7 @@ class BarangKeluarController extends Controller
                 }),
             ],
             'items.*.keluar_info.*.status_keluar' => 'required|string|in:dipinjamkan,dijual,maintenance',
+            'items.*.keluar_info.*.sub_lokasi' => 'nullable|string|max:100',
         ]);
 
         $barangKeluar = null;
@@ -171,15 +171,6 @@ class BarangKeluarController extends Controller
                 ['nama' => $request->lokasi],
                 ['is_gudang' => false]
             );
-
-            // Cari atau buat sub-lokasi jika diisi
-            $subLokasiId = null;
-            if ($request->filled('sub_lokasi')) {
-                $subLokasi = \App\Models\SubLokasi::firstOrCreate(
-                    ['nama' => $request->sub_lokasi, 'lokasi_id' => $lokasiTujuan->id]
-                );
-                $subLokasiId = $subLokasi->id;
-            }
 
             // 2. Buat satu header transaksi BarangKeluar
             $barangKeluar = BarangKeluar::create([
@@ -219,6 +210,15 @@ class BarangKeluarController extends Controller
                     if (!$barang) continue;
 
                     $lokasiAsalId = $barang->lokasi_id;
+
+                    // Cari atau buat sub-lokasi jika diisi di baris ini
+                    $subLokasiId = null;
+                    if (!empty($info['sub_lokasi'])) {
+                        $subLokasi = \App\Models\SubLokasi::firstOrCreate(
+                            ['nama' => $info['sub_lokasi'], 'lokasi_id' => $lokasiTujuan->id]
+                        );
+                        $subLokasiId = $subLokasi->id;
+                    }
 
                     // Update lokasi, sub_lokasi, pic dan status barang
                     $barang->update([
@@ -315,6 +315,7 @@ class BarangKeluarController extends Controller
                 return [
                     'serial_number' => $detail->barang->serial_number,
                     'status_keluar' => $detail->status_keluar,
+                    'sub_lokasi' => $detail->barang->subLokasi->nama ?? '',
                 ];
             });
 
@@ -326,18 +327,12 @@ class BarangKeluarController extends Controller
             ];
         });
 
-        // Ambil sub_lokasi dan pic dari barang pertama (asumsi sama untuk satu transaksi)
-        $firstBarang = $barangKeluar->details->first()?->barang;
-        $subLokasiNama = $firstBarang?->subLokasi?->nama ?? '';
-        $pic = $firstBarang?->pic ?? '';
-
         // 4. Siapkan data final untuk dikirim ke view
         $dataToEdit = [
             'id' => $barangKeluar->id,
             'tanggal' => $barangKeluar->tanggal,
             'lokasi' => $barangKeluar->lokasi->nama,
-            'sub_lokasi' => $subLokasiNama,
-            'pic' => $pic,
+            'pic' => $barangKeluar->details->first()?->barang?->pic ?? '',
             'items' => $items->values()->all(), // Kirim data dalam format baru
         ];
 
@@ -370,15 +365,15 @@ class BarangKeluarController extends Controller
         $request->validate([
             'tanggal' => 'required|date',
             'lokasi' => 'required|string|max:100',
-            'sub_lokasi' => 'nullable|string|max:100',
             'pic' => 'nullable|string|max:100',
             'items' => 'required|array|min:1',
-            'items.*.kategori' => 'required|string', // Validasi yang terlewat
-            'items.*.merek' => 'required|string',    // Validasi yang terlewat
-            'items.*.model' => 'required|string',    // Validasi yang terlewat
+            'items.*.kategori' => 'required|string', 
+            'items.*.merek' => 'required|string',    
+            'items.*.model' => 'required|string',    
             'items.*.keluar_info' => 'required|array|min:1',
             'items.*.keluar_info.*.serial_number' => 'required|string|distinct|exists:barang,serial_number',
             'items.*.keluar_info.*.status_keluar' => 'required|string|in:dipinjamkan,dijual,maintenance',
+            'items.*.keluar_info.*.sub_lokasi' => 'nullable|string|max:100',
         ]);
 
         DB::transaction(function () use ($request, $barangKeluar) {
@@ -389,15 +384,6 @@ class BarangKeluarController extends Controller
                 'tanggal' => $request->tanggal,
                 'lokasi_id' => $lokasiTujuan->id,
             ]);
-
-            // Cari atau buat sub-lokasi jika diisi
-            $subLokasiId = null;
-            if ($request->filled('sub_lokasi')) {
-                $subLokasi = \App\Models\SubLokasi::firstOrCreate(
-                    ['nama' => $request->sub_lokasi, 'lokasi_id' => $lokasiTujuan->id]
-                );
-                $subLokasiId = $subLokasi->id;
-            }
 
             $oldDetails = $barangKeluar->details()->with('barang')->get();
             $oldSerials = $oldDetails->pluck('barang.serial_number')->all();
@@ -453,6 +439,15 @@ class BarangKeluarController extends Controller
                             StockHelpers::pindahkanStok($barang->model_id, $lokasiGudang->id, $lokasiTujuan->id, 1);
                         }
 
+                        // Cari atau buat sub-lokasi jika diisi di baris ini
+                        $subLokasiId = null;
+                        if (!empty($info['sub_lokasi'])) {
+                            $subLokasi = \App\Models\SubLokasi::firstOrCreate(
+                                ['nama' => $info['sub_lokasi'], 'lokasi_id' => $lokasiTujuan->id]
+                            );
+                            $subLokasiId = $subLokasi->id;
+                        }
+
                         // Langkah C: Update record
                         $detail->update(['status_keluar' => $status]);
                         $barang->update([
@@ -463,6 +458,15 @@ class BarangKeluarController extends Controller
                         ]);
                     } else {
                         // Meskipun status tidak berubah, update lokasi detailnya (sub_lokasi & pic)
+                        // Cari atau buat sub-lokasi jika diisi di baris ini
+                        $subLokasiId = null;
+                        if (!empty($info['sub_lokasi'])) {
+                            $subLokasi = \App\Models\SubLokasi::firstOrCreate(
+                                ['nama' => $info['sub_lokasi'], 'lokasi_id' => $lokasiTujuan->id]
+                            );
+                            $subLokasiId = $subLokasi->id;
+                        }
+
                         $detail->barang->update([
                             'lokasi_id' => $lokasiTujuan->id,
                             'sub_lokasi_id' => $subLokasiId,
@@ -473,6 +477,15 @@ class BarangKeluarController extends Controller
                     // INI BARANG BARU yang ditambahkan ke transaksi
                     $barang = Barang::where('serial_number', $serial)->firstOrFail();
                     $lokasiAsalId = $barang->lokasi_id; // Ini adalah lokasi gudang
+
+                    // Cari atau buat sub-lokasi jika diisi di baris ini
+                    $subLokasiId = null;
+                    if (!empty($info['sub_lokasi'])) {
+                        $subLokasi = \App\Models\SubLokasi::firstOrCreate(
+                            ['nama' => $info['sub_lokasi'], 'lokasi_id' => $lokasiTujuan->id]
+                        );
+                        $subLokasiId = $subLokasi->id;
+                    }
 
                     $barang->update([
                         'lokasi_id' => $lokasiTujuan->id, 
@@ -516,6 +529,7 @@ class BarangKeluarController extends Controller
             'details.barang.modelBarang' => function ($query) {
                 $query->with(['merek', 'kategori']);
             },
+            'details.barang.subLokasi',
         ])->findOrFail($id);
 
         // Kelompokkan detail berdasarkan model barangnya
@@ -534,6 +548,8 @@ class BarangKeluarController extends Controller
                         'id' => $detail->id,
                         'serial_number' => $detail->barang->serial_number,
                         'status_keluar' => $detail->status_keluar,
+                        'sub_lokasi' => $detail->barang->subLokasi->nama ?? '-',
+                        'pic' => $detail->barang->pic ?? '-',
                     ];
                 })->values()->all(),
             ];

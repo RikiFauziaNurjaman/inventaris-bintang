@@ -9,6 +9,7 @@ import Swal from 'sweetalert2';
 interface KeluarInfo {
     serial_number: string;
     status_keluar: 'dipinjamkan' | 'dijual' | 'maintenance';
+    sub_lokasi: string;
 }
 
 interface Item {
@@ -20,10 +21,8 @@ interface Item {
 
 interface PageProps {
     barangKeluar: {
-        id: number;
         tanggal: string;
         lokasi: string;
-        sub_lokasi: string;
         pic: string;
         items: Item[]; // Struktur baru
     };
@@ -36,7 +35,7 @@ interface PageProps {
 
 // 2. Gunakan kembali komponen ItemRow yang sama dari form Create
 // (Sangat disarankan untuk mengekstrak ini ke file terpisah dan mengimpornya)
-const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
+const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, subLokasiOptions, loadingSubLokasi }) => {
     const kategoriOptions = lists?.kategoriList || [];
     const merekOptions = lists?.merekList || [];
     const modelOptions = lists?.modelList || [];
@@ -93,7 +92,7 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
     };
 
     const addSerialField = () => {
-        const newKeluarInfo = [...item.keluar_info, { serial_number: '', status_keluar: 'dipinjamkan' }];
+        const newKeluarInfo = [...item.keluar_info, { serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }];
         onItemChange(index, { ...item, keluar_info: newKeluarInfo });
     };
 
@@ -167,8 +166,10 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
             {/* Serial Numbers & Status */}
             <div className="mt-4">
                 <label className="mb-2 block text-sm font-semibold text-red-700">Serial Number & Status</label>
-                {item.keluar_info.map((info, infoIndex) => (
-                    <div key={infoIndex} className="mb-2 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {item.keluar_info.map((info, infoIndex) => (
+                <div key={infoIndex} className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Serial Number</label>
                         <div className="flex items-center gap-2">
                             <input
                                 type="text"
@@ -183,25 +184,45 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
                                     <option key={sn} value={sn} />
                                 ))}
                             </datalist>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Status</label>
+                        <select
+                            value={info.status_keluar}
+                            onChange={(e) => handleKeluarInfoChange(infoIndex, 'status_keluar', e.target.value)}
+                            className="w-full rounded border-2 border-blue-400 bg-blue-50 p-2"
+                        >
+                            <option value="dipinjamkan">Dipinjamkan</option>
+                            <option value="dijual">Dijual</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Sub Lokasi</label>
+                        <div className="flex items-center gap-2">
+                            <select
+                                className="flex-1 rounded border p-2 disabled:bg-gray-100"
+                                value={info.sub_lokasi}
+                                onChange={(e) => handleKeluarInfoChange(infoIndex, 'sub_lokasi', e.target.value)}
+                                disabled={subLokasiOptions.length === 0}
+                            >
+                                <option value="">-- Sub Lokasi --</option>
+                                {subLokasiOptions.map((s) => (
+                                    <option key={s.id} value={s.nama}>
+                                        {s.nama} {s.lantai ? `(Lt. ${s.lantai})` : ''}
+                                    </option>
+                                ))}
+                            </select>
                             {item.keluar_info.length > 1 && (
                                 <button type="button" className="text-sm text-red-600 hover:underline" onClick={() => removeSerialField(infoIndex)}>
                                     Hapus
                                 </button>
                             )}
                         </div>
-                        <div>
-                            <select
-                                value={info.status_keluar}
-                                onChange={(e) => handleKeluarInfoChange(infoIndex, 'status_keluar', e.target.value)}
-                                className="w-full rounded border-2 border-blue-400 bg-blue-50 p-2"
-                            >
-                                <option value="dipinjamkan">Dipinjamkan</option>
-                                <option value="dijual">Dijual</option>
-                                <option value="maintenance">Maintenance</option>
-                            </select>
-                        </div>
                     </div>
-                ))}
+                </div>
+            ))}
                 <button type="button" className="mt-1 text-sm text-blue-600 hover:underline" onClick={addSerialField}>
                     + Tambah Serial
                 </button>
@@ -220,7 +241,6 @@ export default function BarangKeluarEdit() {
     const { data, setData, put, processing, errors } = useForm({
         tanggal: barangKeluar.tanggal,
         lokasi: barangKeluar.lokasi,
-        sub_lokasi: barangKeluar.sub_lokasi || '',
         pic: barangKeluar.pic || '',
         items: barangKeluar.items, // Inisialisasi dengan struktur items yang baru
     });
@@ -258,7 +278,7 @@ export default function BarangKeluarEdit() {
                 kategori: '',
                 merek: '',
                 model: '',
-                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan' }],
+                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }],
             },
         ]);
     };
@@ -294,7 +314,7 @@ export default function BarangKeluarEdit() {
                 <h1 className="mb-4 text-2xl font-bold">Edit Transaksi Barang Keluar</h1>
                 <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-md">
                     {/* Header Form (Tanggal & Lokasi) */}
-                    <div className="mb-6 grid grid-cols-1 gap-6 border-b pb-6 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="mb-6 grid grid-cols-1 gap-6 border-b pb-6 md:grid-cols-3">
                         <div>
                             <label>Tanggal</label>
                             <input
@@ -312,7 +332,6 @@ export default function BarangKeluarEdit() {
                                 value={data.lokasi}
                                 onChange={(e) => {
                                     setData('lokasi', e.target.value);
-                                    setData('sub_lokasi', '');
                                 }}
                             >
                                 <option value="">-- Pilih Lokasi Tujuan --</option>
@@ -323,26 +342,6 @@ export default function BarangKeluarEdit() {
                                 ))}
                             </select>
                             {errors.lokasi && <p className="text-sm text-red-500">{errors.lokasi}</p>}
-                        </div>
-                        <div>
-                            <label>
-                                Sub-Lokasi
-                                {loadingSubLokasi && <span className="ml-2 text-xs text-gray-400">(memuat...)</span>}
-                            </label>
-                            <select
-                                className="mt-1 w-full rounded border p-2 disabled:bg-gray-100"
-                                value={data.sub_lokasi}
-                                onChange={(e) => setData('sub_lokasi', e.target.value)}
-                                disabled={!data.lokasi || subLokasiOptions.length === 0}
-                            >
-                                <option value="">-- Pilih Sub-Lokasi --</option>
-                                {subLokasiOptions.map((s) => (
-                                    <option key={s.id} value={s.nama}>
-                                        {s.nama} {s.lantai ? `(Lt. ${s.lantai})` : ''}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.sub_lokasi && <p className="text-sm text-red-500">{errors.sub_lokasi}</p>}
                         </div>
                         <div>
                             <label>PIC (Penanggung Jawab)</label>
@@ -367,6 +366,8 @@ export default function BarangKeluarEdit() {
                             onRemove={data.items.length > 1 ? () => removeItemRow(index) : undefined}
                             errors={errors}
                             lists={{ kategoriList, merekList, modelList, serialNumberList }}
+                            subLokasiOptions={subLokasiOptions}
+                            loadingSubLokasi={loadingSubLokasi}
                         />
                     ))}
 

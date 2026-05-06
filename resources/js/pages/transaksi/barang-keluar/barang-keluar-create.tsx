@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 interface KeluarInfo {
     serial_number: string;
     status_keluar: 'dipinjamkan' | 'dijual' | 'maintenance';
+    sub_lokasi: string;
 }
 
 interface Item {
@@ -18,7 +19,7 @@ interface Item {
 }
 
 // Komponen untuk satu baris item
-const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModels }) => {
+const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModels, subLokasiOptions, loadingSubLokasi }) => {
     const [loadingMerek, setLoadingMerek] = useState(false);
     const [loadingModel, setLoadingModel] = useState(false);
 
@@ -73,7 +74,7 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
     };
 
     const addSerialField = () => {
-        const newKeluarInfo = [...item.keluar_info, { serial_number: '', status_keluar: 'dipinjamkan' }];
+        const newKeluarInfo = [...item.keluar_info, { serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }];
         onItemChange(index, { ...item, keluar_info: newKeluarInfo });
     };
 
@@ -85,11 +86,11 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
     const handleBulkSerials = (serials: string[]) => {
         const newKeluarInfo = [
             ...item.keluar_info.filter((info) => info.serial_number.trim()),
-            ...serials.map((sn) => ({ serial_number: sn, status_keluar: 'dipinjamkan' as const })),
+            ...serials.map((sn) => ({ serial_number: sn, status_keluar: 'dipinjamkan' as const, sub_lokasi: '' })),
         ];
         onItemChange(index, {
             ...item,
-            keluar_info: newKeluarInfo.length > 0 ? newKeluarInfo : [{ serial_number: '', status_keluar: 'dipinjamkan' }],
+            keluar_info: newKeluarInfo.length > 0 ? newKeluarInfo : [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }],
         });
     };
 
@@ -178,32 +179,36 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                     <BulkSerialInput existingSerials={item.keluar_info.map((i) => i.serial_number)} onSerialsParsed={handleBulkSerials} />
                 </div>
                 {item.keluar_info.map((info, infoIndex) => (
-                    <div key={infoIndex} className="mb-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="text"
-                                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                                value={info.serial_number}
-                                onChange={(e) => handleKeluarInfoChange(infoIndex, 'serial_number', e.target.value)}
-                                placeholder={`Serial #${infoIndex + 1}`}
-                                list={`serial-suggest-${index}-${infoIndex}`}
-                            />
-                            <datalist id={`serial-suggest-${index}-${infoIndex}`}>
-                                {availableSerialsForSuggestions.map((sn) => (
-                                    <option key={sn} value={sn} />
-                                ))}
-                            </datalist>
-                            {item.keluar_info.length > 1 && (
-                                <button
-                                    type="button"
-                                    className="rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"
-                                    onClick={() => removeSerialField(infoIndex)}
-                                >
-                                    Hapus
-                                </button>
-                            )}
+                    <div key={infoIndex} className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase">Serial Number</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                                    value={info.serial_number}
+                                    onChange={(e) => handleKeluarInfoChange(infoIndex, 'serial_number', e.target.value)}
+                                    placeholder={`Serial #${infoIndex + 1}`}
+                                    list={`serial-suggest-${index}-${infoIndex}`}
+                                />
+                                <datalist id={`serial-suggest-${index}-${infoIndex}`}>
+                                    {availableSerialsForSuggestions.map((sn) => (
+                                        <option key={sn} value={sn} />
+                                    ))}
+                                </datalist>
+                                {item.keluar_info.length > 1 && (
+                                    <button
+                                        type="button"
+                                        className="rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 md:hidden"
+                                        onClick={() => removeSerialField(infoIndex)}
+                                    >
+                                        Hapus
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase">Status</label>
                             <select
                                 value={info.status_keluar}
                                 onChange={(e) => handleKeluarInfoChange(infoIndex, 'status_keluar', e.target.value)}
@@ -213,6 +218,33 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                                 <option value="dijual">Dijual</option>
                                 <option value="maintenance">Maintenance</option>
                             </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase">Sub Lokasi</label>
+                            <div className="flex items-center gap-2">
+                                <select
+                                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:disabled:bg-zinc-700"
+                                    value={info.sub_lokasi}
+                                    onChange={(e) => handleKeluarInfoChange(infoIndex, 'sub_lokasi', e.target.value)}
+                                    disabled={subLokasiOptions.length === 0}
+                                >
+                                    <option value="">-- Sub Lokasi --</option>
+                                    {subLokasiOptions.map((s) => (
+                                        <option key={s.id} value={s.nama}>
+                                            {s.nama} {s.lantai ? `(Lt. ${s.lantai})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                {item.keluar_info.length > 1 && (
+                                    <button
+                                        type="button"
+                                        className="hidden rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 md:block"
+                                        onClick={() => removeSerialField(infoIndex)}
+                                    >
+                                        Hapus
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -240,14 +272,13 @@ export default function BarangKeluarCreate() {
     const { data, setData, post, processing, errors, reset } = useForm({
         tanggal: new Date().toISOString().slice(0, 10),
         lokasi: '',
-        sub_lokasi: '',
         pic: '',
         items: [
             {
                 kategori: '',
                 merek: '',
                 model: '',
-                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan' }],
+                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }],
             },
         ] as Item[],
     });
@@ -285,7 +316,7 @@ export default function BarangKeluarCreate() {
                 kategori: '',
                 merek: '',
                 model: '',
-                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan' }],
+                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }],
             },
         ]);
     };
@@ -334,7 +365,7 @@ export default function BarangKeluarCreate() {
                         className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
                     >
                         {/* Header Form */}
-                        <div className="mb-6 grid grid-cols-1 gap-6 border-b border-gray-100 pb-6 md:grid-cols-2 lg:grid-cols-4 dark:border-zinc-800">
+                        <div className="mb-6 grid grid-cols-1 gap-6 border-b border-gray-100 pb-6 md:grid-cols-3 dark:border-zinc-800">
                             <div className="space-y-1">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal</label>
                                 <input
@@ -352,7 +383,6 @@ export default function BarangKeluarCreate() {
                                     value={data.lokasi}
                                     onChange={(e) => {
                                         setData('lokasi', e.target.value);
-                                        setData('sub_lokasi', '');
                                     }}
                                 >
                                     <option value="">-- Pilih Lokasi Tujuan --</option>
@@ -363,26 +393,6 @@ export default function BarangKeluarCreate() {
                                     ))}
                                 </select>
                                 {errors.lokasi && <p className="text-xs text-red-500">{errors.lokasi}</p>}
-                            </div>
-                            <div className="space-y-1">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Sub-Lokasi
-                                    {loadingSubLokasi && <span className="ml-2 text-xs text-gray-400">(memuat...)</span>}
-                                </label>
-                                <select
-                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:disabled:bg-zinc-700"
-                                    value={data.sub_lokasi}
-                                    onChange={(e) => setData('sub_lokasi', e.target.value)}
-                                    disabled={!data.lokasi || subLokasiOptions.length === 0}
-                                >
-                                    <option value="">-- Pilih Sub-Lokasi --</option>
-                                    {subLokasiOptions.map((s) => (
-                                        <option key={s.id} value={s.nama}>
-                                            {s.nama} {s.lantai ? `(Lt. ${s.lantai})` : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.sub_lokasi && <p className="text-xs text-red-500">{errors.sub_lokasi}</p>}
                             </div>
                             <div className="space-y-1">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">PIC (Penanggung Jawab)</label>
@@ -422,6 +432,8 @@ export default function BarangKeluarCreate() {
                                     errors={itemErrors}
                                     lists={{ kategoriList, merekList, modelList, serialNumberList }}
                                     usedModels={usedModels}
+                                    subLokasiOptions={subLokasiOptions}
+                                    loadingSubLokasi={loadingSubLokasi}
                                 />
                             );
                         })}

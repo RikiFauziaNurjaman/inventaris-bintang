@@ -53,5 +53,10 @@ class Barang extends Model
         return $this->belongsToMany(Pemusnahan::class, 'barang_pemusnahan');
     }
 
+    public function mutasi()
+    {
+        return $this->hasMany(MutasiBarang::class, 'barang_id');
+    }
+
 }
 

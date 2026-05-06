@@ -39,6 +39,7 @@
         th {
             background-color: #f2f2f2;
             font-weight: bold;
+            text-align: center;
         }
         .text-center {
             text-align: center;
@@ -56,44 +57,46 @@
 </head>
 <body>
     <div class="header">
-        <h1>Laporan Monitoring Barang</h1>
-        <p>Lokasi: {{ $lokasi->nama }}</p>
-        <p>Tanggal Cetak: {{ $tanggalCetak }}</p>
+        <h1>LAPORAN MONITORING PRINTER</h1>
+        <p>LOKASI: {{ strtoupper($lokasi->nama) }}</p>
+        <p>TANGGAL CETAK: {{ strtoupper($tanggalCetak) }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
                 <th style="width: 30px;">NO</th>
-                <th>Lokasi</th>
-                <th>Kategori</th>
-                <th>Merek</th>
-                <th>Model</th>
-                <th>Serial Number</th>
-                <th>status</th>
+                <th>NAMA PRINTER</th>
+                <th>SERIAL NUMBER</th>
+                <th>JENIS PRINTER</th>
+                <th>TANGGAL PENEMPATAN</th>
+                <th>UNIT PENEMPATAN</th>
             </tr>
         </thead>
         <tbody>
             @forelse($barangList as $index => $barang)
+                @php
+                    $latestMutasi = $barang->mutasi->first();
+                    $tanggalPenempatan = $latestMutasi ? \Carbon\Carbon::parse($latestMutasi->tanggal)->translatedFormat('d F Y') : '-';
+                @endphp
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $lokasi->nama }}</td>
-                    <td>{{ $barang->modelBarang->kategori->nama ?? '-' }}</td>
-                    <td>{{ $barang->modelBarang->merek->nama ?? '-' }}</td>
-                    <td>{{ $barang->modelBarang->nama ?? '-' }}</td>
+                    <td>{{ strtoupper(($barang->modelBarang->merek->nama ?? '') . ' ' . ($barang->modelBarang->nama ?? '')) }}</td>
                     <td>{{ $barang->serial_number ?: '-' }}</td>
-                    <td>{{ $barang->status ?: '-' }}</td>
+                    <td>{{ strtoupper($barang->modelBarang->jenis->nama ?? '-') }}</td>
+                    <td class="text-center">{{ strtoupper($tanggalPenempatan) }}</td>
+                    <td>{{ strtoupper($barang->subLokasi->nama ?? '-') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center">Tidak ada data yang ditemukan.</td>
+                    <td colspan="6" class="text-center">Tidak ada data yang ditemukan.</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
     <div class="footer">
-        Dicetak oleh Sistem Manajemen Inventaris - Laporan Per Lokasi
+        Dicetak oleh Sistem Manajemen Inventaris - Laporan Monitoring Printer
     </div>
 </body>
 </html>

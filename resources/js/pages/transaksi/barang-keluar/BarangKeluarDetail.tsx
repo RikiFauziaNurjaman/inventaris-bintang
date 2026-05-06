@@ -33,6 +33,7 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
             kategori: item.kategori,
             merek: item.merek,
             model: item.model,
+            sub_lokasi: detail.sub_lokasi,
         })),
     );
 
@@ -74,6 +75,10 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                             <p className="font-semibold text-gray-800">{barangKeluar.lokasi?.nama || '-'}</p>
                         </div>
                         <div>
+                            <p className="text-sm text-gray-500">PIC (Penanggung Jawab)</p>
+                            <p className="font-semibold text-gray-800">{barangKeluar.pic || '-'}</p>
+                        </div>
+                        <div>
                             <p className="text-sm text-gray-500">Diinput oleh</p>
                             <p className="font-semibold text-gray-800">{barangKeluar.user?.name || '-'}</p>
                         </div>
@@ -95,6 +100,9 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                                             </th>
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                 Status Keluar
+                                            </th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                Sub Lokasi
                                             </th>
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Aksi</th>
                                         </tr>
@@ -118,6 +126,7 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                                                             {detail.status_keluar}
                                                         </span>
                                                     </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600">{detail.sub_lokasi}</td>
                                                     <td className="px-4 py-3 text-sm">
                                                         <button
                                                             onClick={() =>

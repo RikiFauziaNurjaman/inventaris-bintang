@@ -194,6 +194,9 @@ class MonitoringController extends Controller
             'subLokasi:id,nama,kode,lantai',
             'rak:id,kode_rak',
             'asal:id,nama',
+            'mutasi' => function ($q) use ($lokasi) {
+                $q->where('lokasi_tujuan_id', $lokasi->id)->latest('tanggal');
+            }
         ])->where('lokasi_id', $lokasi->id);
 
         // Filter by sub_lokasi
@@ -222,9 +225,9 @@ class MonitoringController extends Controller
             });
         }
 
-        $barangList = $query->orderBy('sub_lokasi_id')
-            ->orderBy('serial_number')
-            ->get();
+        $barangList = $query->get()->sortBy(function($barang) {
+            return $barang->mutasi->first()?->tanggal ?? '9999-12-31';
+        })->values();
 
         $data = [
             'lokasi' => $lokasi,
