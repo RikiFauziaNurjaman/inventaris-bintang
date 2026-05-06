@@ -7,6 +7,7 @@ use App\Models\Barang;
 use App\Models\Lokasi;
 use App\Models\ModelBarang;
 use App\Models\RekapStokBarang;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -41,6 +42,41 @@ class StokDistribusiController extends Controller
         return Inertia::render('stock/distribusi/index', [
             'stokDistribusi' => $stokDistribusi,
         ]);
+    }
+
+    public function exportPdf()
+    {
+        $stokDistribusi = RekapStokBarang::with([
+                'lokasi' => function ($q) {
+                    $q->where('is_gudang', false);
+                },
+                'modelBarang.kategori',
+                'modelBarang.merek',
+            ])
+            ->whereHas('lokasi', function ($q) {
+                $q->where('is_gudang', false);
+            })
+            ->where('jumlah_tersedia', '>', 0)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'lokasi' => $item->lokasi->nama,
+                    'kategori' => $item->modelBarang->kategori->nama ?? '-',
+                    'merek' => $item->modelBarang->merek->nama ?? '-',
+                    'model' => $item->modelBarang->nama,
+                    'jumlah_tersedia' => $item->jumlah_tersedia,
+                ];
+            });
+
+        $data = [
+            'stokDistribusi' => $stokDistribusi,
+            'tanggalCetak' => now()->translatedFormat('d F Y'),
+        ];
+
+        $pdf = Pdf::loadView('reports.stok_distribusi_pdf', $data);
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->stream('laporan-stok-distribusi-'.date('Ymd').'.pdf');
     }
 
     public function getDetailAsJson(ModelBarang $modelBarang, Lokasi $lokasi)

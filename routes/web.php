@@ -83,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Monitoring routes
     Route::get('/monitoring', [\App\Http\Controllers\MonitoringController::class, 'index'])->name('monitoring.index');
     Route::get('/monitoring/lokasi/{lokasi}', [\App\Http\Controllers\MonitoringController::class, 'showLokasi'])->name('monitoring.lokasi.detail');
+    Route::get('/monitoring/lokasi/{lokasi}/export-pdf', [\App\Http\Controllers\MonitoringController::class, 'exportPdf'])->name('monitoring.lokasi.exportPdf');
 
     Route::get('/barang/search', [DataBarangController::class, 'search'])->name('barang.search');
     Route::resource('barang', DataBarangController::class);
@@ -162,6 +163,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/perbaikan', [StockDiperbaikiController::class, 'index'])->name('stok.gudang.perbaikan');
 
     Route::get('/stok-distribusi', [StokDistribusiController::class, 'index'])->name('stok.distribusi.index');
+    Route::get('/stok-distribusi/export-pdf', [StokDistribusiController::class, 'exportPdf'])->name('stok.distribusi.exportPdf');
     Route::get('/api/stok-distribusi-detail/{modelBarang}/{lokasi}', [StokDistribusiController::class, 'getDetailAsJson'])->name('api.stok-distribusi.detail');
 
     Route::resource('total-stock', TotalStockController::class)->only(['index', 'destroy']);

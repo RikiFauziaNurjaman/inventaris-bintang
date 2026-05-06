@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Total Stok</title>
+    <title>Laporan Stok Distribusi</title>
     <style>
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
@@ -40,6 +40,9 @@
         .text-center {
             text-align: center;
         }
+        .text-right {
+            text-align: right;
+        }
         .footer {
             position: fixed;
             bottom: 0;
@@ -53,7 +56,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>Laporan Total Stok Barang</h1>
+        <h1>Laporan Ringkasan Stok Distribusi</h1>
         <p>Tanggal Cetak: {{ $tanggalCetak }}</p>
     </div>
 
@@ -63,33 +66,29 @@
                 <th style="width: 30px;">NO</th>
                 <th>Lokasi</th>
                 <th>Kategori</th>
-                <th>Merek</th>
-                <th>Model</th>
-                <th>Serial Number</th>
-                <th>status</th>
+                <th>Nama Barang</th>
+                <th style="width: 60px;" class="text-right">Jumlah</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($barangList as $index => $barang)
+            @forelse($stokDistribusi as $index => $item)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $barang->lokasi ?: '-' }}</td>
-                    <td>{{ $barang->kategori ?: '-' }}</td>
-                    <td>{{ $barang->merek ?: '-' }}</td>
-                    <td>{{ $barang->model ?: '-' }}</td>
-                    <td>{{ $barang->serial_number ?: '-' }}</td>
-                    <td>{{ $barang->status_awal ?: '-' }}</td>
+                    <td>{{ $item['lokasi'] }}</td>
+                    <td>{{ $item['kategori'] }}</td>
+                    <td>{{ $item['merek'] }} {{ $item['model'] }}</td>
+                    <td class="text-right">{{ $item['jumlah_tersedia'] }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center">Tidak ada data yang ditemukan.</td>
+                    <td colspan="5" class="text-center">Tidak ada data yang ditemukan.</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
     <div class="footer">
-        Dicetak oleh Sistem Manajemen Inventaris
+        Dicetak oleh Sistem Manajemen Inventaris - Ringkasan Stok Distribusi
     </div>
 </body>
 </html>

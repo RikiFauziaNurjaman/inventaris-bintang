@@ -9,6 +9,7 @@ import {
     Filter,
     MapPin,
     Package,
+    Printer,
     Search,
     Wrench,
 } from 'lucide-react';
@@ -133,6 +134,18 @@ export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subL
                             <div>
                                 <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{lokasi.nama}</h1>
                                 {lokasi.alamat && <p className="text-sm text-gray-500 dark:text-gray-400">{lokasi.alamat}</p>}
+                            </div>
+                            <div className="ml-auto flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        const queryParams = new URLSearchParams(filters as any).toString();
+                                        window.open(`${route('monitoring.lokasi.exportPdf', lokasi.id)}?${queryParams}`, '_blank');
+                                    }}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 active:scale-95"
+                                >
+                                    <Printer size={16} />
+                                    Ekspor PDF
+                                </button>
                             </div>
                         </div>
                     </div>

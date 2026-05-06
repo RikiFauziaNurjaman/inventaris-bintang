@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Total Stok</title>
+    <title>Laporan Monitoring Lokasi - {{ $lokasi->nama }}</title>
     <style>
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
@@ -22,6 +22,9 @@
         .header p {
             margin: 5px 0;
             font-size: 12px;
+        }
+        .info {
+            margin-bottom: 15px;
         }
         table {
             width: 100%;
@@ -53,7 +56,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>Laporan Total Stok Barang</h1>
+        <h1>Laporan Monitoring Barang</h1>
+        <p>Lokasi: {{ $lokasi->nama }}</p>
         <p>Tanggal Cetak: {{ $tanggalCetak }}</p>
     </div>
 
@@ -73,12 +77,12 @@
             @forelse($barangList as $index => $barang)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $barang->lokasi ?: '-' }}</td>
-                    <td>{{ $barang->kategori ?: '-' }}</td>
-                    <td>{{ $barang->merek ?: '-' }}</td>
-                    <td>{{ $barang->model ?: '-' }}</td>
+                    <td>{{ $lokasi->nama }}</td>
+                    <td>{{ $barang->modelBarang->kategori->nama ?? '-' }}</td>
+                    <td>{{ $barang->modelBarang->merek->nama ?? '-' }}</td>
+                    <td>{{ $barang->modelBarang->nama ?? '-' }}</td>
                     <td>{{ $barang->serial_number ?: '-' }}</td>
-                    <td>{{ $barang->status_awal ?: '-' }}</td>
+                    <td>{{ $barang->status ?: '-' }}</td>
                 </tr>
             @empty
                 <tr>
@@ -89,7 +93,7 @@
     </table>
 
     <div class="footer">
-        Dicetak oleh Sistem Manajemen Inventaris
+        Dicetak oleh Sistem Manajemen Inventaris - Laporan Per Lokasi
     </div>
 </body>
 </html>

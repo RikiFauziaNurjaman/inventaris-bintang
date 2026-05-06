@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { Link } from '@inertiajs/react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Printer } from 'lucide-react';
 import { useState } from 'react';
 import { DetailStokModal } from './detail';
 
@@ -46,9 +46,18 @@ export default function Index({ stokDistribusi }: Props) {
         <AppLayout>
             <div className="p-4">
                 {/* Simplified Header */}
-                <div className="mb-6">
-                    <h1 className="text-2xl font-semibold text-gray-800">Stok Distribusi</h1>
-                    <p className="text-gray-600">Data Semua Item Di Lokasi</p>
+                <div className="mb-6 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-gray-800">Stok Distribusi</h1>
+                        <p className="text-gray-600">Data Semua Item Di Lokasi</p>
+                    </div>
+                    <button
+                        onClick={() => window.open(route('stok.distribusi.exportPdf'), '_blank')}
+                        className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 active:scale-95"
+                    >
+                        <Printer size={16} />
+                        Ekspor PDF
+                    </button>
                 </div>
 
                 {/* Simplified Table */}

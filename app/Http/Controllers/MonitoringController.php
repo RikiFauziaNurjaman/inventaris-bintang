@@ -6,6 +6,7 @@ use App\Models\Barang;
 use App\Models\Lokasi;
 use App\Models\SubLokasi;
 use App\Models\KategoriBarang;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -180,6 +181,62 @@ class MonitoringController extends Controller
             'kategoriList' => $kategoriList,
             'filters' => $request->only(['sub_lokasi_id', 'status', 'kategori_id', 'search']),
         ]);
+    }
+
+    public function exportPdf(Request $request, Lokasi $lokasi)
+    {
+        $query = Barang::with([
+            'modelBarang:id,nama,merek_id,kategori_id,label',
+            'modelBarang.merek:id,nama',
+            'modelBarang.kategori:id,nama',
+            'modelBarang.jenis:id,nama',
+            'jenisBarang:id,nama',
+            'subLokasi:id,nama,kode,lantai',
+            'rak:id,kode_rak',
+            'asal:id,nama',
+        ])->where('lokasi_id', $lokasi->id);
+
+        // Filter by sub_lokasi
+        if ($request->filled('sub_lokasi_id')) {
+            $query->where('sub_lokasi_id', $request->sub_lokasi_id);
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by kategori
+        if ($request->filled('kategori_id')) {
+            $query->whereHas('modelBarang', function ($q) use ($request) {
+                $q->where('kategori_id', $request->kategori_id);
+            });
+        }
+
+        // Search by serial number or PIC
+        if ($request->filled('search')) {
+            $search = strtolower($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(serial_number) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(pic) LIKE ?', ["%{$search}%"]);
+            });
+        }
+
+        $barangList = $query->orderBy('sub_lokasi_id')
+            ->orderBy('serial_number')
+            ->get();
+
+        $data = [
+            'lokasi' => $lokasi,
+            'barangList' => $barangList,
+            'tanggalCetak' => now()->translatedFormat('d F Y'),
+            'filters' => $request->only(['sub_lokasi_id', 'status', 'kategori_id', 'search']),
+        ];
+
+        $pdf = Pdf::loadView('reports.monitoring_lokasi_pdf', $data);
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->stream('laporan-monitoring-'.str_replace(' ', '-', strtolower($lokasi->nama)).'-'.date('Ymd').'.pdf');
     }
 
     /**

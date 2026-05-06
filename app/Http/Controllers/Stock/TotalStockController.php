@@ -112,6 +112,8 @@ class TotalStockController extends Controller
                 'barang.id',
                 'barang.serial_number',
                 'model_barang.label as label',
+                'merek_barang.nama as merek',
+                'model_barang.nama as model',
                 DB::raw("CONCAT(merek_barang.nama, ' - ', model_barang.nama) AS merek_model"),
                 'kategori_barang.nama as kategori',
                 'rak_barang.nama_rak',
@@ -126,16 +128,11 @@ class TotalStockController extends Controller
 
     private function applyOrdering($query)
     {
-        $query->orderByDesc('lokasi.is_gudang')
+        $query->orderBy('lokasi.nama')
             ->orderBy('kategori_barang.nama')
             ->orderBy('merek_barang.nama')
             ->orderBy('model_barang.nama')
-            ->orderBy('rak_barang.nama_rak')
-            ->orderBy('rak_barang.kode_rak')
-            ->orderBy('rak_barang.baris')
-            ->orderBy('barang.status')
-            ->orderBy('barang.kondisi_awal')
-            ->orderBy('lokasi.nama');
+            ->orderBy('barang.status');
     }
 
     public function destroy($id)
