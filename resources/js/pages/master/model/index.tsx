@@ -3,11 +3,12 @@ import { PERMISSIONS } from '@/constants/permission';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import axios from 'axios';
-import { debounce } from 'lodash';
+import debounce from 'lodash.debounce';
 import { Edit3, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 
 type Kategori = { id: number; nama: string };
 type Merek = { id: number; nama: string };
@@ -322,12 +323,13 @@ export default function Index({ auth, modelBarang, kategori, merek, jenis, flash
 
                                 <div className="space-y-1 md:col-span-2">
                                     <label className="text-sm font-medium dark:text-gray-200">Label Barang</label>
-                                    <Select
+                                    <CreatableSelect
                                         options={labelOptions.map((label) => ({ label, value: label }))}
                                         onChange={(selected) => form.setData('label', selected?.value || '')}
                                         value={form.data.label ? { label: form.data.label, value: form.data.label } : null}
                                         isClearable
                                         placeholder="Pilih atau ketik label baru..."
+                                        formatCreateLabel={(inputValue) => `Gunakan label baru: "${inputValue}"`}
                                     />
                                     {form.errors.label && <p className="text-sm text-red-500">{form.errors.label}</p>}
                                 </div>

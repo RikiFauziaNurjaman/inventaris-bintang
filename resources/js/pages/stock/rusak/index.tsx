@@ -109,6 +109,7 @@ export default function Index({ stokRusak }: Props) {
                     <table className="min-w-full border border-gray-300">
                         <thead className="bg-gray-100">
                             <tr>
+                                <th className="border px-4 py-2 text-left">No</th>
                                 <th className="border px-4 py-2 text-left">Lokasi</th>
                                 <th className="border px-4 py-2 text-left">Kategori</th>
                                 <th className="border px-4 py-2 text-left">Nama Barang</th>
@@ -119,6 +120,7 @@ export default function Index({ stokRusak }: Props) {
                         <tbody>
                             {stokRusak.map((item, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
+                                    <td className="border px-4 py-2">{index + 1}</td>
                                     <td className="border px-4 py-2">{item.lokasi}</td>
                                     <td className="border px-4 py-2">{item.kategori}</td>
                                     <td className="border px-4 py-2">{item.nama_barang}</td>
@@ -156,11 +158,12 @@ export default function Index({ stokRusak }: Props) {
                                                 <th className="w-16 px-4 py-2">
                                                     <input type="checkbox" disabled />
                                                 </th>
+                                                <th className="w-16 px-4 py-2 text-left">No</th>
                                                 <th className="px-4 py-2 text-left">Serial Number</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {detailItems.map((detail) => (
+                                            {detailItems.map((detail, idx) => (
                                                 <tr key={detail.id} className="hover:bg-gray-100">
                                                     <td className="px-4 py-2 text-center">
                                                         <input
@@ -169,6 +172,7 @@ export default function Index({ stokRusak }: Props) {
                                                             onChange={() => handleCheckboxChange(detail.id)}
                                                         />
                                                     </td>
+                                                    <td className="px-4 py-2 text-left">{idx + 1}</td>
                                                     <td className="px-4 py-2">{detail.serial_number}</td>
                                                 </tr>
                                             ))}

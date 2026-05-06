@@ -4,6 +4,7 @@ namespace App\Http\Controllers\MasterData;
 
 use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
+use App\Helpers\MasterDataHelper;
 use App\Models\MerekBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -54,6 +55,7 @@ class MerekBarangController extends Controller
         ]);
 
         MerekBarang::create($request->only('nama'));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('merek.index')->with('message', 'Merek Barang berhasil ditambahkan.');
     }
@@ -65,6 +67,7 @@ class MerekBarangController extends Controller
         ]);
 
         $merek->update($request->only('nama'));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('merek.index')->with('message', 'Merek Barang berhasil diperbarui.');
     }
@@ -72,6 +75,7 @@ class MerekBarangController extends Controller
     public function destroy(MerekBarang $merek)
     {
         $merek->delete();
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::back()->with('message', 'Merek Barang berhasil dihapus.');
     }

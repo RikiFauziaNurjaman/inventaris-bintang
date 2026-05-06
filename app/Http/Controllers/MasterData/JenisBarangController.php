@@ -50,6 +50,7 @@ class JenisBarangController extends Controller
         ]);
 
         JenisBarang::create($request->only('nama', 'kategori_id'));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('jenis-barang.index')->with('message', 'Jenis Barang berhasil ditambahkan.');
     }
@@ -67,6 +68,7 @@ class JenisBarangController extends Controller
         ]);
 
         $jenisBarang->update($request->only('nama', 'kategori_id'));
+        MasterDataHelper::clearAllCaches();
 
         return redirect()->route('jenis-barang.index')->with('message', 'Jenis Barang berhasil diperbarui.');
     }
@@ -74,6 +76,7 @@ class JenisBarangController extends Controller
     public function destroy(JenisBarang $jenisBarang)
     {
         $jenisBarang->delete();
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::back()->with('message', 'Jenis Barang berhasil dihapus.');
     }

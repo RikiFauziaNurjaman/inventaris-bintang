@@ -483,7 +483,7 @@ class BarangMasukController extends Controller
                 if ($barang) {
                     MutasiBarang::where('barang_id', $barang->id)->delete();
 
-                    // StockHelpers::barangDihapus($barang->model_id, $barang->lokasi_id, 1);
+                    StockHelpers::barangKeluar($barang->model_id, $barang->lokasi_id, 1);
 
                     $barang->delete();
                 }

@@ -27,6 +27,7 @@ use App\Http\Controllers\Stock\Gudang\StockTerjualController;
 use App\Http\Controllers\Stock\Gudang\StokGudangController;
 use App\Http\Controllers\Stock\StockController;
 use App\Http\Controllers\Stock\TotalStockController;
+use App\Http\Controllers\Settings\DatabaseController;
 use App\Http\Controllers\Transaksi\BarangKeluarController;
 use App\Http\Controllers\Transaksi\BarangKembaliController;
 use App\Http\Controllers\Transaksi\BarangMasukController;
@@ -81,6 +82,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Monitoring routes
     Route::get('/monitoring', [\App\Http\Controllers\MonitoringController::class, 'index'])->name('monitoring.index');
+    Route::get('/monitoring/lokasi/{lokasi}', [\App\Http\Controllers\MonitoringController::class, 'showLokasi'])->name('monitoring.lokasi.detail');
 
     Route::get('/barang/search', [DataBarangController::class, 'search'])->name('barang.search');
     Route::resource('barang', DataBarangController::class);
@@ -164,6 +166,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('total-stock', TotalStockController::class)->only(['index', 'destroy']);
     Route::get('/total-stock/export-pdf', [TotalStockController::class, 'exportPdf'])->name('total-stock.exportPdf');
+
+    // Database Backup & Import
+    Route::get('/database', [DatabaseController::class, 'index'])->name('database.index');
+    Route::post('/database/backup', [DatabaseController::class, 'backup'])->name('database.backup');
+    Route::post('/database/import', [DatabaseController::class, 'import'])->name('database.import');
+    Route::get('/database/download/{filename}', [DatabaseController::class, 'download'])->name('database.download');
+    Route::delete('/database/{filename}', [DatabaseController::class, 'destroy'])->name('database.destroy');
 });
 
 Route::prefix('laporan')->name('laporan.')->group(function () {

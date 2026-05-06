@@ -4,6 +4,7 @@ namespace App\Http\Controllers\MasterData;
 
 use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
+use App\Helpers\MasterDataHelper;
 use App\Models\AsalBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -46,6 +47,7 @@ class AsalBarangController extends Controller
         ]);
 
         AsalBarang::create($request->only('nama'));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('asal-barang.index')->with('message', 'Asal Barang berhasil ditambahkan.');
     }
@@ -58,6 +60,7 @@ class AsalBarangController extends Controller
         ]);
 
         $asalBarang->update($request->only('nama'));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('asal-barang.index')->with('message', 'Asal Barang berhasil diperbarui.');
     }
@@ -65,6 +68,7 @@ class AsalBarangController extends Controller
     public function destroy(AsalBarang $asalBarang)
     {
         $asalBarang->delete();
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::back()->with('message', 'Asal Barang berhasil dihapus.');
     }

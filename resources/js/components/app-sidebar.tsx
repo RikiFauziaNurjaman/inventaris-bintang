@@ -32,6 +32,7 @@ import {
     Undo2,
     UserCog,
     Users,
+    HardDrive
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -177,6 +178,15 @@ export function AppSidebar() {
         },
     ];
 
+    const sistemNavItems = [
+        {
+            title: 'Database',
+            href: '/database',
+            icon: HardDrive,
+            permission: PERMISSIONS.BACKUP_DATABASE,
+        },
+    ];
+
     const visiblePlatformNavItems = filterMenuByPermissions(platformNavItems, userPermissions);
     const visibleMasterDataNavItems = filterMenuByPermissions(masterDataNavItems, userPermissions);
     const visibleTransaksiNavItems = filterMenuByPermissions(transaksiNavItems, userPermissions);
@@ -184,6 +194,7 @@ export function AppSidebar() {
     const visibleStokNavItems = filterMenuByPermissions(stokNavItems, userPermissions);
     const visibleLaporanNavItems = filterMenuByPermissions(laporanNavItems, userPermissions);
     const visibleAksesNavItems = filterMenuByPermissions(aksesNavItems, userPermissions);
+    const visibleSistemNavItems = filterMenuByPermissions(sistemNavItems, userPermissions);
 
     return (
         <Sidebar collapsible="icon" variant="sidebar">
@@ -249,6 +260,13 @@ export function AppSidebar() {
                     <SidebarGroup className="px-2 py-0">
                         <SidebarGroupLabel>Manajemen Akses</SidebarGroupLabel>
                         <SidebarSection items={visibleAksesNavItems} storageKey="sidebar-akses" />
+                    </SidebarGroup>
+                )}
+
+                {visibleSistemNavItems.length > 0 && (
+                    <SidebarGroup className="px-2 py-0">
+                        <SidebarGroupLabel>Sistem</SidebarGroupLabel>
+                        <SidebarSection items={visibleSistemNavItems} />
                     </SidebarGroup>
                 )}
             </SidebarContent>

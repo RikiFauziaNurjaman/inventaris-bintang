@@ -107,4 +107,8 @@ export const PERMISSIONS = {
     // Setting
     VIEW_SETTING: 'view-setting',
     EDIT_SETTING: 'edit-setting',
+
+    // Database
+    BACKUP_DATABASE: 'backup-database',
+    IMPORT_DATABASE: 'import-database',
 };

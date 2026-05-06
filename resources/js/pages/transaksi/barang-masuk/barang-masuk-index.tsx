@@ -4,7 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Menu, Transition } from '@headlessui/react';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { ChevronDownIcon, ChevronUpIcon, EllipsisVerticalIcon, Eye, PencilIcon, PlusIcon, TrashIcon } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import DetailBarangMasukModal from './barang-masuk-detail';
 
 interface BarangMasukItem {
@@ -32,6 +32,7 @@ export default function BarangMasukIndex() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBarang, setSelectedBarang] = useState(null);
     const [isFilterOpen, setIsFilterOpen] = useState(true); // Default open for better visibility based on requirement
+    const isFirstRender = useRef(true);
 
     const { data, setData, reset } = useForm({
         tanggal: filters?.tanggal || '',
@@ -77,6 +78,10 @@ export default function BarangMasukIndex() {
     }, [data]);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         debouncedFilter();
     }, [data.tanggal, data.kategori_id, data.asal_barang_id, data.merek, data.search, data.sort_by, data.per_page, debouncedFilter]);
 
@@ -284,7 +289,7 @@ export default function BarangMasukIndex() {
                                         leaveFrom="transform opacity-100 scale-100"
                                         leaveTo="transform opacity-0 scale-95"
                                     >
-                                        <Menu.Items className="ring-opacity-5 absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black focus:outline-none dark:bg-zinc-900 dark:ring-zinc-800">
+                                        <Menu.Items anchor="bottom end" className="z-50 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-zinc-900 dark:ring-zinc-800">
                                             <Menu.Item>
                                                 {({ active }) => (
                                                     <button
@@ -324,7 +329,10 @@ export default function BarangMasukIndex() {
                                                     <button
                                                         onClick={() => {
                                                             if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-                                                                router.delete(route('barang-masuk.destroy', item.id));
+                                                                router.delete(route('barang-masuk.destroy', item.id), {
+                                                                    preserveScroll: true,
+                                                                    preserveState: true,
+                                                                });
                                                             }
                                                         }}
                                                         className={`${

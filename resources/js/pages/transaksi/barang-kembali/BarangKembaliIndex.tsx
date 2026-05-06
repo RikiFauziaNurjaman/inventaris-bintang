@@ -3,9 +3,9 @@ import { PERMISSIONS } from '@/constants/permission';
 import AppLayout from '@/layouts/app-layout';
 import { Menu, Transition } from '@headlessui/react';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
-import { debounce } from 'lodash';
+import debounce from 'lodash.debounce';
 import { ChevronDownIcon, ChevronUpIcon, EllipsisVerticalIcon, EyeIcon, PencilIcon, PlusIcon, TrashIcon } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import BarangKembaliDetailModal from './BarangKembaliDetail';
 
 interface KategoriOption {
@@ -73,14 +73,32 @@ export default function BarangKembaliIndex() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [isFilterOpen, setIsFilterOpen] = useState(true);
+    const isFirstRender = useRef(true);
 
     const items = barangKembali.data || [];
     const links = barangKembali.links || [];
 
-    // Fungsi untuk membuka modal
+    // Fungsi untuk membuka modal — fetch data detail via AJAX
     const handleOpenDetailModal = (transaksi) => {
-        setSelectedItem(transaksi);
-        setIsModalOpen(true);
+        fetch(route('barang-kembali.show', transaksi.id), {
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                setSelectedItem(data.barangKembali);
+                setIsModalOpen(true);
+            })
+            .catch((error) => {
+                console.error('Gagal mengambil data detail:', error);
+            });
     };
 
     // Fungsi untuk menutup modal
@@ -138,6 +156,10 @@ export default function BarangKembaliIndex() {
 
     // useEffect untuk filter otomatis
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         debouncedFilter();
     }, [data.tanggal, data.kategori_id, data.lokasi_id, data.sort, data.per_page, data.search, debouncedFilter]);
 
@@ -355,7 +377,7 @@ export default function BarangKembaliIndex() {
                                         leaveFrom="transform opacity-100 scale-100"
                                         leaveTo="transform opacity-0 scale-95"
                                     >
-                                        <Menu.Items className="ring-opacity-5 absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black focus:outline-none dark:bg-zinc-900 dark:ring-zinc-800">
+                                        <Menu.Items anchor="bottom end" className="z-50 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-zinc-900 dark:ring-zinc-800">
                                             <Menu.Item>
                                                 {({ active }) => (
                                                     <button
@@ -396,7 +418,10 @@ export default function BarangKembaliIndex() {
                                                         <button
                                                             onClick={() => {
                                                                 if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-                                                                    router.delete(route('barang-kembali.destroy', item.id));
+                                                                    router.delete(route('barang-kembali.destroy', item.id), {
+                                                                        preserveScroll: true,
+                                                                        preserveState: true,
+                                                                    });
                                                                 }
                                                             }}
                                                             className={`${

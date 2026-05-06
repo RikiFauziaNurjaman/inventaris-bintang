@@ -3,7 +3,7 @@ import { PERMISSIONS } from '@/constants/permission';
 import AppLayout from '@/layouts/app-layout';
 import { Menu, Transition } from '@headlessui/react';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
-import { debounce } from 'lodash';
+import debounce from 'lodash.debounce';
 import {
     ChevronDownIcon,
     ChevronUpIcon,
@@ -15,7 +15,7 @@ import {
     PrinterIcon,
     TrashIcon,
 } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import BarangKeluarDetailModal from './BarangKeluarDetail';
 
 interface KategoriOption {
@@ -90,14 +90,32 @@ export default function BarangKeluarIndex() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [isFilterOpen, setIsFilterOpen] = useState(true);
+    const isFirstRender = useRef(true);
 
     const items = barangKeluar.data || [];
     const links = barangKeluar.links || [];
 
-    // Fungsi untuk membuka modal
+    // Fungsi untuk membuka modal — fetch data detail via AJAX
     const handleOpenModal = (transaksi) => {
-        setSelectedItem(transaksi);
-        setIsModalOpen(true);
+        fetch(route('barang-keluar.show', transaksi.id), {
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                setSelectedItem(data.barangKeluar);
+                setIsModalOpen(true);
+            })
+            .catch((error) => {
+                console.error('Gagal mengambil data detail:', error);
+            });
     };
 
     // Fungsi untuk menutup modal
@@ -151,6 +169,10 @@ export default function BarangKeluarIndex() {
     );
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         debouncedFilter();
     }, [data.tanggal, data.kategori_id, data.lokasi_id, data.sort, data.per_page, data.search, debouncedFilter]);
 
@@ -347,7 +369,7 @@ export default function BarangKeluarIndex() {
                                         leaveFrom="transform opacity-100 scale-100"
                                         leaveTo="transform opacity-0 scale-95"
                                     >
-                                        <Menu.Items className="ring-opacity-5 absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black focus:outline-none dark:bg-zinc-900 dark:ring-zinc-800">
+                                        <Menu.Items anchor="bottom end" className="z-50 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-zinc-900 dark:ring-zinc-800">
                                             <div className="py-1">
                                                 <Menu.Item>
                                                     {({ active }) => (
@@ -410,7 +432,10 @@ export default function BarangKeluarIndex() {
                                                             <button
                                                                 onClick={() => {
                                                                     if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-                                                                        router.delete(route('barang-keluar.destroy', item.id));
+                                                                        router.delete(route('barang-keluar.destroy', item.id), {
+                                                                            preserveScroll: true,
+                                                                            preserveState: true,
+                                                                        });
                                                                     }
                                                                 }}
                                                                 className={`${active ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'text-red-600 dark:text-red-400'} flex w-full items-center gap-2 px-4 py-2 text-sm`}

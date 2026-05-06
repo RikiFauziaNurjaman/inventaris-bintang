@@ -481,7 +481,7 @@ class BarangKembaliController extends Controller
         return redirect()->route('barang-kembali.index')->with('success', 'Transaksi barang kembali berhasil diperbarui.');
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $barangKembali = BarangKembali::with([
             'lokasi',
@@ -489,14 +489,81 @@ class BarangKembaliController extends Controller
             'details.barang.modelBarang' => function ($query) {
                 $query->with(['merek', 'kategori']);
             },
-
-            'details'
         ])->findOrFail($id);
 
+        // Kelompokkan detail berdasarkan model barangnya
+        $groupedDetails = $barangKembali->details->groupBy('barang.model_id');
+
+        // Transformasi data menjadi struktur yang rapi untuk frontend
+        $items = $groupedDetails->map(function ($details) {
+            $modelBarang = $details->first()->barang->modelBarang;
+
+            return [
+                'kategori' => $modelBarang->kategori->nama ?? '-',
+                'merek' => $modelBarang->merek->nama ?? '-',
+                'model' => $modelBarang->nama ?? '-',
+                'details' => $details->map(function ($detail) {
+                    return [
+                        'id' => $detail->id,
+                        'serial_number' => $detail->barang->serial_number,
+                        'status_saat_kembali' => $detail->status_saat_kembali,
+                    ];
+                })->values()->all(),
+            ];
+        });
+
+        $data = [
+            'id' => $barangKembali->id,
+            'tanggal' => $barangKembali->tanggal,
+            'lokasi' => $barangKembali->lokasi,
+            'user' => $barangKembali->user,
+            'items' => $items->values()->all(),
+        ];
+
+        if ($request->wantsJson()) {
+            return response()->json(['barangKembali' => $data]);
+        }
 
         return Inertia::render('transaksi/barang-kembali/BarangKembaliDetail', [
-            'barangKembali' => $barangKembali,
+            'barangKembali' => $data,
         ]);
+    }
+
+    public function destroy(BarangKembali $barangKembali)
+    {
+        DB::transaction(function () use ($barangKembali) {
+            $lokasiGudang = Lokasi::where('is_gudang', true)->firstOrFail();
+
+            foreach ($barangKembali->details as $detail) {
+                $barang = $detail->barang;
+
+                if ($barang) {
+                    // Reverse stok gudang (kurangi stok yang sudah dicatat kembali)
+                    StockHelpers::kurangiStokKembali($barang->model_id, $lokasiGudang->id, $detail->status_saat_kembali);
+
+                    // Kembalikan stok ke lokasi distribusi asal
+                    StockHelpers::distribusiMasuk($barang->model_id, $barangKembali->lokasi_id, 1);
+
+                    // Hapus mutasi terkait
+                    MutasiBarang::where('barang_id', $barang->id)->delete();
+
+                    // Kembalikan status barang ke dipinjamkan di lokasi distribusi
+                    $barang->update([
+                        'lokasi_id' => $barangKembali->lokasi_id,
+                        'status' => 'dipinjamkan',
+                    ]);
+                }
+            }
+
+            // Hapus semua detail
+            $barangKembali->details()->delete();
+
+            // Hapus data utama
+            $barangKembali->delete();
+        });
+
+        return redirect()->route('barang-kembali.index')
+            ->with('success', 'Data barang kembali dan semua item terkait berhasil dihapus.');
     }
 
 }

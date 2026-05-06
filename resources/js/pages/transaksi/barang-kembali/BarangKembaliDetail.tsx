@@ -1,9 +1,8 @@
-import { X } from 'lucide-react'; // Contoh import icon
+import { X } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function BarangKembaliDetailModal({ show, barangKembali, onClose }) {
     useEffect(() => {
-        // Logika untuk menutup modal dengan tombol 'Escape'
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
                 onClose();
@@ -13,7 +12,7 @@ export default function BarangKembaliDetailModal({ show, barangKembali, onClose 
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
-    if (!show) {
+    if (!show || !barangKembali) {
         return null;
     }
 
@@ -22,6 +21,16 @@ export default function BarangKembaliDetailModal({ show, barangKembali, onClose 
         month: 'long',
         year: 'numeric',
     });
+
+    // Flatten items into a flat list for table display
+    const flatDetails = (barangKembali?.items || []).flatMap((item) =>
+        (item.details || []).map((detail) => ({
+            ...detail,
+            kategori: item.kategori,
+            merek: item.merek,
+            model: item.model,
+        })),
+    );
 
     return (
         <div
@@ -37,7 +46,6 @@ export default function BarangKembaliDetailModal({ show, barangKembali, onClose 
                 {/* Header Modal */}
                 <div className="flex items-start justify-between border-b border-gray-200 pb-4">
                     <div>
-                        {/* ✅ Teks disesuaikan */}
                         <h3 className="text-xl font-bold text-gray-900">Detail Transaksi Barang Kembali</h3>
                         <p className="mt-1 text-sm text-gray-500">Menampilkan informasi lengkap dari sebuah transaksi pengembalian.</p>
                     </div>
@@ -55,7 +63,6 @@ export default function BarangKembaliDetailModal({ show, barangKembali, onClose 
                             <p className="font-semibold text-gray-800">{formattedDate}</p>
                         </div>
                         <div>
-                            {/* ✅ Teks disesuaikan */}
                             <p className="text-sm text-gray-500">Asal Lokasi</p>
                             <p className="font-semibold text-gray-800">{barangKembali.lokasi?.nama || '-'}</p>
                         </div>
@@ -79,34 +86,26 @@ export default function BarangKembaliDetailModal({ show, barangKembali, onClose 
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                 Serial Number
                                             </th>
-                                            {/* ✅ Kolom status disesuaikan */}
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                 Kondisi Saat Kembali
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
-                                        {!barangKembali.details || barangKembali.details.length === 0 ? (
+                                        {flatDetails.length === 0 ? (
                                             <tr>
-                                                <td colSpan="5" className="py-4 text-center text-sm text-gray-500">
+                                                <td colSpan={5} className="py-4 text-center text-sm text-gray-500">
                                                     Tidak ada data barang.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            barangKembali.details.map((detail, index) => (
-                                                <tr key={detail.id}>
+                                            flatDetails.map((detail, index) => (
+                                                <tr key={detail.id || index}>
                                                     <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                                                    <td className="px-4 py-3 text-sm font-medium text-gray-800">
-                                                        {detail.barang?.model_barang?.nama || '-'}
-                                                    </td>
+                                                    <td className="px-4 py-3 text-sm font-medium text-gray-800">{detail.model}</td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600">{detail.merek}</td>
+                                                    <td className="px-4 py-3 font-mono text-sm text-gray-700">{detail.serial_number || '-'}</td>
                                                     <td className="px-4 py-3 text-sm text-gray-600">
-                                                        {detail.barang?.model_barang?.merek?.nama || '-'}
-                                                    </td>
-                                                    <td className="px-4 py-3 font-mono text-sm text-gray-700">
-                                                        {detail.barang?.serial_number || '-'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600">
-                                                        {/* ✅ Data dan style badge disesuaikan untuk kondisi */}
                                                         <span
                                                             className={`inline-flex rounded-full px-2 text-xs leading-5 font-semibold ${
                                                                 detail.status_saat_kembali === 'bagus'

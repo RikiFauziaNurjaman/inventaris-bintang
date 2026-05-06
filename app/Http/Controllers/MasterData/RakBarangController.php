@@ -61,6 +61,7 @@ class RakBarangController extends Controller
         ]);
 
         RakBarang::create($request->all());
+        MasterDataHelper::clearAllCaches();
 
         return redirect()->route('rak-barang.index')->with('success', 'Rak berhasil ditambahkan.');
     }
@@ -88,6 +89,7 @@ class RakBarangController extends Controller
         ]);
 
         $rak->update($request->all());
+        MasterDataHelper::clearAllCaches();
 
         return redirect()->route('rak-barang.index')->with('success', 'Rak berhasil diperbarui.');
     }
@@ -96,6 +98,7 @@ class RakBarangController extends Controller
     {
         $rak = RakBarang::findOrFail($id);
         $rak->delete();
+        MasterDataHelper::clearAllCaches();
 
         return redirect()->route('rak-barang.index')->with('success', 'Rak berhasil dihapus.');
     }

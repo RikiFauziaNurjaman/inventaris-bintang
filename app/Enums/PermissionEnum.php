@@ -107,4 +107,8 @@ enum PermissionEnum: string
     // Setting
     case VIEW_SETTING = 'view-setting';
     case EDIT_SETTING = 'edit-setting';
+
+    // Database
+    case BACKUP_DATABASE = 'backup-database';
+    case IMPORT_DATABASE = 'import-database';
 }

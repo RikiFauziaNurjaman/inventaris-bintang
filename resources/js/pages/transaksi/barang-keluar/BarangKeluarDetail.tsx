@@ -1,7 +1,6 @@
-import { X } from 'lucide-react'; // Library ikon yang bagus dan ringan, atau gunakan SVG Anda sendiri
+import { X } from 'lucide-react';
 import { useEffect } from 'react';
 
-// Komponen fungsional React
 export default function BarangKeluarDetailModal({ show, barangKeluar, onClose }) {
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -16,36 +15,42 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
             document.removeEventListener('keydown', handleKeyDown);
         };
     }, [onClose]);
-    if (!show) {
+
+    if (!show || !barangKeluar) {
         return null;
     }
 
-    // Fungsi untuk memformat tanggal
     const formattedDate = new Date(barangKeluar?.tanggal).toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
     });
 
+    // Flatten items into a flat list for table display
+    const flatDetails = (barangKeluar?.items || []).flatMap((item) =>
+        (item.details || []).map((detail) => ({
+            ...detail,
+            kategori: item.kategori,
+            merek: item.merek,
+            model: item.model,
+        })),
+    );
+
     return (
-        // Wrapper Modal, menggunakan 'fixed' untuk overlay
         <div
             className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 transition-opacity duration-300 ease-out"
             style={{ opacity: show ? 1 : 0 }}
         >
-            {/* 1. Latar Belakang Overlay */}
-            <div
-                className="absolute inset-0 bg-black/60"
-                onClick={onClose} // Menutup modal saat overlay diklik
-            ></div>
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black/60" onClick={onClose}></div>
 
-            {/* 2. Konten Modal */}
+            {/* Modal Content */}
             <div
                 className="relative z-10 w-full max-w-4xl transform rounded-lg bg-white p-6 shadow-xl transition-all duration-300 ease-out"
                 style={{ transform: show ? 'scale(1)' : 'scale(0.95)' }}
-                onClick={(e) => e.stopPropagation()} // Mencegah modal tertutup saat kontennya diklik
+                onClick={(e) => e.stopPropagation()}
             >
-                {/* Header Modal */}
+                {/* Header */}
                 <div className="flex items-start justify-between border-b border-gray-200 pb-4">
                     <div>
                         <h3 className="text-xl font-bold text-gray-900">Detail Transaksi Barang Keluar</h3>
@@ -56,9 +61,9 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                     </button>
                 </div>
 
-                {/* Body Modal */}
+                {/* Body */}
                 <div className="mt-6 space-y-6">
-                    {/* Informasi Umum Transaksi */}
+                    {/* Info Umum */}
                     <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
                         <div>
                             <p className="text-sm text-gray-500">Tanggal Transaksi</p>
@@ -78,7 +83,6 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                     <div>
                         <p className="text-md mb-2 font-semibold text-gray-700">Rincian Barang:</p>
                         <div className="overflow-hidden rounded-lg border border-gray-200">
-                            {/* Bungkus hanya tbody yang scroll */}
                             <div className="max-h-64 overflow-y-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="sticky top-0 z-10 bg-gray-50">
@@ -96,19 +100,19 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
-                                        {!barangKeluar.details || barangKeluar.details.length === 0 ? (
+                                        {flatDetails.length === 0 ? (
                                             <tr>
-                                                <td colSpan="5" className="py-4 text-center text-sm text-gray-500">
+                                                <td colSpan={6} className="py-4 text-center text-sm text-gray-500">
                                                     Tidak ada data barang.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            barangKeluar.details.map((detail, index) => (
-                                                <tr key={detail.id}>
+                                            flatDetails.map((detail, index) => (
+                                                <tr key={detail.id || index}>
                                                     <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                                                    <td className="px-4 py-3 text-sm font-medium text-gray-800">{detail.barang.model_barang.nama}</td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600">{detail.barang.model_barang.merek.nama}</td>
-                                                    <td className="px-4 py-3 font-mono text-sm text-gray-700">{detail.barang.serial_number}</td>
+                                                    <td className="px-4 py-3 text-sm font-medium text-gray-800">{detail.model}</td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600">{detail.merek}</td>
+                                                    <td className="px-4 py-3 font-mono text-sm text-gray-700">{detail.serial_number}</td>
                                                     <td className="px-4 py-3 text-sm text-gray-600">
                                                         <span className="inline-flex rounded-full bg-blue-100 px-2 text-xs leading-5 font-semibold text-blue-800">
                                                             {detail.status_keluar}
@@ -140,7 +144,7 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                     </div>
                 </div>
 
-                {/* Footer Modal */}
+                {/* Footer */}
                 <div className="mt-6 flex justify-end border-t border-gray-200 pt-4">
                     <button
                         onClick={onClose}

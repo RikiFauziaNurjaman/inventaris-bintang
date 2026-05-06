@@ -100,7 +100,7 @@ export function DataTable<T extends { id: number | string }>({
             </div>
 
             {/* Table Container */}
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <Table>
                     <TableHeader className="bg-slate-100 dark:bg-zinc-800/50">
                         <TableRow className="hover:bg-slate-100 dark:hover:bg-zinc-800/50">

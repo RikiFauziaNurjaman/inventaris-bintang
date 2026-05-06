@@ -79,6 +79,8 @@ class ModelBarangController extends Controller
         ]);
 
         ModelBarang::create($request->only('nama', 'kategori_id', 'merek_id', 'jenis_id', 'deskripsi', 'label'));
+        Cache::forget('model_label_list');
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('model.index')->with('message', 'Model Barang berhasil ditambahkan.');
     }
@@ -95,6 +97,8 @@ class ModelBarangController extends Controller
         ]);
 
         $model->update($request->only('nama', 'kategori_id', 'merek_id', 'jenis_id', 'deskripsi', 'label'));
+        Cache::forget('model_label_list');
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('model.index')->with('message', 'Model Barang berhasil diperbarui.');
     }
@@ -102,6 +106,8 @@ class ModelBarangController extends Controller
     public function destroy(ModelBarang $model)
     {
         $model->delete();
+        Cache::forget('model_label_list');
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::back()->with('message', 'Model Barang berhasil dihapus.');
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\MasterData;
 
 use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
+use App\Helpers\MasterDataHelper;
 use App\Models\Lokasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -47,6 +48,7 @@ class LokasiBarangController extends Controller
         ]);
 
         Lokasi::create($request->only(['nama', 'alamat']));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('lokasi.index')->with('message', 'Lokasi berhasil ditambahkan.');
     }
@@ -60,6 +62,7 @@ class LokasiBarangController extends Controller
         ]);
 
         $lokasi->update($request->only(['nama', 'alamat']));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('lokasi.index')->with('message', 'Lokasi berhasil diperbarui.');
     }
@@ -67,6 +70,7 @@ class LokasiBarangController extends Controller
     public function destroy(Lokasi $lokasi)
     {
         $lokasi->delete();
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::back()->with('message', 'Lokasi berhasil dihapus.');
     }

@@ -473,7 +473,7 @@ class BarangKeluarController extends Controller
         return redirect()->route('barang-keluar.index')->with('success', 'Transaksi barang keluar berhasil diperbarui.');
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $barangKeluar = BarangKeluar::with([
             'lokasi',
@@ -481,11 +481,43 @@ class BarangKeluarController extends Controller
             'details.barang.modelBarang' => function ($query) {
                 $query->with(['merek', 'kategori']);
             },
-            'details.barang.jenisBarang.kategori'
         ])->findOrFail($id);
 
+        // Kelompokkan detail berdasarkan model barangnya
+        $groupedDetails = $barangKeluar->details->groupBy('barang.model_id');
+
+        // Transformasi data menjadi struktur yang rapi untuk frontend
+        $items = $groupedDetails->map(function ($details) {
+            $modelBarang = $details->first()->barang->modelBarang;
+
+            return [
+                'kategori' => $modelBarang->kategori->nama ?? '-',
+                'merek' => $modelBarang->merek->nama ?? '-',
+                'model' => $modelBarang->nama ?? '-',
+                'details' => $details->map(function ($detail) {
+                    return [
+                        'id' => $detail->id,
+                        'serial_number' => $detail->barang->serial_number,
+                        'status_keluar' => $detail->status_keluar,
+                    ];
+                })->values()->all(),
+            ];
+        });
+
+        $data = [
+            'id' => $barangKeluar->id,
+            'tanggal' => $barangKeluar->tanggal,
+            'lokasi' => $barangKeluar->lokasi,
+            'user' => $barangKeluar->user,
+            'items' => $items->values()->all(),
+        ];
+
+        if ($request->wantsJson()) {
+            return response()->json(['barangKeluar' => $data]);
+        }
+
         return Inertia::render('transaksi/barang-keluar/BarangKeluarDetail', [
-            'barangKeluar' => $barangKeluar,
+            'barangKeluar' => $data,
         ]);
     }
 
@@ -641,6 +673,46 @@ class BarangKeluarController extends Controller
         return Inertia::render('transaksi/barang-keluar/surat-pinjaman', [
             'data' => $data,
         ]);
+    }
+
+    public function destroy(BarangKeluar $barangKeluar)
+    {
+        DB::transaction(function () use ($barangKeluar) {
+            $lokasiGudang = Lokasi::where('is_gudang', true)->firstOrFail();
+
+            foreach ($barangKeluar->details as $detail) {
+                $barang = $detail->barang;
+
+                if ($barang) {
+                    // Reverse stok berdasarkan status keluar
+                    if ($detail->status_keluar === 'dijual') {
+                        StockHelpers::batalJual($barang->model_id, $lokasiGudang->id, 1);
+                    } elseif ($detail->status_keluar === 'dipinjamkan') {
+                        StockHelpers::pindahkanStok($barang->model_id, $barang->lokasi_id, $lokasiGudang->id, 1);
+                    }
+
+                    // Hapus mutasi terkait
+                    MutasiBarang::where('barang_id', $barang->id)->delete();
+
+                    // Kembalikan status dan lokasi barang ke gudang
+                    $barang->update([
+                        'lokasi_id' => $lokasiGudang->id,
+                        'status' => 'baik',
+                        'sub_lokasi_id' => null,
+                        'pic' => null,
+                    ]);
+                }
+            }
+
+            // Hapus semua detail
+            $barangKeluar->details()->delete();
+
+            // Hapus data utama
+            $barangKeluar->delete();
+        });
+
+        return redirect()->route('barang-keluar.index')
+            ->with('success', 'Data barang keluar dan semua item terkait berhasil dihapus.');
     }
 
     private function convertToRoman($month)

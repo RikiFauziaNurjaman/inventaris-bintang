@@ -4,6 +4,7 @@ namespace App\Http\Controllers\MasterData;
 
 use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
+use App\Helpers\MasterDataHelper;
 use App\Models\KategoriBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -47,6 +48,7 @@ class KategoriBarangController extends Controller
         ]);
 
         KategoriBarang::create($request->only('nama'));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('kategori.index')->with('message', 'Kategori Barang berhasil ditambahkan.');
     }
@@ -59,6 +61,7 @@ class KategoriBarangController extends Controller
         ]);
 
         $kategori->update($request->only('nama'));
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::route('kategori.index')->with('message', 'Kategori Barang berhasil diperbarui.');
     }
@@ -66,6 +69,7 @@ class KategoriBarangController extends Controller
     public function destroy(KategoriBarang $kategori)
     {
         $kategori->delete();
+        MasterDataHelper::clearAllCaches();
 
         return Redirect::back()->with('message', 'Kategori Barang berhasil dihapus.');
     }

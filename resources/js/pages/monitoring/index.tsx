@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, router } from '@inertiajs/react';
-import { AlertTriangle, Filter, MapPin, Package, Search, Wrench } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { AlertTriangle, ExternalLink, Filter, MapPin, Package, Search, Wrench } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type Barang = {
@@ -25,6 +25,8 @@ type Props = {
         data: Barang[];
         links: { url: string | null; label: string; active: boolean }[];
         total: number;
+        current_page: number;
+        per_page: number;
     };
     lokasiList: { id: number; nama: string }[];
     subLokasiList: { id: number; nama: string; lokasi_id: number }[];
@@ -229,6 +231,9 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                                 <thead className="bg-gray-50 dark:bg-zinc-800">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                                            No
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                             Serial Number
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
@@ -246,20 +251,26 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                                         <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                             Kondisi
                                         </th>
+                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                                            Aksi
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
                                     {barang.data.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                                            <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
                                                 <Package className="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
                                                 <p className="font-medium">Tidak ada data</p>
                                                 <p className="text-xs">Coba ubah filter atau hapus pencarian</p>
                                             </td>
                                         </tr>
                                     ) : (
-                                        barang.data.map((item) => (
+                                        barang.data.map((item, index) => (
                                             <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                    {(barang.current_page - 1) * barang.per_page + index + 1}
+                                                </td>
                                                 <td className="px-4 py-3 whitespace-nowrap">
                                                     <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
                                                         {item.serial_number}
@@ -276,7 +287,12 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-1.5 text-sm text-gray-900 dark:text-white">
                                                         <MapPin size={14} className="text-gray-400" />
-                                                        {item.lokasi?.nama || <span className="text-gray-400">Gudang</span>}
+                                                        <Link
+                                                            href={route('monitoring.lokasi.detail', item.lokasi?.id)}
+                                                            className="font-medium text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                                                        >
+                                                            {item.lokasi?.nama || <span className="text-gray-400">Gudang</span>}
+                                                        </Link>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -295,6 +311,18 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                                                     <span className="text-sm text-gray-900 dark:text-white">{item.pic || '-'}</span>
                                                 </td>
                                                 <td className="px-4 py-3">{getStatusBadge(item.status)}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    {item.lokasi && (
+                                                        <Link
+                                                            href={route('monitoring.lokasi.detail', item.lokasi.id)}
+                                                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                            title="Lihat detail lokasi"
+                                                        >
+                                                            <ExternalLink size={14} />
+                                                            Detail
+                                                        </Link>
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))
                                     )}

@@ -2,7 +2,7 @@ import { Column, DataTable } from '@/components/data-table';
 import { PERMISSIONS } from '@/constants/permission';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { debounce } from 'lodash';
+import debounce from 'lodash.debounce';
 import { Edit3, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';

@@ -109,6 +109,7 @@ export default function Index({ auth, stokPerbaikan }: Props) {
                     <table className="min-w-full border border-gray-300">
                         <thead className="bg-gray-100">
                             <tr>
+                                <th className="border px-4 py-2 text-left">No</th>
                                 <th className="border px-4 py-2 text-left">Lokasi</th>
                                 <th className="border px-4 py-2 text-left">Kategori</th>
                                 <th className="border px-4 py-2 text-left">Nama Barang</th>
@@ -119,6 +120,7 @@ export default function Index({ auth, stokPerbaikan }: Props) {
                         <tbody>
                             {stokPerbaikan.map((item, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
+                                    <td className="border px-4 py-2 text-sm">{index + 1}</td>
                                     <td className="border px-4 py-2">{item.lokasi}</td>
                                     <td className="border px-4 py-2">{item.kategori}</td>
                                     <td className="border px-4 py-2">{item.nama_barang}</td>
@@ -157,12 +159,13 @@ export default function Index({ auth, stokPerbaikan }: Props) {
                                                 <th className="px-4 py-2">
                                                     <input type="checkbox" disabled />
                                                 </th>
+                                                <th className="px-4 py-2 text-left">No</th>
                                                 <th className="px-4 py-2 text-left">Serial Number</th>
                                                 <th className="px-4 py-2 text-left">Kondisi Awal</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {detailItems.map((detail) => (
+                                            {detailItems.map((detail, idx) => (
                                                 <tr key={detail.id} className="hover:bg-gray-100">
                                                     <td className="px-4 py-2 text-center">
                                                         <input
@@ -171,6 +174,7 @@ export default function Index({ auth, stokPerbaikan }: Props) {
                                                             onChange={() => handleCheckboxChange(detail.id)}
                                                         />
                                                     </td>
+                                                    <td className="px-4 py-2 text-sm">{idx + 1}</td>
                                                     <td className="px-4 py-2">{detail.serial_number}</td>
                                                     <td className="px-4 py-2">{detail.kondisi_awal}</td>
                                                 </tr>

@@ -87,6 +87,102 @@ class MonitoringController extends Controller
     }
 
     /**
+     * Halaman detail per-lokasi — menampilkan semua barang di lokasi tertentu
+     */
+    public function showLokasi(Request $request, Lokasi $lokasi)
+    {
+        $query = Barang::with([
+            'modelBarang:id,nama,merek_id,kategori_id,label',
+            'modelBarang.merek:id,nama',
+            'modelBarang.kategori:id,nama',
+            'modelBarang.jenis:id,nama',
+            'jenisBarang:id,nama',
+            'subLokasi:id,nama,kode,lantai',
+            'rak:id,kode_rak',
+            'asal:id,nama',
+        ])->where('lokasi_id', $lokasi->id);
+
+        // Filter by sub_lokasi
+        if ($request->filled('sub_lokasi_id')) {
+            $query->where('sub_lokasi_id', $request->sub_lokasi_id);
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by kategori
+        if ($request->filled('kategori_id')) {
+            $query->whereHas('modelBarang', function ($q) use ($request) {
+                $q->where('kategori_id', $request->kategori_id);
+            });
+        }
+
+        // Search by serial number or PIC
+        if ($request->filled('search')) {
+            $search = strtolower($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(serial_number) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(pic) LIKE ?', ["%{$search}%"]);
+            });
+        }
+
+        $barang = $query->orderBy('sub_lokasi_id')
+            ->orderBy('serial_number')
+            ->paginate(25)
+            ->withQueryString();
+
+        // Stats khusus lokasi ini
+        $statsQuery = Barang::where('lokasi_id', $lokasi->id);
+        $stats = [
+            'total' => (clone $statsQuery)->count(),
+            'baik' => (clone $statsQuery)->where('status', 'baik')->count(),
+            'rusak' => (clone $statsQuery)->where('status', 'rusak')->count(),
+            'diperbaiki' => (clone $statsQuery)->where('status', 'diperbaiki')->count(),
+        ];
+
+        // Summary per model barang (ringkasan berapa unit tiap model)
+        $modelSummary = Barang::where('lokasi_id', $lokasi->id)
+            ->with(['modelBarang:id,nama,merek_id', 'modelBarang.merek:id,nama'])
+            ->get()
+            ->groupBy('model_id')
+            ->map(function ($items) {
+                $first = $items->first();
+                return [
+                    'model_id' => $first->model_id,
+                    'model_nama' => $first->modelBarang->nama ?? '-',
+                    'merek_nama' => $first->modelBarang->merek->nama ?? '-',
+                    'total' => $items->count(),
+                    'baik' => $items->where('status', 'baik')->count(),
+                    'rusak' => $items->where('status', 'rusak')->count(),
+                    'diperbaiki' => $items->where('status', 'diperbaiki')->count(),
+                ];
+            })
+            ->sortByDesc('total')
+            ->values();
+
+        // Sub-lokasi di lokasi ini (untuk filter)
+        $subLokasiList = SubLokasi::where('lokasi_id', $lokasi->id)
+            ->select('id', 'nama', 'kode', 'lantai')
+            ->orderBy('nama')
+            ->get();
+
+        // Kategori (untuk filter)
+        $kategoriList = KategoriBarang::select('id', 'nama')->orderBy('nama')->get();
+
+        return Inertia::render('monitoring/lokasi-detail', [
+            'lokasi' => $lokasi,
+            'barang' => $barang,
+            'stats' => $stats,
+            'modelSummary' => $modelSummary,
+            'subLokasiList' => $subLokasiList,
+            'kategoriList' => $kategoriList,
+            'filters' => $request->only(['sub_lokasi_id', 'status', 'kategori_id', 'search']),
+        ]);
+    }
+
+    /**
      * API untuk mendapatkan sub-lokasi berdasarkan lokasi (untuk cascade filter)
      */
     public function getSubLokasiByLokasi(Request $request)

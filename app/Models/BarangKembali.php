@@ -22,5 +22,10 @@ class BarangKembali extends Model
     {
         return $this->hasMany(BarangKembaliDetail::class);
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
 

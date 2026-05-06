@@ -1,5 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
-import { EyeIcon } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { DetailStokModal } from './detail';
 
@@ -55,28 +56,32 @@ export default function Index({ stokDistribusi }: Props) {
                     <table className="min-w-full">
                         <thead className="bg-gray-100">
                             <tr>
+                                <th className="border-b p-3 text-left text-sm font-medium text-gray-600">No</th>
                                 <th className="border-b p-3 text-left text-sm font-medium text-gray-600">Lokasi</th>
                                 <th className="border-b p-3 text-left text-sm font-medium text-gray-600">Kategori</th>
                                 <th className="border-b p-3 text-left text-sm font-medium text-gray-600">Nama Barang</th>
                                 <th className="border-b p-3 text-right text-sm font-medium text-gray-600">Jumlah</th>
-                                <th className="border-b p-3 text-center text-sm font-medium text-gray-600">Aksi</th>
+
+                                <th className="border-b p-3 text-center text-sm font-medium text-gray-600">Lokasi</th>
                             </tr>
                         </thead>
                         <tbody>
                             {stokDistribusi.map((item, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
+                                    <td className="border-b p-3 text-sm">{index + 1}</td>
                                     <td className="border-b p-3 text-sm">{item.lokasi}</td>
                                     <td className="border-b p-3 text-sm">{item.kategori}</td>
                                     <td className="border-b p-3 text-sm">{[item.merek, item.model].filter(Boolean).join(' ')}</td>
                                     <td className="border-b p-3 text-right text-sm">{item.jumlah_tersedia}</td>
                                     <td className="border-b p-3 text-center">
-                                        <button
-                                            onClick={() => handleShowDetail(item)}
-                                            className="text-blue-600 hover:text-blue-800"
-                                            title="Lihat Detail"
+                                        <Link
+                                            href={route('monitoring.lokasi.detail', item.lokasi_id)}
+                                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
+                                            title="Lihat semua barang di lokasi ini"
                                         >
-                                            <EyeIcon className="h-5 w-5" />
-                                        </button>
+                                            <ExternalLink size={14} />
+                                            Detail Lokasi
+                                        </Link>
                                     </td>
                                 </tr>
                             ))}

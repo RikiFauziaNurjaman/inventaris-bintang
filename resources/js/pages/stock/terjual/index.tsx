@@ -54,6 +54,7 @@ export default function Index({ stokTerjual }: Props) {
                         <table className="min-w-full border border-gray-300">
                             <thead className="bg-gray-100">
                                 <tr>
+                                    <th className="border px-4 py-2">No</th>
                                     <th className="border px-4 py-2">Lokasi</th>
                                     <th className="border px-4 py-2">Kategori</th>
                                     <th className="border px-4 py-2">Nama Barang</th>
@@ -64,6 +65,7 @@ export default function Index({ stokTerjual }: Props) {
                             <tbody>
                                 {stokTerjual.map((item, index) => (
                                     <tr key={index} className="hover:bg-gray-50">
+                                        <td className="border px-4 py-2">{index + 1}</td>
                                         <td className="border px-4 py-2">{item.lokasi}</td>
                                         <td className="border px-4 py-2">{item.kategori}</td>
                                         <td className="border px-4 py-2">{(item.merek ? item.merek + ' ' : '') + item.model}</td>
