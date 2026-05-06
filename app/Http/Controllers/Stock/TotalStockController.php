@@ -145,6 +145,25 @@ class TotalStockController extends Controller
 
         $barang->delete();
 
-        return redirect()->route('barang.index')->with('success', 'Data barang berhasil dihapus.');
+        return redirect()->route('total-stock.index')->with('success', 'Data barang berhasil dihapus.');
+    }
+
+    public function updateKondisi(Request $request, $id)
+    {
+        $request->validate([
+            'kondisi' => 'required|string|in:baru,second',
+        ]);
+
+        $barang = DB::table('barang')->where('id', $id);
+
+        if ($barang->doesntExist()) {
+            return redirect()->back()->with('error', 'Data barang tidak ditemukan.');
+        }
+
+        $barang->update([
+            'kondisi_awal' => $request->kondisi
+        ]);
+
+        return redirect()->back()->with('success', 'Kondisi barang berhasil diperbarui.');
     }
 }

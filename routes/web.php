@@ -167,6 +167,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/stok-distribusi-detail/{modelBarang}/{lokasi}', [StokDistribusiController::class, 'getDetailAsJson'])->name('api.stok-distribusi.detail');
 
     Route::resource('total-stock', TotalStockController::class)->only(['index', 'destroy']);
+    Route::patch('/total-stock/{id}/kondisi', [TotalStockController::class, 'updateKondisi'])->name('total-stock.updateKondisi');
     Route::get('/total-stock/export-pdf', [TotalStockController::class, 'exportPdf'])->name('total-stock.exportPdf');
 
     // Database Backup & Import

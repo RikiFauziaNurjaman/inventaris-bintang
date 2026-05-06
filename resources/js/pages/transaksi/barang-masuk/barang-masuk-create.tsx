@@ -13,6 +13,7 @@ interface Item {
     rak_nama: string;
     rak_baris: string;
     rak_id: number | null;
+    kondisi: string;
     serial_numbers: string[];
 }
 
@@ -245,6 +246,18 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                         </select>
                     </div>
                 )}
+                {/* Kondisi */}
+                <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Kondisi</label>
+                    <select
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                        value={item.kondisi}
+                        onChange={(e) => handleFieldChange('kondisi', e.target.value)}
+                    >
+                        <option value="baru">Baru</option>
+                        <option value="second">Second</option>
+                    </select>
+                </div>
             </div>
 
             {/* Serial Numbers */}
@@ -317,6 +330,7 @@ export default function BarangMasukCreate() {
         rak_nama: '', // field baru
         rak_baris: '', // field baru
         rak_id: null, // field baru
+        kondisi: 'baru',
         serial_numbers: [''],
     };
 

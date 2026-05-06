@@ -197,6 +197,7 @@ class BarangMasukController extends Controller
             'items.*.model' => 'required|string|max:100',
             'items.*.jenis_barang' => 'required|string|max:100',
             'items.*.rak_id' => 'nullable|integer|exists:rak_barang,id',
+            'items.*.kondisi' => 'required|string|in:baru,second',
             'items.*.serial_numbers' => 'required|array|min:1',
             'items.*.serial_numbers.*' => 'required|string|distinct|unique:barang,serial_number',
         ]);
@@ -254,7 +255,7 @@ class BarangMasukController extends Controller
                         'asal_id' => $asal?->id,
                         'lokasi_id' => $lokasiGudang->id,
                         'serial_number' => $serial,
-                        'kondisi_awal' => 'baru',
+                        'kondisi_awal' => $item['kondisi'],
                         'status' => 'baik',
                     ]);
 
@@ -349,6 +350,7 @@ class BarangMasukController extends Controller
             'items.*.jenis_barang' => 'required|string|max:100',
             'items.*.model' => 'required|string|max:100',
             'items.*.rak_id' => 'nullable|integer|exists:rak_barang,id',
+            'items.*.kondisi' => 'required|string|in:baru,second',
             'items.*.serial_numbers' => 'required|array|min:1',
             'items.*.serial_numbers.*' => [
                 'required',
@@ -403,7 +405,7 @@ class BarangMasukController extends Controller
                         'asal_id' => $asal?->id,
                         'lokasi_id' => $lokasiGudang->id,
                         'serial_number' => $serial,
-                        'kondisi_awal' => 'baru',
+                        'kondisi_awal' => $item['kondisi'],
                         'status' => 'baik',
                     ]);
 

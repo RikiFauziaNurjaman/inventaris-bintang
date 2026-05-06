@@ -70,9 +70,21 @@ export default function BarangIndex() {
 
     const handleDelete = (id: any) => {
         if (confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
-            router.delete(route('barang.destroy', id), {
+            router.delete(route('total-stock.destroy', id), {
                 preserveScroll: true,
             });
+        }
+    };
+
+    const handleUpdateKondisi = (id: any, newKondisi: string) => {
+        if (confirm(`Apakah Anda yakin ingin mengubah kondisi barang ini menjadi ${newKondisi}?`)) {
+            router.patch(
+                route('total-stock.updateKondisi', id),
+                { kondisi: newKondisi },
+                {
+                    preserveScroll: true,
+                },
+            );
         }
     };
 
@@ -249,12 +261,31 @@ export default function BarangIndex() {
                                 <td className={`border px-3 py-1 ${getKondisiStyle(item.kondisi)}`}>{item.kondisi}</td>
                                 <td className="border px-3 py-1">{item.lokasi}</td>
                                 <td className="border px-3 py-1">
-                                    <button
-                                        onClick={() => handleDelete(item.id)}
-                                        className="rounded bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
-                                    >
-                                        Hapus
-                                    </button>
+                                    <div className="flex gap-1">
+                                        {item.kondisi?.toLowerCase() === 'baru' ? (
+                                            <button
+                                                onClick={() => handleUpdateKondisi(item.id, 'second')}
+                                                className="rounded bg-blue-500 px-2 py-1 text-xs text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                                title="Ubah ke Second"
+                                            >
+                                                Second
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleUpdateKondisi(item.id, 'baru')}
+                                                className="rounded bg-emerald-500 px-2 py-1 text-xs text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                                                title="Ubah ke Baru"
+                                            >
+                                                Baru
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => handleDelete(item.id)}
+                                            className="rounded bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+                                        >
+                                            Hapus
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
