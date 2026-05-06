@@ -359,9 +359,8 @@ class BarangKeluarController extends Controller
         ]);
     }
 
-    public function update(Request $request, BarangKeluar $barangKeluar)
+    public function update(Request $request, $id)
     {
-        // 1. Validasi LENGKAP untuk struktur data yang baru
         $request->validate([
             'tanggal' => 'required|date',
             'lokasi' => 'required|string|max:100',
@@ -371,114 +370,64 @@ class BarangKeluarController extends Controller
             'items.*.merek' => 'required|string',    
             'items.*.model' => 'required|string',    
             'items.*.keluar_info' => 'required|array|min:1',
-            'items.*.keluar_info.*.serial_number' => 'required|string|distinct|exists:barang,serial_number',
+            'items.*.keluar_info.*.serial_number' => 'required|string|exists:barang,serial_number',
             'items.*.keluar_info.*.status_keluar' => 'required|string|in:dipinjamkan,dijual,maintenance',
             'items.*.keluar_info.*.sub_lokasi' => 'nullable|string|max:100',
         ]);
 
-        DB::transaction(function () use ($request, $barangKeluar) {
-            $lokasiGudang = Lokasi::where('is_gudang', true)->firstOrFail();
-            $lokasiTujuan = Lokasi::firstOrCreate(['nama' => $request->lokasi], ['is_gudang' => false]);
+        $barangKeluar = BarangKeluar::with('details.barang')->findOrFail($id);
+        $lokasiGudang = Lokasi::where('is_gudang', true)->first();
 
+        DB::transaction(function () use ($request, $barangKeluar, $lokasiGudang) {
+            $lokasiTujuan = Lokasi::firstOrCreate(['nama' => $request->lokasi], ['is_gudang' => false]);
             $barangKeluar->update([
                 'tanggal' => $request->tanggal,
                 'lokasi_id' => $lokasiTujuan->id,
             ]);
 
-            $oldDetails = $barangKeluar->details()->with('barang')->get();
+            $oldDetails = $barangKeluar->details;
             $oldSerials = $oldDetails->pluck('barang.serial_number')->all();
 
-            $newItemsCollection = collect($request->items)->pluck('keluar_info')->flatten(1);
-            $newSerials = $newItemsCollection->pluck('serial_number')->all();
-            $newStatusMap = $newItemsCollection->pluck('status_keluar', 'serial_number')->all();
-
-            // BAGIAN 1: Mengembalikan barang yang dihapus dari transaksi
-            $serialsToReturn = array_diff($oldSerials, $newSerials);
-            foreach ($serialsToReturn as $serial) {
-                $detail = $oldDetails->firstWhere('barang.serial_number', $serial);
-                if (!$detail) continue;
-
-                $barang = $detail->barang;
-                $lokasiAsalBarangSaatKeluar = $barang->lokasi_id;
-
-                // Balikkan stok ke gudang
-                if ($detail->status_keluar === 'dijual') {
-                    StockHelpers::batalJual($barang->model_id, $lokasiGudang->id, 1);
-                } elseif ($detail->status_keluar === 'dipinjamkan') {
-                    StockHelpers::pindahkanStok($barang->model_id, $lokasiAsalBarangSaatKeluar, $lokasiGudang->id, 1);
+            $requestSerials = [];
+            foreach ($request->items as $item) {
+                foreach ($item['keluar_info'] as $info) {
+                    $requestSerials[] = $info['serial_number'];
                 }
-
-                $barang->update(['lokasi_id' => $lokasiGudang->id, 'status' => 'baik']);
-                $detail->delete();
             }
 
-            // BAGIAN 2: Memproses barang baru atau yang statusnya berubah
-            foreach ($newSerials as $serial) {
-                $status = $newStatusMap[$serial];
-                $detail = $oldDetails->firstWhere('barang.serial_number', $serial);
-
+            // 1. Hapus barang yang tidak ada di request
+            $removedSerials = array_diff($oldSerials, $requestSerials);
+            foreach ($removedSerials as $serial) {
+                $detail = $oldDetails->where('barang.serial_number', $serial)->first();
                 if ($detail) {
-                    // BARANG SUDAH ADA, cek apakah statusnya berubah
-                    if ($detail->status_keluar !== $status) {
-                        $barang = $detail->barang;
-                        $lokasiAsalBarangSaatKeluar = $barang->lokasi_id;
+                    $barang = $detail->barang;
+                    $lokasiAsalBarangSaatKeluar = $barang->lokasi_id;
 
-                        // Langkah A: Balikkan stok lama sesuai status SEBELUMNYA
-                        if ($detail->status_keluar === 'dijual') {
-                            StockHelpers::batalJual($barang->model_id, $lokasiGudang->id, 1);
-                        } elseif ($detail->status_keluar === 'dipinjamkan') {
-                            // Kembalikan dulu stoknya ke gudang
-                            StockHelpers::pindahkanStok($barang->model_id, $lokasiAsalBarangSaatKeluar, $lokasiGudang->id, 1);
-                        }
-
-                        // Langkah B: Terapkan stok baru sesuai status BARU
-                        if ($status === 'dijual') {
-                            StockHelpers::catatPenjualan($barang->model_id, $lokasiGudang->id, 1);
-                        } elseif ($status === 'dipinjamkan') {
-                            // Pindahkan stok dari gudang ke tujuan
-                            StockHelpers::pindahkanStok($barang->model_id, $lokasiGudang->id, $lokasiTujuan->id, 1);
-                        }
-
-                        // Cari atau buat sub-lokasi jika diisi di baris ini
-                        $subLokasiId = null;
-                        if (!empty($info['sub_lokasi'])) {
-                            $subLokasi = \App\Models\SubLokasi::firstOrCreate(
-                                ['nama' => $info['sub_lokasi'], 'lokasi_id' => $lokasiTujuan->id]
-                            );
-                            $subLokasiId = $subLokasi->id;
-                        }
-
-                        // Langkah C: Update record
-                        $detail->update(['status_keluar' => $status]);
-                        $barang->update([
-                            'status' => $status, 
-                            'lokasi_id' => $lokasiTujuan->id,
-                            'sub_lokasi_id' => $subLokasiId,
-                            'pic' => $request->pic
-                        ]);
-                    } else {
-                        // Meskipun status tidak berubah, update lokasi detailnya (sub_lokasi & pic)
-                        // Cari atau buat sub-lokasi jika diisi di baris ini
-                        $subLokasiId = null;
-                        if (!empty($info['sub_lokasi'])) {
-                            $subLokasi = \App\Models\SubLokasi::firstOrCreate(
-                                ['nama' => $info['sub_lokasi'], 'lokasi_id' => $lokasiTujuan->id]
-                            );
-                            $subLokasiId = $subLokasi->id;
-                        }
-
-                        $detail->barang->update([
-                            'lokasi_id' => $lokasiTujuan->id,
-                            'sub_lokasi_id' => $subLokasiId,
-                            'pic' => $request->pic
-                        ]);
+                    if ($detail->status_keluar === 'dijual') {
+                        StockHelpers::batalJual($barang->model_id, $lokasiGudang->id, 1);
+                    } elseif ($detail->status_keluar === 'dipinjamkan') {
+                        StockHelpers::pindahkanStok($barang->model_id, $lokasiAsalBarangSaatKeluar, $lokasiGudang->id, 1);
                     }
-                } else {
-                    // INI BARANG BARU yang ditambahkan ke transaksi
-                    $barang = Barang::where('serial_number', $serial)->firstOrFail();
-                    $lokasiAsalId = $barang->lokasi_id; // Ini adalah lokasi gudang
 
-                    // Cari atau buat sub-lokasi jika diisi di baris ini
+                    $barang->update([
+                        'lokasi_id' => $lokasiGudang->id,
+                        'sub_lokasi_id' => null,
+                        'pic' => null,
+                        'status' => 'baik'
+                    ]);
+                    $detail->delete();
+                }
+            }
+
+            // 2. Proses barang di request (update existing atau add new)
+            foreach ($request->items as $item) {
+                foreach ($item['keluar_info'] as $info) {
+                    $serial = $info['serial_number'];
+                    $status = $info['status_keluar'];
+
+                    $barang = Barang::where('serial_number', $serial)->first();
+                    if (!$barang) continue;
+
                     $subLokasiId = null;
                     if (!empty($info['sub_lokasi'])) {
                         $subLokasi = \App\Models\SubLokasi::firstOrCreate(
@@ -487,32 +436,49 @@ class BarangKeluarController extends Controller
                         $subLokasiId = $subLokasi->id;
                     }
 
+                    $detail = $oldDetails->where('barang.serial_number', $serial)->first();
+
+                    if ($detail) {
+                        // Update existing detail
+                        if ($detail->status_keluar !== $status) {
+                            $lokasiAsalBarangSaatKeluar = $barang->lokasi_id;
+
+                            // Revert old stock impact
+                            if ($detail->status_keluar === 'dijual') {
+                                StockHelpers::batalJual($barang->model_id, $lokasiGudang->id, 1);
+                            } elseif ($detail->status_keluar === 'dipinjamkan') {
+                                StockHelpers::pindahkanStok($barang->model_id, $lokasiAsalBarangSaatKeluar, $lokasiGudang->id, 1);
+                            }
+
+                            // Apply new stock impact
+                            if ($status === 'dijual') {
+                                StockHelpers::catatPenjualan($barang->model_id, $lokasiGudang->id, 1);
+                            } elseif ($status === 'dipinjamkan') {
+                                StockHelpers::pindahkanStok($barang->model_id, $lokasiGudang->id, $lokasiTujuan->id, 1);
+                            }
+
+                            $detail->update(['status_keluar' => $status]);
+                        }
+                    } else {
+                        // Add new detail
+                        if ($status === 'dijual') {
+                            StockHelpers::catatPenjualan($barang->model_id, $lokasiGudang->id, 1);
+                        } elseif ($status === 'dipinjamkan') {
+                            StockHelpers::pindahkanStok($barang->model_id, $lokasiGudang->id, $lokasiTujuan->id, 1);
+                        }
+
+                        $barangKeluar->details()->create([
+                            'barang_id' => $barang->id,
+                            'status_keluar' => $status
+                        ]);
+                    }
+
+                    // Always update current location/sub/pic/status on Barang model
                     $barang->update([
-                        'lokasi_id' => $lokasiTujuan->id, 
+                        'lokasi_id' => $lokasiTujuan->id,
                         'sub_lokasi_id' => $subLokasiId,
                         'pic' => $request->pic,
                         'status' => $status
-                    ]);
-
-                    BarangKeluarDetail::create([
-                        'barang_keluar_id' => $barangKeluar->id,
-                        'barang_id' => $barang->id,
-                        'status_keluar' => $status,
-                    ]);
-
-                    // Terapkan pergerakan stok
-                    if ($status === 'dijual') {
-                        StockHelpers::catatPenjualan($barang->model_id, $lokasiAsalId, 1);
-                    } elseif ($status === 'dipinjamkan') {
-                        StockHelpers::pindahkanStok($barang->model_id, $lokasiAsalId, $lokasiTujuan->id, 1);
-                    }
-
-                    MutasiBarang::create([
-                    'barang_id' => $barang->id,
-                    'lokasi_asal_id' => $lokasiAsalId,
-                    'lokasi_tujuan_id' => $lokasiTujuan->id,
-                    'tanggal' => $request->tanggal,
-                    'keterangan' => "Barang keluar via update (Status: {$status})",
                     ]);
                 }
             }
