@@ -295,7 +295,7 @@ class BarangKeluarController extends Controller
     public function edit(BarangKeluar $barangKeluar)
     {
         // 1. Eager load semua relasi yang dibutuhkan
-        $barangKeluar->load('details.barang.modelBarang.kategori', 'details.barang.modelBarang.merek', 'lokasi');
+        $barangKeluar->load('details.barang.modelBarang.kategori', 'details.barang.modelBarang.merek', 'details.barang.subLokasi', 'lokasi');
 
         if ($barangKeluar->details->isEmpty()) {
             return redirect()->route('barang-keluar.index')->with('error', 'Transaksi tidak memiliki detail barang.');
@@ -326,11 +326,18 @@ class BarangKeluarController extends Controller
             ];
         });
 
+        // Ambil sub_lokasi dan pic dari barang pertama (asumsi sama untuk satu transaksi)
+        $firstBarang = $barangKeluar->details->first()?->barang;
+        $subLokasiNama = $firstBarang?->subLokasi?->nama ?? '';
+        $pic = $firstBarang?->pic ?? '';
+
         // 4. Siapkan data final untuk dikirim ke view
         $dataToEdit = [
             'id' => $barangKeluar->id,
             'tanggal' => $barangKeluar->tanggal,
             'lokasi' => $barangKeluar->lokasi->nama,
+            'sub_lokasi' => $subLokasiNama,
+            'pic' => $pic,
             'items' => $items->values()->all(), // Kirim data dalam format baru
         ];
 
@@ -363,6 +370,8 @@ class BarangKeluarController extends Controller
         $request->validate([
             'tanggal' => 'required|date',
             'lokasi' => 'required|string|max:100',
+            'sub_lokasi' => 'nullable|string|max:100',
+            'pic' => 'nullable|string|max:100',
             'items' => 'required|array|min:1',
             'items.*.kategori' => 'required|string', // Validasi yang terlewat
             'items.*.merek' => 'required|string',    // Validasi yang terlewat
@@ -380,6 +389,15 @@ class BarangKeluarController extends Controller
                 'tanggal' => $request->tanggal,
                 'lokasi_id' => $lokasiTujuan->id,
             ]);
+
+            // Cari atau buat sub-lokasi jika diisi
+            $subLokasiId = null;
+            if ($request->filled('sub_lokasi')) {
+                $subLokasi = \App\Models\SubLokasi::firstOrCreate(
+                    ['nama' => $request->sub_lokasi, 'lokasi_id' => $lokasiTujuan->id]
+                );
+                $subLokasiId = $subLokasi->id;
+            }
 
             $oldDetails = $barangKeluar->details()->with('barang')->get();
             $oldSerials = $oldDetails->pluck('barang.serial_number')->all();
@@ -437,14 +455,31 @@ class BarangKeluarController extends Controller
 
                         // Langkah C: Update record
                         $detail->update(['status_keluar' => $status]);
-                        $barang->update(['status' => $status, 'lokasi_id' => $lokasiTujuan->id]);
+                        $barang->update([
+                            'status' => $status, 
+                            'lokasi_id' => $lokasiTujuan->id,
+                            'sub_lokasi_id' => $subLokasiId,
+                            'pic' => $request->pic
+                        ]);
+                    } else {
+                        // Meskipun status tidak berubah, update lokasi detailnya (sub_lokasi & pic)
+                        $detail->barang->update([
+                            'lokasi_id' => $lokasiTujuan->id,
+                            'sub_lokasi_id' => $subLokasiId,
+                            'pic' => $request->pic
+                        ]);
                     }
                 } else {
                     // INI BARANG BARU yang ditambahkan ke transaksi
                     $barang = Barang::where('serial_number', $serial)->firstOrFail();
                     $lokasiAsalId = $barang->lokasi_id; // Ini adalah lokasi gudang
 
-                    $barang->update(['lokasi_id' => $lokasiTujuan->id, 'status' => $status]);
+                    $barang->update([
+                        'lokasi_id' => $lokasiTujuan->id, 
+                        'sub_lokasi_id' => $subLokasiId,
+                        'pic' => $request->pic,
+                        'status' => $status
+                    ]);
 
                     BarangKeluarDetail::create([
                         'barang_keluar_id' => $barangKeluar->id,

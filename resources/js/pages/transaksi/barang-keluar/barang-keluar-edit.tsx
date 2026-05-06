@@ -2,7 +2,7 @@
 
 import AppLayout from '@/layouts/app-layout';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 
 // 1. Definisikan ulang tipe data props
@@ -23,6 +23,8 @@ interface PageProps {
         id: number;
         tanggal: string;
         lokasi: string;
+        sub_lokasi: string;
+        pic: string;
         items: Item[]; // Struktur baru
     };
     lokasiList: Array<{ id: number; nama: string }>;
@@ -212,11 +214,36 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
 export default function BarangKeluarEdit() {
     const { barangKeluar, lokasiList, kategoriList, merekList, modelList, serialNumberList } = usePage<PageProps>().props;
 
+    const [subLokasiOptions, setSubLokasiOptions] = useState<{ id: number; nama: string; lantai: string | null }[]>([]);
+    const [loadingSubLokasi, setLoadingSubLokasi] = useState(false);
+
     const { data, setData, put, processing, errors } = useForm({
         tanggal: barangKeluar.tanggal,
         lokasi: barangKeluar.lokasi,
+        sub_lokasi: barangKeluar.sub_lokasi || '',
+        pic: barangKeluar.pic || '',
         items: barangKeluar.items, // Inisialisasi dengan struktur items yang baru
     });
+
+    // Fetch sub-lokasi ketika lokasi berubah
+    useEffect(() => {
+        if (data.lokasi) {
+            const lokasiId = lokasiList.find((l) => l.nama === data.lokasi)?.id;
+            if (lokasiId) {
+                setLoadingSubLokasi(true);
+                fetch(`/api/sub-lokasi-by-lokasi?lokasi_id=${lokasiId}`)
+                    .then((res) => res.json())
+                    .then((result) => {
+                        setSubLokasiOptions(result);
+                    })
+                    .finally(() => setLoadingSubLokasi(false));
+            } else {
+                setSubLokasiOptions([]);
+            }
+        } else {
+            setSubLokasiOptions([]);
+        }
+    }, [data.lokasi, lokasiList]);
 
     const handleItemChange = (index: number, updatedItem: Item) => {
         const newItems = [...data.items];
@@ -267,7 +294,7 @@ export default function BarangKeluarEdit() {
                 <h1 className="mb-4 text-2xl font-bold">Edit Transaksi Barang Keluar</h1>
                 <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-md">
                     {/* Header Form (Tanggal & Lokasi) */}
-                    <div className="mb-6 grid grid-cols-1 gap-6 border-b pb-6 md:grid-cols-2">
+                    <div className="mb-6 grid grid-cols-1 gap-6 border-b pb-6 md:grid-cols-2 lg:grid-cols-4">
                         <div>
                             <label>Tanggal</label>
                             <input
@@ -280,19 +307,53 @@ export default function BarangKeluarEdit() {
                         </div>
                         <div>
                             <label>Tujuan Distribusi</label>
-                            <input
-                                type="text"
-                                list="lokasi-suggest"
+                            <select
                                 className="mt-1 w-full rounded border p-2"
                                 value={data.lokasi}
-                                onChange={(e) => setData('lokasi', e.target.value)}
-                            />
-                            <datalist id="lokasi-suggest">
+                                onChange={(e) => {
+                                    setData('lokasi', e.target.value);
+                                    setData('sub_lokasi', '');
+                                }}
+                            >
+                                <option value="">-- Pilih Lokasi Tujuan --</option>
                                 {lokasiList.map((l) => (
-                                    <option key={l.id} value={l.nama} />
+                                    <option key={l.id} value={l.nama}>
+                                        {l.nama}
+                                    </option>
                                 ))}
-                            </datalist>
+                            </select>
                             {errors.lokasi && <p className="text-sm text-red-500">{errors.lokasi}</p>}
+                        </div>
+                        <div>
+                            <label>
+                                Sub-Lokasi
+                                {loadingSubLokasi && <span className="ml-2 text-xs text-gray-400">(memuat...)</span>}
+                            </label>
+                            <select
+                                className="mt-1 w-full rounded border p-2 disabled:bg-gray-100"
+                                value={data.sub_lokasi}
+                                onChange={(e) => setData('sub_lokasi', e.target.value)}
+                                disabled={!data.lokasi || subLokasiOptions.length === 0}
+                            >
+                                <option value="">-- Pilih Sub-Lokasi --</option>
+                                {subLokasiOptions.map((s) => (
+                                    <option key={s.id} value={s.nama}>
+                                        {s.nama} {s.lantai ? `(Lt. ${s.lantai})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.sub_lokasi && <p className="text-sm text-red-500">{errors.sub_lokasi}</p>}
+                        </div>
+                        <div>
+                            <label>PIC (Penanggung Jawab)</label>
+                            <input
+                                type="text"
+                                className="mt-1 w-full rounded border p-2"
+                                value={data.pic}
+                                onChange={(e) => setData('pic', e.target.value)}
+                                placeholder="Nama penanggung jawab..."
+                            />
+                            {errors.pic && <p className="text-sm text-red-500">{errors.pic}</p>}
                         </div>
                     </div>
 
