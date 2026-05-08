@@ -30,17 +30,20 @@ interface Paginator<T> {
 interface LaporanBarangMasukProps extends PageProps {
     auth: { user: User };
     barangMasukData: Paginator<BarangMasukItem>;
+    lokasiList: { id: number; nama: string }[];
     filters: {
         start_date?: string;
         end_date?: string;
+        lokasi_id?: string;
         search?: string;
     };
 }
 
-export default function LaporanBarangMasuk({ auth, barangMasukData, filters }: LaporanBarangMasukProps) {
+export default function LaporanBarangMasuk({ auth, barangMasukData, lokasiList, filters }: LaporanBarangMasukProps) {
     const { data, setData, get, reset } = useForm({
         start_date: filters.start_date || '',
         end_date: filters.end_date || '',
+        lokasi_id: filters.lokasi_id || '',
         search: filters.search || '',
     });
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -99,9 +102,28 @@ export default function LaporanBarangMasuk({ auth, barangMasukData, filters }: L
                                 className="w-full rounded border border-gray-300 p-2 text-sm"
                             />
                         </div>
+                        <div>
+                            <label htmlFor="lokasi_id" className="mb-1 block text-sm text-gray-600">
+                                Lokasi
+                            </label>
+                            <select
+                                id="lokasi_id"
+                                name="lokasi_id"
+                                value={data.lokasi_id}
+                                onChange={(e) => setData('lokasi_id', e.target.value)}
+                                className="w-full rounded border border-gray-300 p-2 text-sm"
+                            >
+                                <option value="">Semua Lokasi</option>
+                                {lokasiList.map((loc) => (
+                                    <option key={loc.id} value={loc.id}>
+                                        {loc.nama}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         <div className="sm:col-span-2">
                             <label htmlFor="search" className="mb-1 block text-sm text-gray-600">
-                                Cari (SN, Model, Merek, Lokasi)
+                                Cari (SN, Model, Merek)
                             </label>
                             <input
                                 type="text"

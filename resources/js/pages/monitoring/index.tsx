@@ -16,6 +16,7 @@ type Barang = {
         nama: string;
         merek: { id: number; nama: string } | null;
         kategori: { id: number; nama: string } | null;
+        jenis: { id: number; nama: string } | null;
     } | null;
     jenis_barang: { id: number; nama: string } | null;
 };
@@ -281,7 +282,7 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                                                         {item.model_barang?.nama || '-'}
                                                     </div>
                                                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                        {item.model_barang?.merek?.nama} • {item.model_barang?.kategori?.nama}
+                                                        {item.model_barang?.merek?.nama} • {item.model_barang?.kategori?.nama} • {item.model_barang?.jenis?.nama || '-'}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3">

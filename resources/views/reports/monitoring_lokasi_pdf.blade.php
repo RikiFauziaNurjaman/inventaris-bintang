@@ -84,7 +84,7 @@
                     <td>{{ strtoupper(($barang->modelBarang->merek->nama ?? '') . ' ' . ($barang->modelBarang->nama ?? '')) }}</td>
                     <td>{{ $barang->serial_number ?: '-' }}</td>
                     <td>{{ strtoupper($barang->modelBarang->jenis->nama ?? '-') }}</td>
-                    <td class="text-center">{{ strtoupper($tanggalPenempatan) }}</td>
+                    <td>{{ strtoupper($tanggalPenempatan) }}</td>
                     <td>{{ strtoupper($barang->subLokasi->nama ?? '-') }}</td>
                 </tr>
             @empty

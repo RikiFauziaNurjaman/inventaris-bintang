@@ -15,9 +15,10 @@ class MonitoringController extends Controller
     public function index(Request $request)
     {
         $query = Barang::with([
-            'modelBarang:id,nama,merek_id,kategori_id',
+            'modelBarang:id,nama,merek_id,kategori_id,jenis_id',
             'modelBarang.merek:id,nama',
             'modelBarang.kategori:id,nama',
+            'modelBarang.jenis:id,nama',
             'jenisBarang:id,nama',
             'lokasi:id,nama',
             'subLokasi:id,nama,kode,lantai',
@@ -74,7 +75,9 @@ class MonitoringController extends Controller
             'baik' => Barang::where('status', 'baik')->count(),
             'rusak' => Barang::where('status', 'rusak')->count(),
             'diperbaiki' => Barang::where('status', 'diperbaiki')->count(),
-            'terdistribusi' => Barang::whereNotNull('lokasi_id')->where('lokasi_id', '!=', 1)->count(), // Assume 1 is gudang
+            'terdistribusi' => Barang::whereHas('lokasi', function($q) {
+                $q->where('is_gudang', false);
+            })->count(),
         ];
 
         return Inertia::render('monitoring/index', [
@@ -93,7 +96,7 @@ class MonitoringController extends Controller
     public function showLokasi(Request $request, Lokasi $lokasi)
     {
         $query = Barang::with([
-            'modelBarang:id,nama,merek_id,kategori_id,label',
+            'modelBarang:id,nama,merek_id,kategori_id,label,jenis_id',
             'modelBarang.merek:id,nama',
             'modelBarang.kategori:id,nama',
             'modelBarang.jenis:id,nama',
@@ -186,7 +189,7 @@ class MonitoringController extends Controller
     public function exportPdf(Request $request, Lokasi $lokasi)
     {
         $query = Barang::with([
-            'modelBarang:id,nama,merek_id,kategori_id,label',
+            'modelBarang:id,nama,merek_id,kategori_id,label,jenis_id',
             'modelBarang.merek:id,nama',
             'modelBarang.kategori:id,nama',
             'modelBarang.jenis:id,nama',

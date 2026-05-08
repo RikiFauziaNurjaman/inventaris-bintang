@@ -1,12 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Barang Masuk</title>
-   <style>
+    <style>
         body {
-            font-family: 'Helvetica', sans-serif;
+            font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 10px;
+            color: #333;
         }
         .header {
             text-align: center;
@@ -23,60 +26,79 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 20px;
         }
         th, td {
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             padding: 6px;
             text-align: left;
         }
         th {
             background-color: #f2f2f2;
             font-weight: bold;
+            text-align: center;
+        }
+        .text-center {
+            text-align: center;
         }
         .footer {
             position: fixed;
-            bottom: 0px;
+            bottom: 0;
+            left: 0;
+            right: 0;
             text-align: center;
-            width: 100%;
             font-size: 9px;
-            color: #777;
+            color: #888;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Laporan Barang Masuk</h1>
-        <p>Periode: {{ $filters['start_date'] ?? 'Semua' }} s/d {{ $filters['end_date'] ?? 'Waktu' }}</p>
+        <h1>LAPORAN BARANG MASUK</h1>
+        @if($lokasi)
+            <p>LOKASI: {{ strtoupper($lokasi->nama) }}</p>
+        @endif
+        <p>PERIODE: {{ $filters['start_date'] ?? 'AWAL' }} S/D {{ $filters['end_date'] ?? 'AKHIR' }}</p>
+        <p>TANGGAL CETAK: {{ strtoupper($tanggalCetak) }}</p>
     </div>
+
     <table>
         <thead>
             <tr>
-                <th>Tanggal</th>
-                <th>Serial Number</th>
-                <th>Model</th>
-                <th>Merek</th>
-                <th>Kategori</th>
-                <th>Asal Barang</th>
-                <th>User Penerima</th>
+                <th style="width: 30px;">NO</th>
+                <th>NAMA PRINTER</th>
+                <th>SERIAL NUMBER</th>
+                <th>JENIS PRINTER</th>
+                <th>TANGGAL MASUK</th>
+                @if(!$lokasi)
+                    <th>LOKASI</th>
+                @endif
+                <th>UNIT PENEMPATAN</th>
             </tr>
         </thead>
         <tbody>
-            @forelse ($barangMasukData as $item)
+            @forelse($barangMasukData as $index => $item)
                 <tr>
-                    <td>{{ $item->tanggal }}</td>
-                    <td>{{ $item->serial_number }}</td>
-                    <td>{{ $item->model }}</td>
-                    <td>{{ $item->merek }}</td>
-                    <td>{{ $item->kategori }}</td>
-                    <td>{{ $item->asal_barang }}</td>
-                    <td>{{ $item->nama_user }}</td>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td>{{ strtoupper($item->merek_nama_real == $item->model_nama_real ? $item->model_nama_real : ($item->merek_nama_real . ' ' . $item->model_nama_real)) }}</td>
+                    <td>{{ $item->serial_number ?: '-' }}</td>
+                    <td>{{ strtoupper($item->jenis_nama ?? '-') }}</td>
+                    <td class="text-center">{{ $item->tanggal }}</td>
+                    @if(!$lokasi)
+                        <td>{{ strtoupper($item->lokasi_nama ?? '-') }}</td>
+                    @endif
+                    <td>{{ strtoupper($item->sub_lokasi_nama ?? '-') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" style="text-align: center;">Tidak ada data ditemukan.</td>
+                    <td colspan="{{ $lokasi ? 6 : 7 }}" class="text-center">Tidak ada data yang ditemukan.</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
+
+    <div class="footer">
+        Dicetak oleh Sistem Manajemen Inventaris - Laporan Barang Masuk
+    </div>
 </body>
 </html>

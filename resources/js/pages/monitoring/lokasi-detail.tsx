@@ -1,18 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    AlertTriangle,
-    ArrowLeft,
-    Boxes,
-    ChevronDown,
-    ChevronUp,
-    Filter,
-    MapPin,
-    Package,
-    Printer,
-    Search,
-    Wrench,
-} from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Boxes, ChevronDown, ChevronUp, Filter, MapPin, Package, Printer, Search, Wrench } from 'lucide-react';
 import { useState } from 'react';
 
 type SubLokasi = { id: number; nama: string; kode: string | null; lantai: string | null };
@@ -228,19 +216,11 @@ export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subL
                                                         {m.total} unit
                                                     </span>
                                                     {m.baik > 0 && (
-                                                        <span className="text-xs text-emerald-600 dark:text-emerald-400">
-                                                            {m.baik} baik
-                                                        </span>
+                                                        <span className="text-xs text-emerald-600 dark:text-emerald-400">{m.baik} baik</span>
                                                     )}
-                                                    {m.rusak > 0 && (
-                                                        <span className="text-xs text-red-600 dark:text-red-400">
-                                                            {m.rusak} rusak
-                                                        </span>
-                                                    )}
+                                                    {m.rusak > 0 && <span className="text-xs text-red-600 dark:text-red-400">{m.rusak} rusak</span>}
                                                     {m.diperbaiki > 0 && (
-                                                        <span className="text-xs text-amber-600 dark:text-amber-400">
-                                                            {m.diperbaiki} perbaiki
-                                                        </span>
+                                                        <span className="text-xs text-amber-600 dark:text-amber-400">{m.diperbaiki} perbaiki</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -253,25 +233,16 @@ export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subL
 
                     {/* Filter Bar */}
                     <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-                        <button
-                            onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className="flex w-full items-center justify-between px-5 py-3.5"
-                        >
+                        <button onClick={() => setIsFilterOpen(!isFilterOpen)} className="flex w-full items-center justify-between px-5 py-3.5">
                             <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                                 <Filter size={16} />
                                 Filter & Pencarian
-                                {hasActiveFilter && (
-                                    <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-                                )}
+                                {hasActiveFilter && <span className="h-2 w-2 rounded-full bg-blue-500"></span>}
                             </div>
-                            {isFilterOpen ? (
-                                <ChevronUp size={16} className="text-gray-400" />
-                            ) : (
-                                <ChevronDown size={16} className="text-gray-400" />
-                            )}
+                            {isFilterOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
                         </button>
                         {isFilterOpen && (
-                            <div className="border-t border-gray-100 px-5 pb-4 pt-3 dark:border-zinc-800">
+                            <div className="border-t border-gray-100 px-5 pt-3 pb-4 dark:border-zinc-800">
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                     {/* Search */}
                                     <div className="relative">
@@ -356,6 +327,9 @@ export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subL
                                             Kategori
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                                            Jenis
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                             Sub-Lokasi
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
@@ -402,6 +376,11 @@ export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subL
                                                 <td className="px-4 py-3">
                                                     <span className="text-sm text-gray-700 dark:text-gray-300">
                                                         {item.model_barang?.kategori?.nama || '-'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                        {item.model_barang?.jenis?.nama || '-'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
