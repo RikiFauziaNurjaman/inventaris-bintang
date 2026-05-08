@@ -5,12 +5,9 @@ import { useState } from 'react';
 import { DetailStokModal } from './detail';
 
 interface StokDistribusiItem {
-    model_id: number;
     lokasi_id: number;
     lokasi: string;
-    kategori: string;
-    merek: string;
-    model: string;
+    models: string[];
     jumlah_tersedia: number;
 }
 
@@ -67,9 +64,8 @@ export default function Index({ stokDistribusi }: Props) {
                             <tr>
                                 <th className="border-b p-3 text-left text-sm font-medium text-gray-600">No</th>
                                 <th className="border-b p-3 text-left text-sm font-medium text-gray-600">Lokasi</th>
-                                <th className="border-b p-3 text-left text-sm font-medium text-gray-600">Kategori</th>
                                 <th className="border-b p-3 text-left text-sm font-medium text-gray-600">Nama Barang</th>
-                                <th className="border-b p-3 text-right text-sm font-medium text-gray-600">Jumlah</th>
+                                <th className="border-b p-3 text-center text-sm font-medium text-gray-600">Jumlah Total</th>
 
                                 <th className="border-b p-3 text-center text-sm font-medium text-gray-600">Lokasi</th>
                             </tr>
@@ -77,12 +73,17 @@ export default function Index({ stokDistribusi }: Props) {
                         <tbody>
                             {stokDistribusi.map((item, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
-                                    <td className="border-b p-3 text-sm">{index + 1}</td>
-                                    <td className="border-b p-3 text-sm">{item.lokasi}</td>
-                                    <td className="border-b p-3 text-sm">{item.kategori}</td>
-                                    <td className="border-b p-3 text-sm">{[item.merek, item.model].filter(Boolean).join(' ')}</td>
-                                    <td className="border-b p-3 text-right text-sm">{item.jumlah_tersedia}</td>
-                                    <td className="border-b p-3 text-center">
+                                    <td className="border-b p-3 align-top text-sm">{index + 1}</td>
+                                    <td className="border-b p-3 align-top text-sm">{item.lokasi}</td>
+                                    <td className="border-b p-3 align-top text-sm">
+                                        {item.models.map((model, idx) => (
+                                            <div key={idx} className="mb-1">
+                                                {model}
+                                            </div>
+                                        ))}
+                                    </td>
+                                    <td className="border-b p-3 text-center align-top text-sm font-semibold">{item.jumlah_tersedia}</td>
+                                    <td className="border-b p-3 text-center align-top">
                                         <Link
                                             href={route('monitoring.lokasi.detail', item.lokasi_id)}
                                             className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20"

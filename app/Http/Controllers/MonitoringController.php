@@ -14,52 +14,67 @@ class MonitoringController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Barang::with([
-            'modelBarang:id,nama,merek_id,kategori_id,jenis_id',
-            'modelBarang.merek:id,nama',
-            'modelBarang.kategori:id,nama',
-            'modelBarang.jenis:id,nama',
-            'jenisBarang:id,nama',
-            'lokasi:id,nama',
-            'subLokasi:id,nama,kode,lantai',
-        ]);
+        $lokasiQuery = Lokasi::whereHas('barang', function ($q) use ($request) {
+            if ($request->filled('lokasi_id')) {
+                $q->where('lokasi_id', $request->lokasi_id);
+            }
+            if ($request->filled('sub_lokasi_id')) {
+                $q->where('sub_lokasi_id', $request->sub_lokasi_id);
+            }
+            if ($request->filled('status')) {
+                $q->where('status', $request->status);
+            }
+            if ($request->filled('kategori_id')) {
+                $q->whereHas('modelBarang', function ($q2) use ($request) {
+                    $q2->where('kategori_id', $request->kategori_id);
+                });
+            }
+        });
 
-        // Filter by lokasi
+        // Optional: Jika ingin filter lokasi diterapkan ke query Lokasi secara langsung
         if ($request->filled('lokasi_id')) {
-            $query->where('lokasi_id', $request->lokasi_id);
+            $lokasiQuery->where('id', $request->lokasi_id);
         }
 
-        // Filter by sub_lokasi
+        $lokasiPaginated = $lokasiQuery->orderBy('nama')->paginate(25)->withQueryString();
+
+        $lokasiIds = $lokasiPaginated->pluck('id');
+
+        $aggregatesQuery = Barang::whereIn('lokasi_id', $lokasiIds)
+            ->with(['modelBarang.merek', 'modelBarang:id,nama,merek_id']);
+
         if ($request->filled('sub_lokasi_id')) {
-            $query->where('sub_lokasi_id', $request->sub_lokasi_id);
+            $aggregatesQuery->where('sub_lokasi_id', $request->sub_lokasi_id);
         }
-
-        // Filter by kondisi/status
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $aggregatesQuery->where('status', $request->status);
         }
-
-        // Filter by kategori
         if ($request->filled('kategori_id')) {
-            $query->whereHas('modelBarang', function ($q) use ($request) {
+            $aggregatesQuery->whereHas('modelBarang', function ($q) use ($request) {
                 $q->where('kategori_id', $request->kategori_id);
             });
         }
 
-        // Search by serial number
-        if ($request->filled('search')) {
-            $search = strtolower($request->search);
-            $query->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(serial_number) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(pic) LIKE ?', ["%{$search}%"]);
-            });
-        }
+        $aggregates = $aggregatesQuery->get()->groupBy('lokasi_id');
 
-        $barang = $query->orderBy('lokasi_id')
-            ->orderBy('sub_lokasi_id')
-            ->orderBy('serial_number')
-            ->paginate(25)
-            ->withQueryString();
+        $lokasiPaginated->setCollection(
+            $lokasiPaginated->getCollection()->map(function ($lokasi) use ($aggregates) {
+                $items = $aggregates->get($lokasi->id, collect());
+                
+                $models = $items->map(function ($item) {
+                    $merek = $item->modelBarang->merek->nama ?? '';
+                    $model = $item->modelBarang->nama ?? '';
+                    return trim($merek . ' ' . $model);
+                })->unique()->filter()->values()->toArray();
+
+                return [
+                    'id' => $lokasi->id,
+                    'nama' => $lokasi->nama,
+                    'models' => $models,
+                    'jumlah' => $items->count(),
+                ];
+            })
+        );
 
         // Get filter options
         $lokasiList = Lokasi::select('id', 'nama')->orderBy('nama')->get();
@@ -81,11 +96,11 @@ class MonitoringController extends Controller
         ];
 
         return Inertia::render('monitoring/index', [
-            'barang' => $barang,
+            'lokasiPaginated' => $lokasiPaginated,
             'lokasiList' => $lokasiList,
             'subLokasiList' => $subLokasiList,
             'kategoriList' => $kategoriList,
-            'filters' => $request->only(['lokasi_id', 'sub_lokasi_id', 'status', 'kategori_id', 'search']),
+            'filters' => $request->only(['lokasi_id', 'sub_lokasi_id', 'status', 'kategori_id']),
             'stats' => $stats,
         ]);
     }

@@ -3232,6 +3232,8 @@ namespace App\Models {
      * @property int $id
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\RekapStokBarang> $stok
      * @property-read int|null $stok_count
+     * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Barang> $barang
+     * @property-read int|null $barang_count
      * @method static \Illuminate\Database\Eloquent\Builder<Lokasi>|Lokasi whereId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Lokasi>|Lokasi whereNama($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Lokasi>|Lokasi whereAlamat($value)

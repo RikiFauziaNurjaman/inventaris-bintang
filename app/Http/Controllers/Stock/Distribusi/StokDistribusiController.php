@@ -19,7 +19,6 @@ class StokDistribusiController extends Controller
                 'lokasi' => function ($q) {
                     $q->where('is_gudang', false); // Hanya lokasi selain gudang
                 },
-                'modelBarang.kategori',
                 'modelBarang.merek',
             ])
             ->whereHas('lokasi', function ($q) {
@@ -27,17 +26,22 @@ class StokDistribusiController extends Controller
             })
             ->where('jumlah_tersedia', '>', 0) // Hanya stok tersedia
             ->get()
-            ->map(function ($item) {
+            ->groupBy('lokasi_id')
+            ->map(function ($items) {
+                $first = $items->first();
+                $models = $items->map(function ($item) {
+                    $merek = $item->modelBarang->merek->nama ?? '';
+                    $model = $item->modelBarang->nama ?? '';
+                    return trim($merek . ' ' . $model);
+                })->unique()->toArray();
+
                 return [
-                    'lokasi_id' => $item->lokasi->id,
-                    'model_id' => $item->modelBarang->id,
-                    'lokasi' => $item->lokasi->nama,
-                    'kategori' => $item->modelBarang->kategori->nama ?? '-',
-                    'merek' => $item->modelBarang->merek->nama ?? '-',
-                    'model' => $item->modelBarang->nama,
-                    'jumlah_tersedia' => $item->jumlah_tersedia,
+                    'lokasi_id' => $first->lokasi->id,
+                    'lokasi' => $first->lokasi->nama,
+                    'models' => $models,
+                    'jumlah_tersedia' => $items->sum('jumlah_tersedia'),
                 ];
-            });
+            })->values();
 
         return Inertia::render('stock/distribusi/index', [
             'stokDistribusi' => $stokDistribusi,
@@ -50,7 +54,6 @@ class StokDistribusiController extends Controller
                 'lokasi' => function ($q) {
                     $q->where('is_gudang', false);
                 },
-                'modelBarang.kategori',
                 'modelBarang.merek',
             ])
             ->whereHas('lokasi', function ($q) {
@@ -58,15 +61,21 @@ class StokDistribusiController extends Controller
             })
             ->where('jumlah_tersedia', '>', 0)
             ->get()
-            ->map(function ($item) {
+            ->groupBy('lokasi_id')
+            ->map(function ($items) {
+                $first = $items->first();
+                $models = $items->map(function ($item) {
+                    $merek = $item->modelBarang->merek->nama ?? '';
+                    $model = $item->modelBarang->nama ?? '';
+                    return trim($merek . ' ' . $model);
+                })->unique()->toArray();
+
                 return [
-                    'lokasi' => $item->lokasi->nama,
-                    'kategori' => $item->modelBarang->kategori->nama ?? '-',
-                    'merek' => $item->modelBarang->merek->nama ?? '-',
-                    'model' => $item->modelBarang->nama,
-                    'jumlah_tersedia' => $item->jumlah_tersedia,
+                    'lokasi' => $first->lokasi->nama,
+                    'models' => $models,
+                    'jumlah_tersedia' => $items->sum('jumlah_tersedia'),
                 ];
-            });
+            })->values();
 
         $data = [
             'stokDistribusi' => $stokDistribusi,

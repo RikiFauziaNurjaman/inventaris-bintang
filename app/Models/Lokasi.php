@@ -16,4 +16,9 @@ class Lokasi extends Model
     {
         return $this->hasMany(RekapStokBarang::class, 'lokasi_id');
     }
+
+    public function barang()
+    {
+        return $this->hasMany(Barang::class, 'lokasi_id');
+    }
 }

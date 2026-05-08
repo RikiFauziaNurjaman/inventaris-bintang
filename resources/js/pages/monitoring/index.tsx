@@ -3,27 +3,16 @@ import { Head, Link, router } from '@inertiajs/react';
 import { AlertTriangle, ExternalLink, Filter, MapPin, Package, Search, Wrench } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-type Barang = {
+type LokasiGroup = {
     id: number;
-    serial_number: string;
-    status: 'baik' | 'rusak' | 'diperbaiki';
-    pic: string | null;
-    catatan: string | null;
-    lokasi: { id: number; nama: string } | null;
-    sub_lokasi: { id: number; nama: string; kode: string | null; lantai: string | null } | null;
-    model_barang: {
-        id: number;
-        nama: string;
-        merek: { id: number; nama: string } | null;
-        kategori: { id: number; nama: string } | null;
-        jenis: { id: number; nama: string } | null;
-    } | null;
-    jenis_barang: { id: number; nama: string } | null;
+    nama: string;
+    models: string[];
+    jumlah: number;
 };
 
 type Props = {
-    barang: {
-        data: Barang[];
+    lokasiPaginated: {
+        data: LokasiGroup[];
         links: { url: string | null; label: string; active: boolean }[];
         total: number;
         current_page: number;
@@ -37,7 +26,6 @@ type Props = {
         sub_lokasi_id: string;
         status: string;
         kategori_id: string;
-        search: string;
     };
     stats: {
         total: number;
@@ -48,7 +36,7 @@ type Props = {
     };
 };
 
-export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kategoriList, filters, stats }: Props) {
+export default function MonitoringIndex({ lokasiPaginated, lokasiList, subLokasiList, kategoriList, filters, stats }: Props) {
     const [localFilters, setLocalFilters] = useState(filters);
     const [filteredSubLokasi, setFilteredSubLokasi] = useState(subLokasiList);
 
@@ -73,7 +61,7 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
     };
 
     const clearFilters = () => {
-        const emptyFilters = { lokasi_id: '', sub_lokasi_id: '', status: '', kategori_id: '', search: '' };
+        const emptyFilters = { lokasi_id: '', sub_lokasi_id: '', status: '', kategori_id: '' };
         setLocalFilters(emptyFilters);
         router.get(route('monitoring.index'), emptyFilters, { preserveState: true, replace: true });
     };
@@ -144,18 +132,7 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                             <Filter size={16} />
                             Filter
                         </div>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                            {/* Search */}
-                            <div className="relative">
-                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Cari serial, PIC..."
-                                    value={localFilters.search || ''}
-                                    onChange={(e) => handleFilter('search', e.target.value)}
-                                    className="w-full rounded-lg border border-gray-300 py-2 pr-3 pl-9 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                                />
-                            </div>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
                             {/* Lokasi */}
                             <select
@@ -214,8 +191,7 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                         </div>
 
                         {/* Clear filters button */}
-                        {(localFilters.search ||
-                            localFilters.lokasi_id ||
+                        {(localFilters.lokasi_id ||
                             localFilters.sub_lokasi_id ||
                             localFilters.status ||
                             localFilters.kategori_id) && (
@@ -235,22 +211,13 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                                             No
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                            Serial Number
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                            Barang
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                             Lokasi
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                            Sub-Lokasi
+                                            Nama Barang
                                         </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                            PIC
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
-                                            Kondisi
+                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                                            Jumlah
                                         </th>
                                         <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
                                             Aksi
@@ -258,71 +225,47 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
-                                    {barang.data.length === 0 ? (
+                                    {lokasiPaginated.data.length === 0 ? (
                                         <tr>
-                                            <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                                            <td colSpan={5} className="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
                                                 <Package className="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
                                                 <p className="font-medium">Tidak ada data</p>
-                                                <p className="text-xs">Coba ubah filter atau hapus pencarian</p>
+                                                <p className="text-xs">Coba ubah filter</p>
                                             </td>
                                         </tr>
                                     ) : (
-                                        barang.data.map((item, index) => (
+                                        lokasiPaginated.data.map((item, index) => (
                                             <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
-                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                    {(barang.current_page - 1) * barang.per_page + index + 1}
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm align-top text-gray-500 dark:text-gray-400">
+                                                    {(lokasiPaginated.current_page - 1) * lokasiPaginated.per_page + index + 1}
                                                 </td>
-                                                <td className="px-4 py-3 whitespace-nowrap">
-                                                    <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
-                                                        {item.serial_number}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                        {item.model_barang?.nama || '-'}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                        {item.model_barang?.merek?.nama} • {item.model_barang?.kategori?.nama} • {item.model_barang?.jenis?.nama || '-'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-1.5 text-sm text-gray-900 dark:text-white">
+                                                <td className="px-4 py-3 align-top">
+                                                    <div className="flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-white">
                                                         <MapPin size={14} className="text-gray-400" />
-                                                        <Link
-                                                            href={route('monitoring.lokasi.detail', item.lokasi?.id)}
-                                                            className="font-medium text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                                                        >
-                                                            {item.lokasi?.nama || <span className="text-gray-400">Gudang</span>}
-                                                        </Link>
+                                                        {item.nama}
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    {item.sub_lokasi ? (
-                                                        <div>
-                                                            <div className="text-sm text-gray-900 dark:text-white">{item.sub_lokasi.nama}</div>
-                                                            {item.sub_lokasi.lantai && (
-                                                                <div className="text-xs text-gray-500">Lt. {item.sub_lokasi.lantai}</div>
-                                                            )}
-                                                        </div>
+                                                <td className="px-4 py-3 align-top text-sm text-gray-900 dark:text-white">
+                                                    {item.models.length > 0 ? (
+                                                        item.models.map((model, idx) => (
+                                                            <div key={idx} className="mb-1">{model}</div>
+                                                        ))
                                                     ) : (
-                                                        <span className="text-sm text-gray-400">-</span>
+                                                        <span className="text-gray-400">-</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    <span className="text-sm text-gray-900 dark:text-white">{item.pic || '-'}</span>
+                                                <td className="px-4 py-3 align-top text-center">
+                                                    <span className="font-semibold text-gray-900 dark:text-white">{item.jumlah}</span>
                                                 </td>
-                                                <td className="px-4 py-3">{getStatusBadge(item.status)}</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    {item.lokasi && (
-                                                        <Link
-                                                            href={route('monitoring.lokasi.detail', item.lokasi.id)}
-                                                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                                            title="Lihat detail lokasi"
-                                                        >
-                                                            <ExternalLink size={14} />
-                                                            Detail
-                                                        </Link>
-                                                    )}
+                                                <td className="px-4 py-3 align-top text-center">
+                                                    <Link
+                                                        href={route('monitoring.lokasi.detail', item.id)}
+                                                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                        title="Lihat detail lokasi"
+                                                    >
+                                                        <ExternalLink size={14} />
+                                                        Detail Lokasi
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))
@@ -332,13 +275,13 @@ export default function MonitoringIndex({ barang, lokasiList, subLokasiList, kat
                         </div>
 
                         {/* Pagination */}
-                        {barang.links && barang.links.length > 3 && (
+                        {lokasiPaginated.links && lokasiPaginated.links.length > 3 && (
                             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 bg-gray-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800">
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    Menampilkan {barang.data.length} dari {barang.total} unit
+                                    Menampilkan {lokasiPaginated.data.length} dari {lokasiPaginated.total} lokasi
                                 </div>
                                 <div className="flex flex-wrap gap-1">
-                                    {barang.links.map((link, i) => (
+                                    {lokasiPaginated.links.map((link, i) => (
                                         <button
                                             key={i}
                                             onClick={() => link.url && router.get(link.url)}
