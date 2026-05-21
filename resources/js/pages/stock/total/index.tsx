@@ -8,6 +8,7 @@ export default function BarangIndex() {
 
     const [search, setSearch] = useState(filters.search || '');
     const [kategori, setKategori] = useState(filters.kategori || '');
+    const [jenis, setJenis] = useState(filters.jenis || '');
     const [lokasi, setLokasi] = useState(filters.lokasi || '');
     const [status, setStatus] = useState(filters.status || '');
     const [kondisi, setKondisi] = useState(filters.kondisi || '');
@@ -17,16 +18,17 @@ export default function BarangIndex() {
             const query = {
                 search: nextValue,
                 kategori,
+                jenis,
                 lokasi,
                 status,
                 kondisi,
             };
-            router.get(route('barang.index'), query, {
+            router.get(route('total-stock.index'), query, {
                 preserveState: true,
                 preserveScroll: true,
             });
         }, 400),
-        [kategori, lokasi, status, kondisi],
+        [kategori, jenis, lokasi, status, kondisi],
     );
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,13 +41,14 @@ export default function BarangIndex() {
         const query = {
             search,
             kategori,
+            jenis,
             lokasi,
             status,
             kondisi,
             [key]: value,
         };
 
-        router.get(route('barang.index'), query, {
+        router.get(route('total-stock.index'), query, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -54,12 +57,13 @@ export default function BarangIndex() {
     const handleReset = () => {
         setSearch('');
         setKategori('');
+        setJenis('');
         setLokasi('');
         setStatus('');
         setKondisi('');
 
         router.get(
-            route('barang.index'),
+            route('total-stock.index'),
             {},
             {
                 preserveState: false,
@@ -92,6 +96,7 @@ export default function BarangIndex() {
         const queryParams = {
             search,
             kategori,
+            jenis,
             lokasi,
             status,
             kondisi,
@@ -168,6 +173,21 @@ export default function BarangIndex() {
                         ))}
                     </select>
                     <select
+                        value={jenis}
+                        onChange={(e) => {
+                            setJenis(e.target.value);
+                            updateFilter('jenis', e.target.value);
+                        }}
+                        className="rounded border px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    >
+                        <option value="">Semua Jenis</option>
+                        {filterOptions.jenisList?.map((item) => (
+                            <option key={item} value={item}>
+                                {item}
+                            </option>
+                        ))}
+                    </select>
+                    <select
                         value={lokasi}
                         onChange={(e) => {
                             setLokasi(e.target.value);
@@ -237,6 +257,7 @@ export default function BarangIndex() {
                             <th className="border px-3 py-1">Nama</th>
                             <th className="border px-3 py-1">Merek + Model</th>
                             <th className="border px-3 py-1">Kategori</th>
+                            <th className="border px-3 py-1">Jenis</th>
                             <th className="border px-3 py-1">Rak</th>
                             <th className="border px-2 py-1">Kode Rak</th>
                             <th className="border px-3 py-1">Baris</th>
@@ -254,6 +275,7 @@ export default function BarangIndex() {
                                 <td className="border px-3 py-1">{item.label}</td>
                                 <td className="border px-3 py-1">{item.merek_model}</td>
                                 <td className="border px-3 py-1">{item.kategori}</td>
+                                <td className="border px-3 py-1">{item.jenis}</td>
                                 <td className="border px-3 py-1">{item.nama_rak}</td>
                                 <td className="border px-2 py-1">{item.kode_rak}</td>
                                 <td className="border px-3 py-1">{item.baris}</td>

@@ -27,6 +27,7 @@ class TotalStockController extends Controller
         // 5. Siapkan opsi untuk dropdown filter di frontend
         $filterOptions = [
             'kategoriList' => DB::table('kategori_barang')->orderBy('nama')->pluck('nama'),
+            'jenisList'    => DB::table('jenis_barang')->orderBy('nama')->pluck('nama'),
             'lokasiList'   => DB::table('lokasi')->orderBy('nama')->pluck('nama'),
             'statusList'   => DB::table('barang')->distinct()->pluck('status'),
             'kondisiList'  => DB::table('barang')->distinct()->pluck('kondisi_awal'),
@@ -34,7 +35,7 @@ class TotalStockController extends Controller
 
         return Inertia::render('stock/total/index', [
             'barangList'    => $barang,
-            'filters'       => $request->only(['search', 'kategori', 'lokasi', 'status', 'kondisi']),
+            'filters'       => $request->only(['search', 'kategori', 'jenis', 'lokasi', 'status', 'kondisi']),
             'filterOptions' => $filterOptions,
         ]);
     }
@@ -56,7 +57,7 @@ class TotalStockController extends Controller
         // Siapkan data tambahan untuk view PDF
         $data = [
             'barangList'   => $barangList,
-            'filters'      => $request->only(['search', 'kategori', 'lokasi', 'status', 'kondisi']),
+            'filters'      => $request->only(['search', 'kategori', 'jenis', 'lokasi', 'status', 'kondisi']),
             'tanggalCetak' => now()->translatedFormat('d F Y'),
         ];
 
@@ -79,12 +80,17 @@ class TotalStockController extends Controller
                     ->orWhereRaw('LOWER(model_barang.nama) LIKE ?', ["%{$search}%"])
                     ->orWhereRaw('LOWER(merek_barang.nama) LIKE ?', ["%{$search}%"])
                     ->orWhereRaw('LOWER(kategori_barang.nama) LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(jenis_barang.nama) LIKE ?', ["%{$search}%"])
                     ->orWhereRaw('LOWER(lokasi.nama) LIKE ?', ["%{$search}%"]);
             });
         }
 
         if ($kategori = $request->input('kategori')) {
             $query->where('kategori_barang.nama', $kategori);
+        }
+
+        if ($jenis = $request->input('jenis')) {
+            $query->where('jenis_barang.nama', $jenis);
         }
 
         if ($lokasi = $request->input('lokasi')) {
@@ -106,6 +112,7 @@ class TotalStockController extends Controller
             ->leftJoin('model_barang', 'barang.model_id', '=', 'model_barang.id')
             ->leftJoin('merek_barang', 'model_barang.merek_id', '=', 'merek_barang.id')
             ->leftJoin('kategori_barang', 'model_barang.kategori_id', '=', 'kategori_barang.id')
+            ->leftJoin('jenis_barang', 'barang.jenis_barang_id', '=', 'jenis_barang.id')
             ->leftJoin('rak_barang', 'barang.rak_id', '=', 'rak_barang.id')
             ->leftJoin('lokasi', 'barang.lokasi_id', '=', 'lokasi.id')
             ->select([
@@ -116,6 +123,7 @@ class TotalStockController extends Controller
                 'model_barang.nama as model',
                 DB::raw("CONCAT(merek_barang.nama, ' - ', model_barang.nama) AS merek_model"),
                 'kategori_barang.nama as kategori',
+                'jenis_barang.nama as jenis',
                 'rak_barang.nama_rak',
                 'rak_barang.kode_rak',
                 'rak_barang.baris',

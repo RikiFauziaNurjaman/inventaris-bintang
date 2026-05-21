@@ -63,6 +63,7 @@
                 <th style="width: 30px;">NO</th>
                 <th>Lokasi</th>
                 <th>Kategori</th>
+                <th>Jenis</th>
                 <th>Merek</th>
                 <th>Model</th>
                 <th>Serial Number</th>
@@ -75,6 +76,7 @@
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $barang->lokasi ?: '-' }}</td>
                     <td>{{ $barang->kategori ?: '-' }}</td>
+                    <td>{{ $barang->jenis ?: '-' }}</td>
                     <td>{{ $barang->merek ?: '-' }}</td>
                     <td>{{ $barang->model ?: '-' }}</td>
                     <td>{{ $barang->serial_number ?: '-' }}</td>
@@ -82,7 +84,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center">Tidak ada data yang ditemukan.</td>
+                    <td colspan="8" class="text-center">Tidak ada data yang ditemukan.</td>
                 </tr>
             @endforelse
         </tbody>
