@@ -25,6 +25,9 @@ class BarangMasukController extends Controller
 {
     public function index(Request $request)
     {
+        $cacheKey = 'BarangMasukController_' . md5(json_encode(request()->all()));
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
+
         $query = BarangMasuk::with([
             'asal',
             'details.barang.modelBarang.kategori',
@@ -111,7 +114,8 @@ class BarangMasukController extends Controller
                 ];
             });
 
-        return Inertia::render('transaksi/barang-masuk/barang-masuk-index', [
+        
+            return [
             'barangMasuk' => $barangMasukData,
             'filters' => $request->only(
                 'tanggal',
@@ -129,7 +133,10 @@ class BarangMasukController extends Controller
             'modelOptions' => MasterDataHelper::getModelList(),
             'jenisOptions' => MasterDataHelper::getJenisList(),
             'rakOptions' => MasterDataHelper::getRakList(),
-        ]);
+        ];
+        });
+
+        return Inertia::render('transaksi/barang-masuk/barang-masuk-index', $data);
     }
 
     public function getModelByKategoriMerek(Request $request)

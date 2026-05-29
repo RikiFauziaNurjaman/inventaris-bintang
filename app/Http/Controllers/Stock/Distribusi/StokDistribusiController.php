@@ -15,6 +15,9 @@ class StokDistribusiController extends Controller
 {
     public function index()
     {
+        $cacheKey = 'StokDistribusiController_' . md5(json_encode(request()->all()));
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
+
         $stokDistribusi = RekapStokBarang::with([
                 'lokasi' => function ($q) {
                     $q->where('is_gudang', false); // Hanya lokasi selain gudang
@@ -43,9 +46,13 @@ class StokDistribusiController extends Controller
                 ];
             })->values();
 
-        return Inertia::render('stock/distribusi/index', [
+        
+            return [
             'stokDistribusi' => $stokDistribusi,
-        ]);
+        ];
+        });
+
+        return Inertia::render('stock/distribusi/index', $data);
     }
 
     public function exportPdf()

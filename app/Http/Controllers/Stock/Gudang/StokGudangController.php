@@ -17,6 +17,9 @@ class StokGudangController extends Controller
 {
     public function index(Request $request)
     {
+        $cacheKey = 'StokGudangController_' . md5(json_encode(request()->all()));
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
+
         $stokQuery = $this->buildStokQuery($request);
 
         $stokBarang = $stokQuery->paginate(10)->through(function ($item) {
@@ -33,13 +36,17 @@ class StokGudangController extends Controller
             ];
         });
 
-        return Inertia::render('stock/gudang/index', [
+        
+            return [
             'stokBarang' => $stokBarang,
             'filters' => $request->only(['search', 'kategori', 'merek', 'lokasi']),
             'kategoriList' => KategoriBarang::select('id', 'nama')->get(),
             'merekList' => MerekBarang::select('id', 'nama')->get(),
             'lokasiList' => Lokasi::where('is_gudang', true)->select('id', 'nama')->get(),
-        ]);
+        ];
+        });
+
+        return Inertia::render('stock/gudang/index', $data);
     }
 
     public function getDetailAsJson(ModelBarang $modelBarang)

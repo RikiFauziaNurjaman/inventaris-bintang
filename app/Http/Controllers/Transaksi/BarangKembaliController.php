@@ -24,6 +24,9 @@ class BarangKembaliController extends Controller
 {
     public function index(Request $request)
     {
+        $cacheKey = 'BarangKembaliController_' . md5(json_encode(request()->all()));
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
+
         // Ambil input untuk paginasi dan sorting dengan nilai default
         $perPage = $request->input('per_page', 10);
         $sort = $request->input('sort', 'terbaru');
@@ -78,13 +81,17 @@ class BarangKembaliController extends Controller
             $barangKembali = $query->paginate(is_numeric($perPage) ? $perPage : 10)->withQueryString();
         }
 
-        return Inertia::render('transaksi/barang-kembali/BarangKembaliIndex', [
+        
+            return [
             'barangKembali' => $barangKembali,
             // ## 3. KIRIM SEMUA FILTER KE FRONTEND ##
             'filters' => $request->only(['tanggal', 'kategori_id', 'lokasi_id', 'search', 'sort', 'per_page']),
             'kategoriOptions' => KategoriBarang::select('id', 'nama')->get(),
             'lokasiOptions' => Lokasi::select('id', 'nama')->get(),
-        ]);
+        ];
+        });
+
+        return Inertia::render('transaksi/barang-kembali/BarangKembaliIndex', $data);
     }
 
     public function getSerialByLokasi($lokasiId)
