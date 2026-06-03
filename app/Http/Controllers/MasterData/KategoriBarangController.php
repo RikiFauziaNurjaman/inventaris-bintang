@@ -22,6 +22,9 @@ class KategoriBarangController extends Controller
 
     public function index(Request $request)
     {
+        $cacheKey = 'KategoriBarangController_' . md5(json_encode(request()->all()));
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
+
         $kategori = KategoriBarang::applyCaseInsensitiveSearch(
                 $request,
                 ['nama']
@@ -30,15 +33,21 @@ class KategoriBarangController extends Controller
         ->paginate(10)
         ->withQueryString();
 
-        return Inertia::render('master/kategori/index', [
+        
+            return [
             'kategori' => $kategori,
             'filters'   => [
                 'search'    => $request->input('search'),
             ],
-            'flash' => [
-                'message' => session('message'),
-            ]
-        ]);
+        ];
+        });
+
+        // Flash message tidak bisa di-cache, tambahkan di luar cache
+        $data['flash'] = [
+            'message' => session('message'),
+        ];
+
+        return Inertia::render('master/kategori/index', $data);
     }
 
     public function store(Request $request)

@@ -22,21 +22,31 @@ class MerekBarangController extends Controller
 
     public function index(Request $request)
     {
-        $merek = MerekBarang::query()
-            ->applyCaseInsensitiveSearch($request, ['nama'])
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+        $cacheKey = 'MerekBarangController_' . md5(json_encode($request->all()));
+        
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
-        return Inertia::render('master/merek/index', [
-            'merek' => $merek,
-            'filters' => [
-                'search' => $request->input('search'),
-            ],
-            'flash' => [
-                'message' => session('message'),
-            ]
-        ]);
+            $merekPaginator = MerekBarang::query()
+                ->applyCaseInsensitiveSearch($request, ['nama'])
+                ->latest()
+                ->paginate(10)
+                ->withQueryString();
+
+            return [
+                // PERBAIKAN CRITICAL: Simpan dalam bentuk Array murni, bukan Objek Paginator
+                'merek' => $merekPaginator->toArray(), 
+                'filters' => [
+                    'search' => $request->input('search'),
+                ],
+            ];
+        });
+
+        // Flash message tidak bisa di-cache, tambahkan di luar cache
+        $data['flash'] = [
+            'message' => session('message'),
+        ];
+
+        return Inertia::render('master/merek/index', $data);
     }
 
     public function search(Request $request)

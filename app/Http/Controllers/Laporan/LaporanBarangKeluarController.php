@@ -14,6 +14,9 @@ class LaporanBarangKeluarController extends Controller
 {
     public function index(Request $request)
     {
+        $cacheKey = 'LaporanBarangKeluarController_' . md5(json_encode(request()->all()));
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
+
         $query = ViewBarangKeluar::query();
         $filters = $request->only('start_date', 'end_date', 'lokasi_id', 'search');
 
@@ -41,11 +44,15 @@ class LaporanBarangKeluarController extends Controller
 
         $barangKeluarData = $query->orderBy('tanggal', 'desc')->paginate(15)->withQueryString();
 
-        return Inertia::render('laporan/barang-keluar/index', [
+        
+            return [
             'barangKeluarData' => $barangKeluarData,
             'filters' => $filters,
             'lokasiList' => \App\Models\Lokasi::select('id', 'nama')->orderBy('nama')->get(),
-        ]);
+        ];
+        });
+
+        return Inertia::render('laporan/barang-keluar/index', $data);
     }
 
     public function exportBarangKeluarExcel(Request $request)

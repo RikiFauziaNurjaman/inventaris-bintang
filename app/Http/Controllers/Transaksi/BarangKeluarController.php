@@ -30,62 +30,61 @@ class BarangKeluarController extends Controller
         $cacheKey = 'BarangKeluarController_' . md5(json_encode(request()->all()));
         $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
-        $perPage = $request->input('per_page', 10);
-        $sort = $request->input('sort', 'terbaru');
+            $perPage = $request->input('per_page', 10);
+            $sort = $request->input('sort', 'terbaru');
 
-        $query = BarangKeluar::query()
-            ->with([
-                'lokasi',
-                'details.barang.modelBarang' => function ($query) {
-                    $query->with(['merek', 'kategori']);
-                }
-            ])
-            ->when($request->tanggal, fn($q) => $q->whereDate('tanggal', $request->tanggal))
-            ->when($request->lokasi_id, fn($q) => $q->where('lokasi_id', $request->lokasi_id))
-            ->when($request->kategori_id, function ($q) use ($request) {
-                $q->whereHas('details.barang.modelBarang', function ($subQuery) use ($request) {
-                    $subQuery->where('kategori_id', $request->kategori_id);
-                });
-            })
-            ->when($request->search, function ($q) use ($request) {
-                $search = '%' . strtolower($request->search) . '%';
-                $q->where(function ($query) use ($search) {
-                    $query->orWhereHas('details.barang', function ($subQuery) use ($search) {
-                        $subQuery->whereRaw('LOWER(serial_number) ILIKE ?', [$search]);
-                    })
-                    ->orWhereHas('details.barang.modelBarang', function ($subQuery) use ($search) {
-                        $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
-                    })
-                    ->orWhereHas('details.barang.modelBarang.merek', function ($subQuery) use ($search) {
-                        $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
-                    })
-                    ->orWhereHas('details.barang.modelBarang.kategori', function ($subQuery) use ($search) {
-                        $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
+            $query = BarangKeluar::query()
+                ->with([
+                    'lokasi',
+                    'details.barang.modelBarang' => function ($query) {
+                        $query->with(['merek', 'kategori']);
+                    }
+                ])
+                ->when($request->tanggal, fn($q) => $q->whereDate('tanggal', $request->tanggal))
+                ->when($request->lokasi_id, fn($q) => $q->where('lokasi_id', $request->lokasi_id))
+                ->when($request->kategori_id, function ($q) use ($request) {
+                    $q->whereHas('details.barang.modelBarang', function ($subQuery) use ($request) {
+                        $subQuery->where('kategori_id', $request->kategori_id);
+                    });
+                })
+                ->when($request->search, function ($q) use ($request) {
+                    $search = '%' . strtolower($request->search) . '%';
+                    $q->where(function ($query) use ($search) {
+                        $query->orWhereHas('details.barang', function ($subQuery) use ($search) {
+                            $subQuery->whereRaw('LOWER(serial_number) ILIKE ?', [$search]);
+                        })
+                        ->orWhereHas('details.barang.modelBarang', function ($subQuery) use ($search) {
+                            $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
+                        })
+                        ->orWhereHas('details.barang.modelBarang.merek', function ($subQuery) use ($search) {
+                            $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
+                        })
+                        ->orWhereHas('details.barang.modelBarang.kategori', function ($subQuery) use ($search) {
+                            $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
+                        });
                     });
                 });
-            });
 
-        if ($sort === 'terlama') {
-            $query->orderBy('tanggal', 'asc');
-        } else {
-            $query->orderBy('tanggal', 'desc');
-        }
+            if ($sort === 'terlama') {
+                $query->orderBy('tanggal', 'asc');
+            } else {
+                $query->orderBy('tanggal', 'desc');
+            }
 
-        if ($perPage === 'all') {
-            $total = $query->clone()->count();
+            if ($perPage === 'all') {
+                $total = $query->clone()->count();
+                $barangKeluar = $query->paginate($total > 0 ? $total : 10)->withQueryString();
+            } else {
+                $barangKeluar = $query->paginate(is_numeric($perPage) ? $perPage : 10)->withQueryString();
+            }
 
-            $barangKeluar = $query->paginate($total > 0 ? $total : 10)->withQueryString();
-        } else {
-            $barangKeluar = $query->paginate(is_numeric($perPage) ? $perPage : 10)->withQueryString();
-        }
-
-        
             return [
-            'barangKeluar' => $barangKeluar,
-            'filters' => $request->only(['tanggal', 'kategori_id', 'lokasi_id', 'search', 'sort', 'per_page']),
-            'kategoriOptions' => MasterDataHelper::getKategoriList(),
-            'lokasiOptions' => MasterDataHelper::getLokasiList(),
-        ];
+                // PERBAIKAN: Diubah ke array murni agar bebas dari serialization penalty
+                'barangKeluar' => $barangKeluar->toArray(),
+                'filters' => $request->only(['tanggal', 'kategori_id', 'lokasi_id', 'search', 'sort', 'per_page']),
+                'kategoriOptions' => MasterDataHelper::getKategoriList(),
+                'lokasiOptions' => MasterDataHelper::getLokasiList(),
+            ];
         });
 
         return Inertia::render('transaksi/barang-keluar/BarangKeluarIndex', $data);

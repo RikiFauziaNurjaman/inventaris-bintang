@@ -31,6 +31,7 @@ use App\Http\Controllers\Settings\DatabaseController;
 use App\Http\Controllers\Transaksi\BarangKeluarController;
 use App\Http\Controllers\Transaksi\BarangKembaliController;
 use App\Http\Controllers\Transaksi\BarangMasukController;
+use App\Http\Controllers\AiChatController;
 use App\Models\Barang;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -46,7 +47,7 @@ Route::get('/', function () {
     return Redirect::route('login');
 })->name('home');
 
-Route::middleware([\App\Http\Middleware\K6BypassAuth::class])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])
         // ->middleware('can:' . PermissionEnum::VIEW_DASHBOARD->value)
         ->name('dashboard');
@@ -176,27 +177,33 @@ Route::middleware([\App\Http\Middleware\K6BypassAuth::class])->group(function ()
     Route::post('/database/import', [DatabaseController::class, 'import'])->name('database.import');
     Route::get('/database/download/{filename}', [DatabaseController::class, 'download'])->name('database.download');
     Route::delete('/database/{filename}', [DatabaseController::class, 'destroy'])->name('database.destroy');
-});
 
-Route::prefix('laporan')->name('laporan.')->group(function () {
-    Route::get('/', [LaporanSummaryController::class, 'index'])->name('index');
+    // Laporan routes — dipindah ke dalam K6BypassAuth middleware group
+    Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/', [LaporanSummaryController::class, 'index'])->name('index');
 
-    Route::get('/masuk', [LaporanBarangMasukController::class, 'index'])->name('masuk');
-    Route::get('/masuk/excel', [LaporanBarangMasukController::class, 'exportBarangMasukExcel'])->name('masuk.export');
-    Route::get('/masuk/pdf', [LaporanBarangMasukController::class, 'exportBarangMasukPdf'])->name('masuk.pdf');
+        Route::get('/masuk', [LaporanBarangMasukController::class, 'index'])->name('masuk');
+        Route::get('/masuk/excel', [LaporanBarangMasukController::class, 'exportBarangMasukExcel'])->name('masuk.export');
+        Route::get('/masuk/pdf', [LaporanBarangMasukController::class, 'exportBarangMasukPdf'])->name('masuk.pdf');
 
-    Route::get('/keluar', [LaporanBarangKeluarController::class, 'index'])->name('keluar');
-    Route::get('/keluar/excel', [LaporanBarangKeluarController::class, 'exportBarangKeluarExcel'])->name('keluar.export');
-    Route::get('/keluar/pdf', [LaporanBarangKeluarController::class, 'exportBarangKeluarPdf'])->name('keluar.pdf');
+        Route::get('/keluar', [LaporanBarangKeluarController::class, 'index'])->name('keluar');
+        Route::get('/keluar/excel', [LaporanBarangKeluarController::class, 'exportBarangKeluarExcel'])->name('keluar.export');
+        Route::get('/keluar/pdf', [LaporanBarangKeluarController::class, 'exportBarangKeluarPdf'])->name('keluar.pdf');
 
-    Route::get('/kembali', [LaporanBarangKembaliController::class, 'index'])->name('kembali');
-    Route::get('/kembali/excel', [LaporanBarangKembaliController::class, 'exportBarangKembaliExcel'])->name('kembali.export');
-    Route::get('/kembali/pdf', [LaporanBarangKembaliController::class, 'exportBarangKembaliPdf'])->name('kembali.pdf');
+        Route::get('/kembali', [LaporanBarangKembaliController::class, 'index'])->name('kembali');
+        Route::get('/kembali/excel', [LaporanBarangKembaliController::class, 'exportBarangKembaliExcel'])->name('kembali.export');
+        Route::get('/kembali/pdf', [LaporanBarangKembaliController::class, 'exportBarangKembaliPdf'])->name('kembali.pdf');
 
-    Route::get('/mutasi', [MutasiBarangController::class, 'index'])->name('mutasi');
-    Route::get('/mutasi/export', [MutasiBarangController::class, 'exportMutasi'])->name('mutasi.export');
-    Route::get('/mutasi/pdf', [MutasiBarangController::class, 'exportMutasiPdf'])->name('mutasi.pdf');
+        Route::get('/mutasi', [MutasiBarangController::class, 'index'])->name('mutasi');
+        Route::get('/mutasi/export', [MutasiBarangController::class, 'exportMutasi'])->name('mutasi.export');
+        Route::get('/mutasi/pdf', [MutasiBarangController::class, 'exportMutasiPdf'])->name('mutasi.pdf');
+    });
+
+    // AI Assistant Chat
+    Route::post('/api/ai-chat', [AiChatController::class, 'chat'])->name('api.ai-chat');
+    Route::get('/api/ai-chat/suggestions', [AiChatController::class, 'suggestions'])->name('api.ai-chat.suggestions');
 });
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
+

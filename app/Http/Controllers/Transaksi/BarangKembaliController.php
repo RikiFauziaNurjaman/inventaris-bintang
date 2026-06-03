@@ -27,73 +27,66 @@ class BarangKembaliController extends Controller
         $cacheKey = 'BarangKembaliController_' . md5(json_encode(request()->all()));
         $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
-        // Ambil input untuk paginasi dan sorting dengan nilai default
-        $perPage = $request->input('per_page', 10);
-        $sort = $request->input('sort', 'terbaru');
+            $perPage = $request->input('per_page', 10);
+            $sort = $request->input('sort', 'terbaru');
 
-        $query = BarangKembali::query()
-            ->with([
-                'lokasi',
-                'details.barang.modelBarang' => function ($query) {
-                    $query->with(['merek', 'kategori']);
-                },
-                'details'
-            ])
-            ->when($request->tanggal, fn ($q) => $q->whereDate('tanggal', $request->tanggal))
-            ->when($request->lokasi_id, fn ($q) => $q->where('lokasi_id', $request->lokasi_id))
-            ->when($request->kategori_id, function ($q) use ($request) {
-                $q->whereHas('details.barang.modelBarang', function ($subQuery) use ($request) {
-                    $subQuery->where('kategori_id', $request->kategori_id);
-                });
-            })
-            ->when($request->search, function ($q) use ($request) {
-                $search = '%' . strtolower($request->search) . '%';
-                $q->where(function ($query) use ($search) {
-                    $query->orWhereHas('details.barang', function ($subQuery) use ($search) {
-                        $subQuery->whereRaw('LOWER(serial_number) ILIKE ?', [$search]);
-                    })
-                    ->orWhereHas('details.barang.modelBarang', function ($subQuery) use ($search) {
-                        $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
-                    })
-                    ->orWhereHas('details.barang.modelBarang.merek', function ($subQuery) use ($search) {
-                        $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
-                    })
-                    ->orWhereHas('details.barang.modelBarang.kategori', function ($subQuery) use ($search) {
-                        $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
+            $query = BarangKembali::query()
+                ->with([
+                    'lokasi',
+                    'details.barang.modelBarang' => function ($query) {
+                        $query->with(['merek', 'kategori']);
+                    },
+                    'details'
+                ])
+                ->when($request->tanggal, fn ($q) => $q->whereDate('tanggal', $request->tanggal))
+                ->when($request->lokasi_id, fn ($q) => $q->where('lokasi_id', $request->lokasi_id))
+                ->when($request->kategori_id, function ($q) use ($request) {
+                    $q->whereHas('details.barang.modelBarang', function ($subQuery) use ($request) {
+                        $subQuery->where('kategori_id', $request->kategori_id);
+                    });
+                })
+                ->when($request->search, function ($q) use ($request) {
+                    $search = '%' . strtolower($request->search) . '%';
+                    $q->where(function ($query) use ($search) {
+                        $query->orWhereHas('details.barang', function ($subQuery) use ($search) {
+                            $subQuery->whereRaw('LOWER(serial_number) ILIKE ?', [$search]);
+                        })
+                        ->orWhereHas('details.barang.modelBarang', function ($subQuery) use ($search) {
+                            $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
+                        })
+                        ->orWhereHas('details.barang.modelBarang.merek', function ($subQuery) use ($search) {
+                            $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
+                        })
+                        ->orWhereHas('details.barang.modelBarang.kategori', function ($subQuery) use ($search) {
+                            $subQuery->whereRaw('LOWER(nama) ILIKE ?', [$search]);
+                        });
                     });
                 });
-            });
 
-        // ## 1. FILTER PENGURUTAN (TERBARU / TERLAMA) ##
-        // Terapkan pengurutan berdasarkan input 'sort'.
-        if ($sort === 'terlama') {
-            $query->orderBy('tanggal', 'asc'); // Urutkan dari yang paling lama
-        } else {
-            $query->orderBy('tanggal', 'desc'); // Default: urutkan dari yang paling baru
-        }
+            if ($sort === 'terlama') {
+                $query->orderBy('tanggal', 'asc');
+            } else {
+                $query->orderBy('tanggal', 'desc');
+            }
 
-        // ## 2. FILTER JUMLAH DATA PER HALAMAN ##
-        // Terapkan paginasi berdasarkan input 'per_page'.
-        if ($perPage === 'all') {
-            $total = $query->clone()->count();
-            $barangKembali = $query->paginate($total > 0 ? $total : 10)->withQueryString();
-        } else {
-            $barangKembali = $query->paginate(is_numeric($perPage) ? $perPage : 10)->withQueryString();
-        }
+            if ($perPage === 'all') {
+                $total = $query->clone()->count();
+                $barangKembali = $query->paginate($total > 0 ? $total : 10)->withQueryString();
+            } else {
+                $barangKembali = $query->paginate(is_numeric($perPage) ? $perPage : 10)->withQueryString();
+            }
 
-        
             return [
-            'barangKembali' => $barangKembali,
-            // ## 3. KIRIM SEMUA FILTER KE FRONTEND ##
-            'filters' => $request->only(['tanggal', 'kategori_id', 'lokasi_id', 'search', 'sort', 'per_page']),
-            'kategoriOptions' => KategoriBarang::select('id', 'nama')->get(),
-            'lokasiOptions' => Lokasi::select('id', 'nama')->get(),
-        ];
+                // PERBAIKAN: Paginator diubah ke array murni sebelum disimpan ke RAM (Redis)
+                'barangKembali' => $barangKembali->toArray(),
+                'filters' => $request->only(['tanggal', 'kategori_id', 'lokasi_id', 'search', 'sort', 'per_page']),
+                'kategoriOptions' => KategoriBarang::select('id', 'nama')->get(),
+                'lokasiOptions' => Lokasi::select('id', 'nama')->get(),
+            ];
         });
 
         return Inertia::render('transaksi/barang-kembali/BarangKembaliIndex', $data);
     }
-
     public function getSerialByLokasi($lokasiId)
     {
         $barangKeluarIds = BarangKeluar::where('lokasi_id', $lokasiId)->pluck('id');

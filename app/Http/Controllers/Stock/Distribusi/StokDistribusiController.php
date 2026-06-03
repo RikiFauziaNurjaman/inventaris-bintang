@@ -16,40 +16,41 @@ class StokDistribusiController extends Controller
     public function index()
     {
         $cacheKey = 'StokDistribusiController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
-
-        $stokDistribusi = RekapStokBarang::with([
-                'lokasi' => function ($q) {
-                    $q->where('is_gudang', false); // Hanya lokasi selain gudang
-                },
-                'modelBarang.merek',
-            ])
-            ->whereHas('lokasi', function ($q) {
-                $q->where('is_gudang', false); // Filter hanya lokasi non-gudang
-            })
-            ->where('jumlah_tersedia', '>', 0) // Hanya stok tersedia
-            ->get()
-            ->groupBy('lokasi_id')
-            ->map(function ($items) {
-                $first = $items->first();
-                $models = $items->map(function ($item) {
-                    $merek = $item->modelBarang->merek->nama ?? '';
-                    $model = $item->modelBarang->nama ?? '';
-                    return trim($merek . ' ' . $model);
-                })->unique()->toArray();
-
-                return [
-                    'lokasi_id' => $first->lokasi->id,
-                    'lokasi' => $first->lokasi->nama,
-                    'models' => $models,
-                    'jumlah_tersedia' => $items->sum('jumlah_tersedia'),
-                ];
-            })->values();
-
         
+        // PERBAIKAN: "use ($request)" telah dihapus karena tidak didefinisikan dan tidak digunakan
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () {
+
+            $stokDistribusi = RekapStokBarang::with([
+                    'lokasi' => function ($q) {
+                        $q->where('is_gudang', false); // Hanya lokasi selain gudang
+                    },
+                    'modelBarang.merek',
+                ])
+                ->whereHas('lokasi', function ($q) {
+                    $q->where('is_gudang', false); // Filter hanya lokasi non-gudang
+                })
+                ->where('jumlah_tersedia', '>', 0) // Hanya stok tersedia
+                ->get()
+                ->groupBy('lokasi_id')
+                ->map(function ($items) {
+                    $first = $items->first();
+                    $models = $items->map(function ($item) {
+                        $merek = $item->modelBarang->merek->nama ?? '';
+                        $model = $item->modelBarang->nama ?? '';
+                        return trim($merek . ' ' . $model);
+                    })->unique()->toArray();
+
+                    return [
+                        'lokasi_id' => $first->lokasi->id,
+                        'lokasi' => $first->lokasi->nama,
+                        'models' => $models,
+                        'jumlah_tersedia' => $items->sum('jumlah_tersedia'),
+                    ];
+                })->values();
+
             return [
-            'stokDistribusi' => $stokDistribusi,
-        ];
+                'stokDistribusi' => $stokDistribusi,
+            ];
         });
 
         return Inertia::render('stock/distribusi/index', $data);

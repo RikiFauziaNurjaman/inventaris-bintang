@@ -1,4 +1,4 @@
-time="2026-05-28T15:04:11+07:00" level=warning msg="\"cli\" level configuration overrode scenarios configuration entirely"
+time="2026-05-31T20:22:37+07:00" level=warning msg="\"cli\" level configuration overrode scenarios configuration entirely"
 
          /\      Grafana   /‾‾/  
     /\  /  \     |\  __   /  /   
@@ -75,32 +75,44 @@ default   [  47% ] 5 VUs  19.0s/40s
 running (0m20.0s), 5/5 VUs, 0 complete and 0 interrupted iterations
 default   [  50% ] 5 VUs  20.0s/40s
 
-running (0m21.0s), 5/5 VUs, 1 complete and 0 interrupted iterations
+running (0m21.0s), 5/5 VUs, 3 complete and 0 interrupted iterations
 default   [  52% ] 5 VUs  21.0s/40s
 
-running (0m22.0s), 5/5 VUs, 3 complete and 0 interrupted iterations
+running (0m21.3s), 5/5 VUs, 5 complete and 0 interrupted iterations
+default   [  53% ] 5 VUs  21.3s/40s
+
+running (0m22.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  55% ] 5 VUs  22.0s/40s
 
-running (0m23.0s), 5/5 VUs, 3 complete and 0 interrupted iterations
+running (0m23.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  57% ] 5 VUs  23.0s/40s
 
-running (0m24.0s), 5/5 VUs, 3 complete and 0 interrupted iterations
+running (0m24.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  60% ] 5 VUs  24.0s/40s
 
-running (0m25.0s), 5/5 VUs, 3 complete and 0 interrupted iterations
+running (0m25.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  62% ] 5 VUs  25.0s/40s
 
-running (0m26.0s), 5/5 VUs, 3 complete and 0 interrupted iterations
+running (0m26.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  65% ] 5 VUs  26.0s/40s
 
-running (0m27.0s), 5/5 VUs, 3 complete and 0 interrupted iterations
+running (0m27.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  67% ] 5 VUs  27.0s/40s
 
-running (0m28.0s), 5/5 VUs, 4 complete and 0 interrupted iterations
+running (0m27.4s), 5/5 VUs, 5 complete and 0 interrupted iterations
+default   [  69% ] 5 VUs  27.4s/40s
+
+running (0m27.9s), 5/5 VUs, 5 complete and 0 interrupted iterations
+default   [  70% ] 5 VUs  27.9s/40s
+
+running (0m28.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  70% ] 5 VUs  28.0s/40s
 
 running (0m29.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  72% ] 5 VUs  29.0s/40s
+
+running (0m29.2s), 5/5 VUs, 5 complete and 0 interrupted iterations
+default   [  73% ] 5 VUs  29.2s/40s
 
 running (0m30.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default   [  75% ] 5 VUs  30.0s/40s
@@ -143,118 +155,95 @@ default ↓ [ 100% ] 5 VUs  40s
 
 running (0m43.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
 default ↓ [ 100% ] 5 VUs  40s
-
-running (0m44.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m45.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m46.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m47.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m48.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m49.0s), 5/5 VUs, 5 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m50.0s), 4/5 VUs, 6 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m51.0s), 4/5 VUs, 6 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m52.0s), 4/5 VUs, 6 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m53.0s), 2/5 VUs, 8 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m54.0s), 2/5 VUs, 8 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m55.0s), 2/5 VUs, 8 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m56.0s), 2/5 VUs, 8 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-
-running (0m57.0s), 2/5 VUs, 8 complete and 0 interrupted iterations
-default ↓ [ 100% ] 5 VUs  40s
-time="2026-05-28T15:05:08+07:00" level=info msg="═══════════════════════════════════════════════════════════════" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  PENGUJIAN SELESAI — Aplikasi Inventaris Bintang" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="═══════════════════════════════════════════════════════════════" source=console
-time="2026-05-28T15:05:08+07:00" level=info source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="Metrik custom yang tercatat:" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_dashboard        → Response time halaman Dashboard" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_daftar_barang    → Response time halaman Daftar Barang" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_detail_barang    → Response time halaman Detail Barang" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_barang_masuk     → Response time halaman Barang Masuk" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_barang_keluar    → Response time halaman Barang Keluar" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_barang_kembali   → Response time halaman Barang Kembali" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_stok_gudang      → Response time halaman Stok Gudang" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_stok_distribusi  → Response time halaman Stok Distribusi" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_monitoring       → Response time halaman Monitoring" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="  rt_laporan          → Response time halaman Laporan" source=console
-time="2026-05-28T15:05:08+07:00" level=info source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="Salin nilai avg dari output di atas ke tabel perbandingan jurnal." source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="Bandingkan hasil TANPA Redis (CACHE_STORE=database)" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="dengan DENGAN Redis (CACHE_STORE=redis) di .env" source=console
-time="2026-05-28T15:05:08+07:00" level=info msg="═══════════════════════════════════════════════════════════════" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="═══════════════════════════════════════════════════════════════" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  PENGUJIAN SELESAI — Aplikasi Inventaris Bintang" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="═══════════════════════════════════════════════════════════════" source=console
+time="2026-05-31T20:23:20+07:00" level=info source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="Metrik custom yang tercatat:" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_dashboard        → Response time halaman Dashboard" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_daftar_barang    → Response time halaman Daftar Barang" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_detail_barang    → Response time halaman Detail Barang" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_barang_masuk     → Response time halaman Barang Masuk" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_barang_keluar    → Response time halaman Barang Keluar" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_barang_kembali   → Response time halaman Barang Kembali" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_stok_gudang      → Response time halaman Stok Gudang" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_stok_distribusi  → Response time halaman Stok Distribusi" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_monitoring       → Response time halaman Monitoring" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_laporan          → Response time halaman Laporan" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_laporan_masuk    → Response time halaman Laporan Masuk" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_laporan_keluar   → Response time halaman Laporan Keluar" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_laporan_kembali  → Response time halaman Laporan Kembali" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_kategori         → Response time halaman Kategori" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="  rt_merek            → Response time halaman Merek" source=console
+time="2026-05-31T20:23:20+07:00" level=info source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="Salin nilai avg dari output di atas ke tabel perbandingan jurnal." source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="Bandingkan hasil TANPA Redis (CACHE_STORE=database)" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="dengan DENGAN Redis (CACHE_STORE=redis) di .env" source=console
+time="2026-05-31T20:23:20+07:00" level=info msg="═══════════════════════════════════════════════════════════════" source=console
 
 
   █ THRESHOLDS 
 
     http_req_duration
-    ✓ 'p(95)<3000' p(95)=2.36s
+    ✓ 'p(95)<3000' p(95)=623.42ms
 
     http_req_failed
     ✓ 'rate<0.05' rate=0.00%
 
     rt_barang_keluar
-    ✓ 'avg<2000' avg=849.92304
+    ✓ 'avg<2000' avg=191.28551
 
     rt_barang_kembali
-    ✓ 'avg<2000' avg=1585.864832
+    ✓ 'avg<2000' avg=153.04582
 
     rt_barang_masuk
-    ✓ 'avg<2000' avg=1025.407408
+    ✓ 'avg<2000' avg=348.768094
 
     rt_daftar_barang
-    ✓ 'avg<2000' avg=469.393644
+    ✓ 'avg<2000' avg=153.960515
 
     rt_dashboard
-    ✓ 'avg<2000' avg=1942.509482
+    ✓ 'avg<2000' avg=619.703753
 
     rt_detail_barang
-    ✓ 'avg<1500' avg=1230.768016
+    ✓ 'avg<1500' avg=154.777823
+
+    rt_kategori
+    ✓ 'avg<1500' avg=597.159584
 
     rt_laporan
-    ✓ 'avg<2000' avg=1368.559529
+    ✓ 'avg<2000' avg=160.770366
+
+    rt_laporan_keluar
+    ✓ 'avg<2000' avg=308.992102
+
+    rt_laporan_kembali
+    ✓ 'avg<2000' avg=306.008021
+
+    rt_laporan_masuk
+    ✓ 'avg<2000' avg=169.536812
+
+    rt_merek
+    ✓ 'avg<1500' avg=159.027953
 
     rt_monitoring
-    ✓ 'avg<2000' avg=618.628001
+    ✓ 'avg<2000' avg=267.295923
 
     rt_stok_distribusi
-    ✓ 'avg<1500' avg=436.05523
+    ✓ 'avg<1500' avg=128.706885
 
     rt_stok_gudang
-    ✓ 'avg<1500' avg=520.284517
+    ✓ 'avg<1500' avg=193.074542
 
 
   █ TOTAL RESULTS 
 
-    checks_total.......: 230    4.001904/s
-    checks_succeeded...: 98.69% 227 out of 230
-    checks_failed......: 1.30%  3 out of 230
+    checks_total.......: 330     7.634029/s
+    checks_succeeded...: 100.00% 330 out of 330
+    checks_failed......: 0.00%   0 out of 330
 
     ✓ dashboard: status 200
-    ✗ dashboard: response < 3000ms
-      ↳  90% — ✓ 9 / ✗ 1
+    ✓ dashboard: response < 3000ms
     ✓ daftar barang: status 200
     ✓ daftar barang: response < 2000ms
     ✓ detail_barang: status 200
@@ -263,8 +252,7 @@ time="2026-05-28T15:05:08+07:00" level=info msg="══════════�
     ✓ barang keluar: status 200
     ✓ barang keluar: response < 2500ms
     ✓ barang kembali: status 200
-    ✗ barang kembali: response < 2500ms
-      ↳  90% — ✓ 9 / ✗ 1
+    ✓ barang kembali: response < 2500ms
     ✓ stok gudang: status 200
     ✓ stok gudang: response < 2000ms
     ✓ stok distribusi: status 200
@@ -272,41 +260,57 @@ time="2026-05-28T15:05:08+07:00" level=info msg="══════════�
     ✓ monitoring: status 200
     ✓ monitoring: response < 2500ms
     ✓ laporan: status 200
-    ✗ laporan: response < 2500ms
-      ↳  90% — ✓ 9 / ✗ 1
+    ✓ laporan: response < 2500ms
+    ✓ laporan masuk: status 200
+    ✓ laporan masuk: response < 2500ms
+    ✓ laporan keluar: status 200
+    ✓ laporan keluar: response < 2500ms
+    ✓ laporan kembali: status 200
+    ✓ laporan kembali: response < 2500ms
+    ✓ kategori: status 200
+    ✓ kategori: response < 2000ms
+    ✓ merek: status 200
+    ✓ merek: response < 2000ms
 
     CUSTOM
-    error_rate.....................: 0.00%  0 out of 140
-    rt_barang_keluar...............: avg=849.92304   min=327.553326 med=801.499126  max=1487.018282  p(90)=1262.033037 p(95)=1374.525659
-    rt_barang_kembali..............: avg=1585.864832 min=234.038485 med=428.630084  max=11370.16974  p(90)=1994.171091 p(95)=6682.170415
-    rt_barang_masuk................: avg=1025.407408 min=375.645735 med=1060.927587 max=2088.574912  p(90)=1281.919982 p(95)=1685.247447
-    rt_daftar_barang...............: avg=469.393644  min=259.312649 med=524.468414  max=638.40755    p(90)=628.03861   p(95)=633.22308  
-    rt_dashboard...................: avg=1942.509482 min=586.92601  med=1192.317707 max=10611.880661 p(90)=2410.176478 p(95)=6511.028569
-    rt_detail_barang...............: avg=1230.768016 min=177.506507 med=517.423481  max=11711.449878 p(90)=999.373547  p(95)=8605.80256 
-    rt_laporan.....................: avg=1368.559529 min=248.896022 med=568.291647  max=8332.876848  p(90)=1703.430781 p(95)=5018.153814
-    rt_monitoring..................: avg=618.628001  min=404.50272  med=489.972088  max=1347.406172  p(90)=1037.775455 p(95)=1192.590813
-    rt_stok_distribusi.............: avg=436.05523   min=191.478351 med=384.840576  max=728.614587   p(90)=704.345988  p(95)=716.480288 
-    rt_stok_gudang.................: avg=520.284517  min=314.373634 med=467.333594  max=1008.947437  p(90)=729.427331  p(95)=869.187384 
-    total_requests.................: 140    2.435941/s
+    error_rate.....................: 0.00%  0 out of 190
+    rt_barang_keluar...............: avg=191.28551  min=173.886622 med=194.824651 max=214.952197 p(90)=207.595916 p(95)=211.274057
+    rt_barang_kembali..............: avg=153.04582  min=93.677548  med=136.664297 max=297.833601 p(90)=235.559698 p(95)=266.696649
+    rt_barang_masuk................: avg=348.768094 min=282.759827 med=366.843188 max=425.487477 p(90)=387.809403 p(95)=406.64844 
+    rt_daftar_barang...............: avg=153.960515 min=132.286287 med=152.623234 max=176.42141  p(90)=173.129925 p(95)=174.775667
+    rt_dashboard...................: avg=619.703753 min=540.435095 med=618.785505 max=723.697048 p(90)=716.66625  p(95)=720.181649
+    rt_detail_barang...............: avg=154.777823 min=87.309815  med=124.555167 max=592.077256 p(90)=245.85102  p(95)=323.627602
+    rt_kategori....................: avg=597.159584 min=340.16828  med=538.014887 max=958.110103 p(90)=947.102648 p(95)=952.606376
+    rt_laporan.....................: avg=160.770366 min=113.801185 med=166.636126 max=196.672656 p(90)=190.697107 p(95)=193.684881
+    rt_laporan_keluar..............: avg=308.992102 min=169.144793 med=317.918373 max=425.558125 p(90)=385.778617 p(95)=405.668371
+    rt_laporan_kembali.............: avg=306.008021 min=114.474802 med=259.091987 max=619.989236 p(90)=610.291792 p(95)=615.140514
+    rt_laporan_masuk...............: avg=169.536812 min=139.539135 med=161.39952  max=233.900356 p(90)=217.549724 p(95)=225.72504 
+    rt_merek.......................: avg=159.027953 min=131.405107 med=149.049738 max=241.856412 p(90)=194.446966 p(95)=218.151689
+    rt_monitoring..................: avg=267.295923 min=183.199855 med=265.947934 max=408.200383 p(90)=395.882958 p(95)=402.04167 
+    rt_stok_distribusi.............: avg=128.706885 min=106.058235 med=123.731916 max=156.525446 p(90)=146.116201 p(95)=151.320823
+    rt_stok_gudang.................: avg=193.074542 min=130.839914 med=184.297682 max=330.141133 p(90)=242.994605 p(95)=286.567869
+    total_requests.................: 190    4.39535/s
 
     HTTP
-    http_req_duration..............: avg=1.06s       min=177.5ms    med=558.37ms    max=11.71s       p(90)=1.19s       p(95)=2.36s      
-      { expected_response:true }...: avg=1.06s       min=177.5ms    med=558.37ms    max=11.71s       p(90)=1.19s       p(95)=2.36s      
-    http_req_failed................: 0.00%  0 out of 140
-    http_reqs......................: 140    2.435941/s
+    http_req_duration..............: avg=238.48ms   min=87.3ms     med=166.89ms   max=958.11ms   p(90)=434.89ms   p(95)=623.42ms  
+      { expected_response:true }...: avg=238.48ms   min=87.3ms     med=166.89ms   max=958.11ms   p(90)=434.89ms   p(95)=623.42ms  
+    http_req_failed................: 0.00%  0 out of 190
+    http_reqs......................: 190    4.39535/s
 
     EXECUTION
-    iteration_duration.............: avg=26.99s      min=20.16s     med=28.73s      max=31s          p(90)=30.4s       p(95)=30.7s      
-    iterations.....................: 10     0.173996/s
-    vus............................: 2      min=2        max=5
+    iteration_duration.............: avg=21.55s     min=20.88s     med=21.58s     max=22.23s     p(90)=22.18s     p(95)=22.2s     
+    iterations.....................: 10     0.231334/s
+    vus............................: 5      min=5        max=5
     vus_max........................: 5      min=5        max=5
 
     NETWORK
-    data_received..................: 2.3 MB 40 kB/s
-    data_sent......................: 196 kB 3.4 kB/s
+    data_received..................: 3.3 MB 75 kB/s
+    data_sent......................: 164 kB 3.8 kB/s
 
 
 
 
-running (0m57.5s), 0/5 VUs, 10 complete and 0 interrupted iterations
+running (0m43.2s), 0/5 VUs, 10 complete and 0 interrupted iterations
 default ✓ [ 100% ] 5 VUs  40s
+
+

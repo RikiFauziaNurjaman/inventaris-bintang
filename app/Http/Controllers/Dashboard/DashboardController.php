@@ -84,7 +84,7 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $data = \Illuminate\Support\Facades\Cache::remember('dashboard_data', 3600, function () {
+        $data = \Illuminate\Support\Facades\Cache::remember('dashboard_data', 60, function () {
             // Ringkasan total stok
             $stokSummary = RekapStokBarang::selectRaw('
                     SUM(jumlah_tersedia) as tersedia,
@@ -144,6 +144,7 @@ class DashboardController extends Controller
             $stokKritis = RekapStokBarang::where('jumlah_tersedia', '<', 10)
                 ->whereHas('lokasi', fn($q) => $q->where('is_gudang', true))
                 ->with(['lokasi', 'modelBarang.merek']) // gunakan eager load relasi yang benar
+                ->take(20)
                 ->get()
                 ->map(function ($item) {
                     return [

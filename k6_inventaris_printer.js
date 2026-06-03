@@ -13,6 +13,11 @@ const rtStokGudang      = new Trend('rt_stok_gudang');
 const rtStokDistribusi  = new Trend('rt_stok_distribusi');
 const rtMonitoring      = new Trend('rt_monitoring');
 const rtLaporan         = new Trend('rt_laporan');
+const rtLaporanMasuk    = new Trend('rt_laporan_masuk');
+const rtLaporanKeluar   = new Trend('rt_laporan_keluar');
+const rtLaporanKembali  = new Trend('rt_laporan_kembali');
+const rtKategori        = new Trend('rt_kategori');
+const rtMerek           = new Trend('rt_merek');
 const errorRate         = new Rate('error_rate');
 const totalRequests     = new Counter('total_requests');
 
@@ -28,7 +33,7 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '30s', target: 10 },  // ramp-up
+        { duration: '40s', target: 5 },  // ramp-up
         { duration: '2m',  target: 10 },  // tahan beban
         { duration: '20s', target: 0  },  // ramp-down
       ],
@@ -48,6 +53,11 @@ export const options = {
     rt_stok_distribusi:    ['avg<1500'],      // stok distribusi < 1.5 detik
     rt_monitoring:         ['avg<2000'],      // monitoring < 2 detik
     rt_laporan:            ['avg<2000'],      // laporan < 2 detik
+    rt_laporan_masuk:      ['avg<2000'],      // laporan masuk < 2 detik
+    rt_laporan_keluar:     ['avg<2000'],      // laporan keluar < 2 detik
+    rt_laporan_kembali:    ['avg<2000'],      // laporan kembali < 2 detik
+    rt_kategori:           ['avg<1500'],      // kategori < 1.5 detik
+    rt_merek:              ['avg<1500'],      // merek < 1.5 detik
   },
 };
 
@@ -261,6 +271,86 @@ export default function () {
     sleep(1);
   });
 
+  // ── 11. Laporan Barang Masuk ──────────────────────────────────────────────
+  // Query: view laporan barang masuk + filter tanggal/lokasi/search
+  group('11. Laporan Masuk', function () {
+    const res = http.get(`${BASE_URL}${PATH.laporanMasuk}`, { headers: inertiaHeaders });
+
+    check(res, {
+      'laporan masuk: status 200':        (r) => r.status === 200,
+      'laporan masuk: response < 2500ms': (r) => r.timings.duration < 2500,
+    });
+
+    rtLaporanMasuk.add(res.timings.duration);
+    errorRate.add(res.status !== 200);
+    totalRequests.add(1);
+    sleep(1);
+  });
+
+  // ── 12. Laporan Barang Keluar ─────────────────────────────────────────────
+  // Query: view laporan barang keluar + filter tanggal/lokasi/search
+  group('12. Laporan Keluar', function () {
+    const res = http.get(`${BASE_URL}${PATH.laporanKeluar}`, { headers: inertiaHeaders });
+
+    check(res, {
+      'laporan keluar: status 200':        (r) => r.status === 200,
+      'laporan keluar: response < 2500ms': (r) => r.timings.duration < 2500,
+    });
+
+    rtLaporanKeluar.add(res.timings.duration);
+    errorRate.add(res.status !== 200);
+    totalRequests.add(1);
+    sleep(1);
+  });
+
+  // ── 13. Laporan Barang Kembali ────────────────────────────────────────────
+  // Query: view laporan barang kembali + filter tanggal/lokasi/search
+  group('13. Laporan Kembali', function () {
+    const res = http.get(`${BASE_URL}${PATH.laporanKembali}`, { headers: inertiaHeaders });
+
+    check(res, {
+      'laporan kembali: status 200':        (r) => r.status === 200,
+      'laporan kembali: response < 2500ms': (r) => r.timings.duration < 2500,
+    });
+
+    rtLaporanKembali.add(res.timings.duration);
+    errorRate.add(res.status !== 200);
+    totalRequests.add(1);
+    sleep(1);
+  });
+
+  // ── 14. Master Data Kategori ──────────────────────────────────────────────
+  // Query: daftar kategori barang + search
+  group('14. Kategori', function () {
+    const res = http.get(`${BASE_URL}${PATH.kategori}`, { headers: inertiaHeaders });
+
+    check(res, {
+      'kategori: status 200':        (r) => r.status === 200,
+      'kategori: response < 2000ms': (r) => r.timings.duration < 2000,
+    });
+
+    rtKategori.add(res.timings.duration);
+    errorRate.add(res.status !== 200);
+    totalRequests.add(1);
+    sleep(1);
+  });
+
+  // ── 15. Master Data Merek ─────────────────────────────────────────────────
+  // Query: daftar merek barang + search
+  group('15. Merek', function () {
+    const res = http.get(`${BASE_URL}${PATH.merek}`, { headers: inertiaHeaders });
+
+    check(res, {
+      'merek: status 200':        (r) => r.status === 200,
+      'merek: response < 2000ms': (r) => r.timings.duration < 2000,
+    });
+
+    rtMerek.add(res.timings.duration);
+    errorRate.add(res.status !== 200);
+    totalRequests.add(1);
+    sleep(1);
+  });
+
   sleep(0.5);
 }
 
@@ -281,6 +371,11 @@ export function teardown() {
   console.log('  rt_stok_distribusi  → Response time halaman Stok Distribusi');
   console.log('  rt_monitoring       → Response time halaman Monitoring');
   console.log('  rt_laporan          → Response time halaman Laporan');
+  console.log('  rt_laporan_masuk    → Response time halaman Laporan Masuk');
+  console.log('  rt_laporan_keluar   → Response time halaman Laporan Keluar');
+  console.log('  rt_laporan_kembali  → Response time halaman Laporan Kembali');
+  console.log('  rt_kategori         → Response time halaman Kategori');
+  console.log('  rt_merek            → Response time halaman Merek');
   console.log('');
   console.log('Salin nilai avg dari output di atas ke tabel perbandingan jurnal.');
   console.log('Bandingkan hasil TANPA Redis (CACHE_STORE=database)');

@@ -9,6 +9,8 @@ import { ChevronDown } from 'lucide-react';
 export function UserMenu() {
     const { auth } = usePage<SharedData>().props;
 
+    if (!auth.user) return null;
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
