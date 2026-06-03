@@ -22,9 +22,7 @@ class MerekBarangController extends Controller
 
     public function index(Request $request)
     {
-        $cacheKey = 'MerekBarangController_' . md5(json_encode($request->all()));
         
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
             $merekPaginator = MerekBarang::query()
                 ->applyCaseInsensitiveSearch($request, ['nama'])
@@ -32,14 +30,13 @@ class MerekBarangController extends Controller
                 ->paginate(10)
                 ->withQueryString();
 
-            return [
+            $data = [
                 // PERBAIKAN CRITICAL: Simpan dalam bentuk Array murni, bukan Objek Paginator
                 'merek' => $merekPaginator->toArray(), 
                 'filters' => [
                     'search' => $request->input('search'),
                 ],
             ];
-        });
 
         // Flash message tidak bisa di-cache, tambahkan di luar cache
         $data['flash'] = [

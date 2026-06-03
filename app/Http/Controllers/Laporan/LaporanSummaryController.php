@@ -14,8 +14,6 @@ class LaporanSummaryController extends Controller
 {
     public function index()
     {
-        $cacheKey = 'LaporanSummaryController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () {
 
         $summaries = [
             'barang_masuk' => ViewBarangMasuk::count(),
@@ -28,7 +26,6 @@ class LaporanSummaryController extends Controller
             return [
             'summary' => $summaries
         ];
-        });
 
         return Inertia::render('laporan/index', $data);
     }

@@ -17,8 +17,6 @@ class StokGudangController extends Controller
 {
     public function index(Request $request)
     {
-        $cacheKey = 'StokGudangController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
         $stokQuery = $this->buildStokQuery($request);
 
@@ -44,7 +42,6 @@ class StokGudangController extends Controller
             'merekList' => MerekBarang::select('id', 'nama')->get(),
             'lokasiList' => Lokasi::where('is_gudang', true)->select('id', 'nama')->get(),
         ];
-        });
 
         return Inertia::render('stock/gudang/index', $data);
     }

@@ -24,8 +24,6 @@ class BarangKembaliController extends Controller
 {
     public function index(Request $request)
     {
-        $cacheKey = 'BarangKembaliController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
             $perPage = $request->input('per_page', 10);
             $sort = $request->input('sort', 'terbaru');
@@ -83,7 +81,6 @@ class BarangKembaliController extends Controller
                 'kategoriOptions' => KategoriBarang::select('id', 'nama')->get(),
                 'lokasiOptions' => Lokasi::select('id', 'nama')->get(),
             ];
-        });
 
         return Inertia::render('transaksi/barang-kembali/BarangKembaliIndex', $data);
     }

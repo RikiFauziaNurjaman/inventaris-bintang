@@ -14,8 +14,6 @@ class MonitoringController extends Controller
 {
     public function index(Request $request)
     {
-        $cacheKey = 'MonitoringController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
         $lokasiQuery = Lokasi::whereHas('barang', function ($q) use ($request) {
             if ($request->filled('lokasi_id')) {
@@ -107,7 +105,6 @@ class MonitoringController extends Controller
             'filters' => $request->only(['lokasi_id', 'sub_lokasi_id', 'status', 'kategori_id']),
             'stats' => $stats,
         ];
-        });
 
         return Inertia::render('monitoring/index', $data);
     }

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Lokasi;
 use App\Models\SubLokasi;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
@@ -50,8 +50,7 @@ class SubLokasiController extends Controller
 
         SubLokasi::create($validated);
         
-        // Clear cache
-        Cache::forget('sub_lokasi_list');
+
 
         return Redirect::back()->with('message', 'Sub-Lokasi berhasil ditambahkan.');
     }
@@ -67,8 +66,6 @@ class SubLokasiController extends Controller
         ]);
 
         $subLokasi->update($validated);
-        
-        Cache::forget('sub_lokasi_list');
 
         return Redirect::back()->with('message', 'Sub-Lokasi berhasil diperbarui.');
     }
@@ -76,8 +73,6 @@ class SubLokasiController extends Controller
     public function destroy(SubLokasi $subLokasi)
     {
         $subLokasi->delete();
-        
-        Cache::forget('sub_lokasi_list');
 
         return Redirect::back()->with('message', 'Sub-Lokasi berhasil dihapus.');
     }

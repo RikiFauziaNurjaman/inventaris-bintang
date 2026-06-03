@@ -10,7 +10,6 @@ use App\Models\KategoriBarang;
 use App\Models\MerekBarang;
 use App\Models\ModelBarang;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
@@ -32,16 +31,14 @@ class ModelBarangController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        // Cache label list karena jarang berubah
-        $labelList = Cache::remember('model_label_list', 300, function () {
-            return ModelBarang::selectRaw('label, COUNT(*) as total')
+        // Label list
+        $labelList = ModelBarang::selectRaw('label, COUNT(*) as total')
                 ->whereNotNull('label')
                 ->groupBy('label')
                 ->orderByDesc('total')
                 ->limit(20)
                 ->pluck('label')
                 ->toArray();
-        });
 
         return Inertia::render('master/model/index', [
             'modelBarang' => $model,
@@ -79,7 +76,6 @@ class ModelBarangController extends Controller
         ]);
 
         ModelBarang::create($request->only('nama', 'kategori_id', 'merek_id', 'jenis_id', 'deskripsi', 'label'));
-        Cache::forget('model_label_list');
         MasterDataHelper::clearAllCaches();
 
         return Redirect::route('model.index')->with('message', 'Model Barang berhasil ditambahkan.');
@@ -97,7 +93,6 @@ class ModelBarangController extends Controller
         ]);
 
         $model->update($request->only('nama', 'kategori_id', 'merek_id', 'jenis_id', 'deskripsi', 'label'));
-        Cache::forget('model_label_list');
         MasterDataHelper::clearAllCaches();
 
         return Redirect::route('model.index')->with('message', 'Model Barang berhasil diperbarui.');
@@ -106,7 +101,6 @@ class ModelBarangController extends Controller
     public function destroy(ModelBarang $model)
     {
         $model->delete();
-        Cache::forget('model_label_list');
         MasterDataHelper::clearAllCaches();
 
         return Redirect::back()->with('message', 'Model Barang berhasil dihapus.');

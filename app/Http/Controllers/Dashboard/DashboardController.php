@@ -51,7 +51,6 @@ class DashboardController extends Controller
 
     public function getBarangDetail($id)
     {
-        return \Illuminate\Support\Facades\Cache::remember('detail_barang_'.$id, 3600, function() use ($id) {
             $barang = Barang::with(['rak.lokasi', 'asal', 'modelBarang.merek'])->findOrFail($id);
 
             $stok = RekapStokBarang::where('model_id', $barang->model_id)
@@ -79,12 +78,10 @@ class DashboardController extends Controller
                 ],
                 'jumlah_tersedia' => $stok->jumlah_tersedia ?? 0,
             ]);
-        });
     }
 
     public function index()
     {
-        $data = \Illuminate\Support\Facades\Cache::remember('dashboard_data', 60, function () {
             // Ringkasan total stok
             $stokSummary = RekapStokBarang::selectRaw('
                     SUM(jumlah_tersedia) as tersedia,
@@ -173,7 +170,7 @@ class DashboardController extends Controller
             $totalKategori = KategoriBarang::count();
             $totalJenisBarang = JenisBarang::count();
 
-            return [
+            $data = [
                 'stokSummary' => $stokSummary,
                 'stokPerLokasi' => $stokPerLokasi,
                 'latestMasuk' => $latestMasuk,
@@ -184,7 +181,6 @@ class DashboardController extends Controller
                 'totalKategori' => $totalKategori,
                 'totalJenisBarang' => $totalJenisBarang,
             ];
-        });
 
         return Inertia::render('dashboard', $data);
     }

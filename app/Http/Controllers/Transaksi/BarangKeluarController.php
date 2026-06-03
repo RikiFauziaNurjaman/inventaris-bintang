@@ -27,8 +27,6 @@ class BarangKeluarController extends Controller
 {
     public function index(Request $request)
     {
-        $cacheKey = 'BarangKeluarController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
             $perPage = $request->input('per_page', 10);
             $sort = $request->input('sort', 'terbaru');
@@ -78,14 +76,13 @@ class BarangKeluarController extends Controller
                 $barangKeluar = $query->paginate(is_numeric($perPage) ? $perPage : 10)->withQueryString();
             }
 
-            return [
+            $data = [
                 // PERBAIKAN: Diubah ke array murni agar bebas dari serialization penalty
                 'barangKeluar' => $barangKeluar->toArray(),
                 'filters' => $request->only(['tanggal', 'kategori_id', 'lokasi_id', 'search', 'sort', 'per_page']),
                 'kategoriOptions' => MasterDataHelper::getKategoriList(),
                 'lokasiOptions' => MasterDataHelper::getLokasiList(),
             ];
-        });
 
         return Inertia::render('transaksi/barang-keluar/BarangKeluarIndex', $data);
     }
@@ -590,7 +587,7 @@ class BarangKeluarController extends Controller
             'labelData' => $labelData,
         ]);
     }
-
+    
     public function cetakLabelItem($id, $detailId)
     {
         $barangKeluar = BarangKeluar::with([

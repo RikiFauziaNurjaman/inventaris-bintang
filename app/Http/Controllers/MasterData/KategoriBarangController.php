@@ -22,8 +22,6 @@ class KategoriBarangController extends Controller
 
     public function index(Request $request)
     {
-        $cacheKey = 'KategoriBarangController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
         $kategori = KategoriBarang::applyCaseInsensitiveSearch(
                 $request,
@@ -34,13 +32,12 @@ class KategoriBarangController extends Controller
         ->withQueryString();
 
         
-            return [
+            $data = [
             'kategori' => $kategori,
             'filters'   => [
                 'search'    => $request->input('search'),
             ],
-        ];
-        });
+            ];
 
         // Flash message tidak bisa di-cache, tambahkan di luar cache
         $data['flash'] = [

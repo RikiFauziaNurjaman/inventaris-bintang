@@ -15,10 +15,8 @@ class StokDistribusiController extends Controller
 {
     public function index()
     {
-        $cacheKey = 'StokDistribusiController_' . md5(json_encode(request()->all()));
         
         // PERBAIKAN: "use ($request)" telah dihapus karena tidak didefinisikan dan tidak digunakan
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () {
 
             $stokDistribusi = RekapStokBarang::with([
                     'lokasi' => function ($q) {
@@ -51,7 +49,6 @@ class StokDistribusiController extends Controller
             return [
                 'stokDistribusi' => $stokDistribusi,
             ];
-        });
 
         return Inertia::render('stock/distribusi/index', $data);
     }

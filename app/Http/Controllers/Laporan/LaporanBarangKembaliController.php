@@ -14,8 +14,6 @@ class LaporanBarangKembaliController extends Controller
 {
     public function index(Request $request)
     {
-        $cacheKey = 'LaporanBarangKembaliController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
         $query = ViewBarangKembali::query();
         $filters = $request->only('start_date', 'end_date', 'lokasi_id', 'search');
@@ -50,7 +48,6 @@ class LaporanBarangKembaliController extends Controller
             'filters' => $filters,
             'lokasiList' => \App\Models\Lokasi::select('id', 'nama')->orderBy('nama')->get(),
         ];
-        });
 
         return Inertia::render('laporan/barang-kembali/index', $data);
     }

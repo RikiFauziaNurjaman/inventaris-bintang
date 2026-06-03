@@ -11,8 +11,6 @@ class DataBarangController extends Controller
 {
     public function index(Request $request)
     {
-        $cacheKey = 'DataBarangController_' . md5(json_encode(request()->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($request) {
 
             $query = DB::table('barang')
                 ->leftJoin('model_barang', 'barang.model_id', '=', 'model_barang.id')
@@ -87,7 +85,6 @@ class DataBarangController extends Controller
                 'filters' => $request->only(['search', 'kategori', 'lokasi', 'status', 'kondisi']),
                 'filterOptions' => $filterOptions,
             ];
-        });
 
         return Inertia::render('master/barang/index', $data);
     }
