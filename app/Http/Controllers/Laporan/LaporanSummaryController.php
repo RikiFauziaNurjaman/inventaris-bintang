@@ -23,7 +23,7 @@ class LaporanSummaryController extends Controller
         ];
 
         
-            return [
+            $data = [
             'summary' => $summaries
         ];
 

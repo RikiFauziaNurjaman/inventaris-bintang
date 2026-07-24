@@ -43,7 +43,7 @@ class LaporanBarangKembaliController extends Controller
         $barangKembaliData = $query->orderBy('tanggal', 'desc')->paginate(10)->withQueryString();
 
         
-            return [
+            $data = [
             'barangKembaliData' => $barangKembaliData,
             'filters' => $filters,
             'lokasiList' => \App\Models\Lokasi::select('id', 'nama')->orderBy('nama')->get(),

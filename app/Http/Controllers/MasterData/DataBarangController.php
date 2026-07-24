@@ -79,12 +79,12 @@ class DataBarangController extends Controller
                 'kondisiList' => DB::table('barang')->distinct()->pluck('kondisi_awal'),
             ];
 
-            return [
+            $data = [
                 // PERBAIKAN: Diubah ke array murni agar Redis membacanya dengan sangat ringan
                 'barangList' => $barang->toArray(),
                 'filters' => $request->only(['search', 'kategori', 'lokasi', 'status', 'kondisi']),
                 'filterOptions' => $filterOptions,
-            ];
+        ];
 
         return Inertia::render('master/barang/index', $data);
     }

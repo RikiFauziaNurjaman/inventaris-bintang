@@ -97,7 +97,7 @@ class MonitoringController extends Controller
         ];
 
         
-            return [
+        $data = [
             'lokasiPaginated' => $lokasiPaginated,
             'lokasiList' => $lokasiList,
             'subLokasiList' => $subLokasiList,
