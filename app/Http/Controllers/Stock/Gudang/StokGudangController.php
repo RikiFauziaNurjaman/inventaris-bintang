@@ -21,7 +21,7 @@ class StokGudangController extends Controller
         $stokQuery = $this->buildStokQuery($request);
 
         $stokBarang = $stokQuery->paginate(10)->through(function ($item) {
-            $data = [
+            return [
                 'model_id' => $item->modelBarang->id,
                 'kategori' => $item->modelBarang->kategori->nama ?? '-',
                 'label' => $item->modelBarang->label ?? '-',

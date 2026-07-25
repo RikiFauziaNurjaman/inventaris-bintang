@@ -91,7 +91,7 @@ class BarangMasukController extends Controller
         $barangMasukData = ($perPage === 'all')
             ? $barangMasuk->map(function ($bm) {
                 $detail = $bm->details->first();
-                $data = [
+                return [
                     'id' => $bm->id,
                     'tanggal' => $bm->tanggal,
                     'asal_barang' => $bm->asal?->nama,
