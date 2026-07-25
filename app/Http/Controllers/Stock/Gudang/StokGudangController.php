@@ -34,8 +34,7 @@ class StokGudangController extends Controller
             ];
         });
 
-        
-            return [
+        $data = [
             'stokBarang' => $stokBarang,
             'filters' => $request->only(['search', 'kategori', 'merek', 'lokasi']),
             'kategoriList' => KategoriBarang::select('id', 'nama')->get(),

@@ -46,7 +46,7 @@ class StokDistribusiController extends Controller
                     ];
                 })->values();
 
-            return [
+            $data = [
                 'stokDistribusi' => $stokDistribusi,
             ];
 

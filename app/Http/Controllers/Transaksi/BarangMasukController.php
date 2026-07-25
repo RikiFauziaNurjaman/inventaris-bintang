@@ -112,8 +112,7 @@ class BarangMasukController extends Controller
                 ];
             });
 
-        
-            return [
+        $data = [
             'barangMasuk' => $barangMasukData,
             'filters' => $request->only(
                 'tanggal',
