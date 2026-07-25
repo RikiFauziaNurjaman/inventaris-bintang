@@ -129,11 +129,12 @@ class StokGudangController extends Controller
             $stokQuery->where('lokasi_id', $filterLokasi);
         }
 
-        // Mengurutkan berdasarkan nama model barang untuk konsistensi
-        $stokQuery->orderBy(
-            ModelBarang::select('nama')
-                ->whereColumn('model_barang.id', 'rekap_stok_barang.model_id')
-        );
+        // Mengurutkan berdasarkan stok terbanyak dulu, kemudian nama model
+        $stokQuery->orderByRaw('(jumlah_tersedia + jumlah_rusak + jumlah_perbaikan) DESC')
+            ->orderBy(
+                ModelBarang::select('nama')
+                    ->whereColumn('model_barang.id', 'rekap_stok_barang.model_id')
+            );
 
         return $stokQuery;
     }
