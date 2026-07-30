@@ -52,9 +52,11 @@ export default function FastSearch() {
             setIsLoading(true);
 
             try {
-                const response = await fetch(`/dashboard/fast-search?q=${encodeURIComponent(keyword)}`, {
+                const response = await fetch(route('dashboard.fast-search', { q: keyword }), {
                     signal: controller.signal,
+                    headers: { Accept: 'application/json' },
                 });
+                if (!response.ok) throw new Error();
                 const result = await response.json();
                 setSuggestions(result.data ?? []);
             } catch (error) {
@@ -78,7 +80,9 @@ export default function FastSearch() {
         setIsFocused(false);
 
         try {
-            const response = await fetch(`/dashboard/barang-detail/${id}`);
+            const response = await fetch(route('dashboard.barang-detail', id), {
+                headers: { Accept: 'application/json' },
+            });
             if (!response.ok) throw new Error();
 
             setSelectedBarang(await response.json());

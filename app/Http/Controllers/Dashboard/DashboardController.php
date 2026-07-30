@@ -20,13 +20,13 @@ class DashboardController extends Controller
 {
     public function fastSearchSuggestions(Request $request)
     {
-        $keyword = strtolower($request->input('q'));
+        $keyword = strtolower(trim((string) $request->input('q')));
 
         if (! $keyword) {
             return response()->json(['data' => []]);
         }
 
-        $results = Barang::with(['rak.lokasi', 'modelBarang.merek'])
+        $results = Barang::with(['modelBarang.merek'])
             ->where(function ($query) use ($keyword) {
                 $query->whereRaw('LOWER(serial_number) LIKE ?', ["%{$keyword}%"])
                     ->orWhereHas('modelBarang', function ($q) use ($keyword) {
@@ -34,18 +34,14 @@ class DashboardController extends Controller
                             ->orWhereHas('merek', fn ($m) => $m->whereRaw('LOWER(nama) LIKE ?', ["%{$keyword}%"]));
                     });
             })
-            ->whereHas('rak.lokasi', fn ($q) => $q->where('is_gudang', true))
             ->limit(10)
             ->get()
             ->map(function ($barang) {
                 return [
                     'id' => $barang->id,
                     'serial_number' => $barang->serial_number,
-                    'nama_barang' => optional($barang->modelBarang)->nama ?? '-',
                     'merek' => optional($barang->modelBarang?->merek)->nama ?? '-',
-                    'rak' => optional($barang->rak)->nama_rak ?? '-',
-                    'kode_rak' => optional($barang->rak)->kode_rak ?? '-',
-                    'baris' => optional($barang->rak)->baris ?? '-',
+                    'model' => optional($barang->modelBarang)->nama ?? '-',
                 ];
             });
 
@@ -54,15 +50,7 @@ class DashboardController extends Controller
 
     public function getBarangDetail($id)
     {
-        $barang = Barang::with(['rak.lokasi', 'asal', 'modelBarang.merek'])->findOrFail($id);
-
-        $stok = RekapStokBarang::where('model_id', $barang->model_id)
-            ->where('lokasi_id', $barang->lokasi_id)
-            ->first();
-
-        if (! $stok) {
-            return response()->json(['error' => 'Stok tidak ditemukan'], 404);
-        }
+        $barang = Barang::with(['rak', 'lokasi', 'asal', 'modelBarang.merek'])->findOrFail($id);
 
         return response()->json([
             'id' => $barang->id,
@@ -73,13 +61,12 @@ class DashboardController extends Controller
             'asal' => optional($barang->asal)->nama ?? '-',
             'kondisi' => $barang->kondisi_awal ?? '-',
             'status' => $barang->status ?? '-',
-            'lokasi' => $barang->rak->lokasi->nama ?? '-',
+            'lokasi' => optional($barang->lokasi)->nama ?? '-',
             'rak' => [
                 'nama_rak' => optional($barang->rak)->nama_rak ?? '-',
                 'kode_rak' => optional($barang->rak)->kode_rak ?? '-',
                 'baris' => optional($barang->rak)->baris ?? '-',
             ],
-            'jumlah_tersedia' => $stok->jumlah_tersedia ?? 0,
         ]);
     }
 

@@ -48,8 +48,8 @@ Route::middleware(['auth'])->group(function () {
         // ->middleware('can:' . PermissionEnum::VIEW_DASHBOARD->value)
         ->name('dashboard');
 
-    Route::get('/dashboard/fast-search', [DashboardController::class, 'fastSearchSuggestions']);
-    Route::get('/dashboard/barang-detail/{id}', [DashboardController::class, 'getBarangDetail']);
+    Route::get('/dashboard/fast-search', [DashboardController::class, 'fastSearchSuggestions'])->name('dashboard.fast-search');
+    Route::get('/dashboard/barang-detail/{id}', [DashboardController::class, 'getBarangDetail'])->name('dashboard.barang-detail');
 
     Route::get('/kategori/search', [KategoriBarangController::class, 'search'])->name('kategori.search');
     Route::resource('kategori', KategoriBarangController::class);
