@@ -1,190 +1,75 @@
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { Column, DataTable } from '@/components/data-table';
+import { MasterDataFormPanel } from '@/components/master-data-form-panel';
+import { MasterDataPage } from '@/components/master-data-page';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PERMISSIONS } from '@/constants/permission';
-import AppLayout from '@/layouts/app-layout';
-import { Head, router, useForm } from '@inertiajs/react';
-import axios from 'axios';
-import debounce from 'lodash.debounce';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { Edit3, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
-import Select from 'react-select';
-import CreatableSelect from 'react-select/creatable';
+import { useMemo, useState } from 'react';
 
 type Kategori = { id: number; nama: string };
 type Merek = { id: number; nama: string };
-type JenisBarang = { id: number; nama: string; kategori?: Kategori; kategori_id?: number };
-
+type JenisBarang = { id: number; nama: string; kategori_id?: number };
 type ModelBarang = {
     id: number;
     nama: string;
-    label: string;
+    label: string | null;
     kategori: Kategori;
     merek: Merek;
-    jenis?: JenisBarang;
+    jenis?: JenisBarang | null;
 };
-
 type Props = {
     modelBarang: {
         data: ModelBarang[];
-        links: {
-            url: string | null;
-            label: string;
-            active: boolean;
-        }[];
+        links: { url: string | null; label: string; active: boolean }[];
+        from: number | null;
+        to: number | null;
+        total: number;
     };
     kategori: Kategori[];
     merek: Merek[];
     jenis: JenisBarang[];
     labelList: string[];
-    flash?: { message?: string };
-    auth: {
-        permissions?: string[];
-    };
+    filters: { search?: string };
 };
 
-export default function Index({ auth, modelBarang, kategori, merek, jenis, flash, labelList, filters }: Props & { filters: { search: string } }) {
+const selectClass =
+    'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50';
+
+export default function Index({ modelBarang, kategori, merek, jenis, labelList, filters }: Props) {
+    const { auth } = usePage<{ auth: { permissions?: string[] } }>().props;
+    const permissions = auth.permissions ?? [];
     const [editing, setEditing] = useState<ModelBarang | null>(null);
     const [showForm, setShowForm] = useState(false);
-    const [labelOptions, setLabelOptions] = useState<string[]>([]);
-    const [search, setSearch] = useState(filters.search || '');
-    const [filteredJenis, setFilteredJenis] = useState<JenisBarang[]>([]);
-    const [loadingJenis, setLoadingJenis] = useState(false);
-    const userPermissions = auth.permissions || [];
-
-    const form = useForm({
-        nama: '',
-        label: '',
-        kategori_id: '',
-        merek_id: '',
-        jenis_id: '',
+    const [pendingDelete, setPendingDelete] = useState<ModelBarang | null>(null);
+    const form = useForm({ nama: '', label: '', kategori_id: '', merek_id: '', jenis_id: '' });
+    const filteredJenis = useMemo(
+        () => jenis.filter((item) => String(item.kategori_id ?? '') === form.data.kategori_id),
+        [form.data.kategori_id, jenis],
+    );
+    const search = useDebouncedCallback((value: string) => {
+        router.get(route('model.index'), { search: value }, { preserveState: true, preserveScroll: true, replace: true });
     });
 
-    useEffect(() => {
-        if (flash?.message) {
-            form.reset();
-            toast.success(flash.message);
-        }
-    }, [flash?.message]);
-
-    useEffect(() => {
-        if (labelList?.length) {
-            setLabelOptions(labelList);
-        }
-    }, [labelList]);
-
-    // Cascade filter: load Jenis berdasarkan Kategori yang dipilih
-    const fetchJenisByKategori = useCallback(async (kategoriId: string) => {
-        if (!kategoriId) {
-            setFilteredJenis([]);
-            return;
-        }
-
-        setLoadingJenis(true);
-        try {
-            const response = await axios.get('/api/jenis-by-kategori', {
-                params: { kategori_id: kategoriId },
-            });
-            setFilteredJenis(response.data);
-        } catch (error) {
-            console.error('Error fetching jenis:', error);
-            setFilteredJenis([]);
-        } finally {
-            setLoadingJenis(false);
-        }
-    }, []);
-
-    // Watch kategori_id changes untuk cascade filter
-    useEffect(() => {
-        if (form.data.kategori_id) {
-            fetchJenisByKategori(form.data.kategori_id);
-        } else {
-            setFilteredJenis([]);
-        }
-    }, [form.data.kategori_id, fetchJenisByKategori]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (form.data.label && !labelOptions.includes(form.data.label)) {
-            setLabelOptions((prev) => [...prev, form.data.label]);
-        }
-
-        if (editing) {
-            form.put(`/model/${editing.id}`, {
-                onSuccess: () => {
-                    form.reset();
-                    setEditing(null);
-                    setShowForm(false);
-                },
-            });
-        } else {
-            form.post('/model', {
-                onSuccess: () => {
-                    form.reset();
-                    setShowForm(false);
-                },
-            });
-        }
-    };
-
-    const canCreateModel = userPermissions.includes(PERMISSIONS.CREATE_MODEL);
-    const canEditModel = userPermissions.includes(PERMISSIONS.EDIT_MODEL);
-    const canDeleteModel = userPermissions.includes(PERMISSIONS.DELETE_MODEL);
-
-    const handleEdit = (item: ModelBarang) => {
-        form.setData({
-            nama: item.nama,
-            label: item.label,
-            kategori_id: item.kategori.id.toString(),
-            merek_id: item.merek.id.toString(),
-            jenis_id: item.jenis?.id ? item.jenis.id.toString() : '',
-        });
-        // Set filtered jenis untuk edit mode
-        if (item.kategori?.id) {
-            fetchJenisByKategori(item.kategori.id.toString());
-        }
-        setEditing(item);
-        setShowForm(true);
-    };
-
-    const handleDelete = (id: number) => {
-        if (confirm('Yakin ingin menghapus model ini?')) {
-            form.delete(`/model/${id}`);
-        }
-    };
-
-    const handleCancel = () => {
+    const closeForm = () => {
         form.reset();
+        form.clearErrors();
         setEditing(null);
         setShowForm(false);
-        setFilteredJenis([]);
     };
 
-    const handleKategoriChange = (newKategoriId: string) => {
-        form.setData((data) => ({
-            ...data,
-            kategori_id: newKategoriId,
-            jenis_id: '', // Reset jenis when kategori changes
-        }));
-    };
-
-    const debouncedSearch = useCallback(
-        debounce((value: string) => {
-            router.get(
-                route('model.index'),
-                { search: value },
-                {
-                    preserveState: true,
-                    replace: true,
-                },
-            );
-        }, 400),
-        [],
-    );
-
-    const handleSearch = (value: string) => {
-        setSearch(value);
-        debouncedSearch(value);
+    const submit = (event: React.FormEvent) => {
+        event.preventDefault();
+        const options = { preserveScroll: true, onSuccess: closeForm };
+        if (editing) {
+            form.put(route('model.update', editing.id), options);
+        } else {
+            form.post(route('model.store'), options);
+        }
     };
 
     const columns: Column<ModelBarang>[] = [
@@ -192,211 +77,202 @@ export default function Index({ auth, modelBarang, kategori, merek, jenis, flash
             header: 'Model Barang',
             accessorKey: 'nama',
             cell: (item) => (
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {item.merek?.nama} {item.nama}
+                <div>
+                    <p className="font-medium">
+                        {item.merek?.nama} {item.nama}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{item.kategori?.nama}</p>
                 </div>
             ),
         },
-        {
-            header: 'Kategori',
-            accessorKey: 'kategori',
-            cell: (item) => item.kategori?.nama,
-        },
-        {
-            header: 'Jenis',
-            accessorKey: 'jenis',
-            cell: (item) => item.jenis?.nama || '-',
-        },
+        { header: 'Jenis', accessorKey: 'jenis', cell: (item) => item.jenis?.nama || '—' },
         {
             header: 'Label',
             accessorKey: 'label',
             cell: (item) =>
                 item.label ? (
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                        {item.label}
-                    </span>
+                    <span className="inline-flex rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{item.label}</span>
                 ) : (
-                    <span className="text-sm text-gray-400">-</span>
+                    '—'
                 ),
         },
     ];
 
     return (
-        <AppLayout>
-            <div className="min-h-screen bg-gray-50 p-4 sm:p-6 dark:bg-zinc-950">
-                <Head title="Model Barang" />
-                <div className="mx-auto max-w-7xl space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Model Barang</h1>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Kelola daftar model barang, kategori, dan jenis.</p>
+        <MasterDataPage title="Model Barang" description="Kelola model, merek, kategori, jenis, dan label inventaris.">
+            {showForm && (
+                <MasterDataFormPanel title={editing ? 'Edit model barang' : 'Tambah model barang'} onClose={closeForm}>
+                    <form onSubmit={submit} className="grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="nama-model">Nama model</Label>
+                            <Input
+                                id="nama-model"
+                                value={form.data.nama}
+                                onChange={(event) => form.setData('nama', event.target.value)}
+                                placeholder="Contoh: ThinkPad E14"
+                                aria-invalid={Boolean(form.errors.nama)}
+                                required
+                            />
+                            {form.errors.nama && <p className="text-sm text-destructive">{form.errors.nama}</p>}
                         </div>
-                    </div>
-
-                    {showForm && (
-                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                            <div className="mb-5 flex items-center justify-between">
-                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                                    {editing ? 'Edit Model' : 'Tambah Model Baru'}
-                                </h2>
-                                <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600">
-                                    <span className="sr-only">Close</span>
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium dark:text-gray-200">Nama Model</label>
-                                    <input
-                                        type="text"
-                                        value={form.data.nama}
-                                        onChange={(e) => form.setData('nama', e.target.value)}
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                                        required
-                                    />
-                                    {form.errors.nama && <p className="text-sm text-red-500">{form.errors.nama}</p>}
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium dark:text-gray-200">Kategori</label>
-                                    <select
-                                        value={form.data.kategori_id}
-                                        onChange={(e) => handleKategoriChange(e.target.value)}
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                                        required
-                                    >
-                                        <option value="">Pilih Kategori</option>
-                                        {kategori.map((k) => (
-                                            <option key={k.id} value={k.id}>
-                                                {k.nama}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {form.errors.kategori_id && <p className="text-sm text-red-500">{form.errors.kategori_id}</p>}
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium dark:text-gray-200">Merek</label>
-                                    <select
-                                        value={form.data.merek_id}
-                                        onChange={(e) => form.setData('merek_id', e.target.value)}
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                                        required
-                                    >
-                                        <option value="">Pilih Merek</option>
-                                        {merek.map((m) => (
-                                            <option key={m.id} value={m.id}>
-                                                {m.nama}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {form.errors.merek_id && <p className="text-sm text-red-500">{form.errors.merek_id}</p>}
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium dark:text-gray-200">
-                                        Jenis Barang
-                                        {loadingJenis && <span className="ml-2 text-gray-400">(memuat...)</span>}
-                                        {!form.data.kategori_id && <span className="ml-2 text-xs text-gray-400">(pilih kategori dulu)</span>}
-                                    </label>
-                                    <select
-                                        value={form.data.jenis_id}
-                                        onChange={(e) => form.setData('jenis_id', e.target.value)}
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:disabled:bg-zinc-700"
-                                        disabled={!form.data.kategori_id || loadingJenis}
-                                    >
-                                        <option value="">
-                                            {!form.data.kategori_id
-                                                ? '-- Pilih Kategori terlebih dahulu --'
-                                                : filteredJenis.length === 0
-                                                  ? 'Tidak ada jenis untuk kategori ini'
-                                                  : 'Pilih Jenis Barang'}
-                                        </option>
-                                        {filteredJenis.map((j) => (
-                                            <option key={j.id} value={j.id}>
-                                                {j.nama}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {form.errors.jenis_id && <p className="text-sm text-red-500">{form.errors.jenis_id}</p>}
-                                </div>
-
-                                <div className="space-y-1 md:col-span-2">
-                                    <label className="text-sm font-medium dark:text-gray-200">Label Barang</label>
-                                    <CreatableSelect
-                                        options={labelOptions.map((label) => ({ label, value: label }))}
-                                        onChange={(selected) => form.setData('label', selected?.value || '')}
-                                        value={form.data.label ? { label: form.data.label, value: form.data.label } : null}
-                                        isClearable
-                                        placeholder="Pilih atau ketik label baru..."
-                                        formatCreateLabel={(inputValue) => `Gunakan label baru: "${inputValue}"`}
-                                    />
-                                    {form.errors.label && <p className="text-sm text-red-500">{form.errors.label}</p>}
-                                </div>
-
-                                <div className="flex gap-3 md:col-span-2">
-                                    <button
-                                        type="submit"
-                                        disabled={form.processing}
-                                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-                                    >
-                                        {editing ? 'Simpan Perubahan' : 'Simpan Model'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleCancel}
-                                        className="rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-gray-50 hover:text-slate-900"
-                                    >
-                                        Batal
-                                    </button>
-                                </div>
-                            </form>
+                        <div className="space-y-2">
+                            <Label htmlFor="merek-model">Merek</Label>
+                            <select
+                                id="merek-model"
+                                value={form.data.merek_id}
+                                onChange={(event) => form.setData('merek_id', event.target.value)}
+                                className={selectClass}
+                                aria-invalid={Boolean(form.errors.merek_id)}
+                                required
+                            >
+                                <option value="">Pilih merek</option>
+                                {merek.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.nama}
+                                    </option>
+                                ))}
+                            </select>
+                            {form.errors.merek_id && <p className="text-sm text-destructive">{form.errors.merek_id}</p>}
                         </div>
-                    )}
+                        <div className="space-y-2">
+                            <Label htmlFor="kategori-model">Kategori</Label>
+                            <select
+                                id="kategori-model"
+                                value={form.data.kategori_id}
+                                onChange={(event) => form.setData((data) => ({ ...data, kategori_id: event.target.value, jenis_id: '' }))}
+                                className={selectClass}
+                                aria-invalid={Boolean(form.errors.kategori_id)}
+                                required
+                            >
+                                <option value="">Pilih kategori</option>
+                                {kategori.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.nama}
+                                    </option>
+                                ))}
+                            </select>
+                            {form.errors.kategori_id && <p className="text-sm text-destructive">{form.errors.kategori_id}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="jenis-model">Jenis barang</Label>
+                            <select
+                                id="jenis-model"
+                                value={form.data.jenis_id}
+                                onChange={(event) => form.setData('jenis_id', event.target.value)}
+                                className={selectClass}
+                                disabled={!form.data.kategori_id}
+                                aria-invalid={Boolean(form.errors.jenis_id)}
+                            >
+                                <option value="">{form.data.kategori_id ? 'Pilih jenis' : 'Pilih kategori terlebih dahulu'}</option>
+                                {filteredJenis.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.nama}
+                                    </option>
+                                ))}
+                            </select>
+                            {form.errors.jenis_id && <p className="text-sm text-destructive">{form.errors.jenis_id}</p>}
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="label-model">Label barang</Label>
+                            <Input
+                                id="label-model"
+                                list="label-model-options"
+                                value={form.data.label}
+                                onChange={(event) => form.setData('label', event.target.value)}
+                                placeholder="Pilih atau ketik label baru"
+                                aria-invalid={Boolean(form.errors.label)}
+                            />
+                            <datalist id="label-model-options">
+                                {labelList.map((label) => (
+                                    <option key={label} value={label} />
+                                ))}
+                            </datalist>
+                            {form.errors.label && <p className="text-sm text-destructive">{form.errors.label}</p>}
+                        </div>
+                        <div className="flex gap-2 md:col-span-2">
+                            <Button type="submit" disabled={form.processing}>
+                                {form.processing ? 'Menyimpan...' : editing ? 'Simpan perubahan' : 'Simpan model'}
+                            </Button>
+                            <Button type="button" variant="outline" onClick={closeForm}>
+                                Batal
+                            </Button>
+                        </div>
+                    </form>
+                </MasterDataFormPanel>
+            )}
 
-                    <DataTable
-                        data={modelBarang.data}
-                        columns={columns}
-                        links={modelBarang.links}
-                        searchPlaceholder="Cari model..."
-                        onSearch={handleSearch}
-                        initialSearch={search}
-                        onCreate={
-                            canCreateModel
-                                ? () => {
-                                      setShowForm(true);
-                                      setEditing(null);
-                                      form.reset();
-                                  }
-                                : undefined
-                        }
-                        createLabel="Tambah Model"
-                        actionWidth="w-[100px]"
-                        actions={(item) => (
-                            <div className="flex items-center justify-end gap-2">
-                                {canEditModel && (
-                                    <button
-                                        onClick={() => handleEdit(item)}
-                                        className="group hover:bg-opacity-100 rounded-full p-2 text-blue-600 transition-all hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                        title="Edit"
-                                    >
-                                        <Edit3 size={16} />
-                                    </button>
-                                )}
-                                {canDeleteModel && (
-                                    <button
-                                        onClick={() => handleDelete(item.id)}
-                                        className="group hover:bg-opacity-100 rounded-full p-2 text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                        title="Hapus"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
-                            </div>
+            <DataTable
+                data={modelBarang.data}
+                columns={columns}
+                links={modelBarang.links}
+                paginationMeta={modelBarang}
+                searchPlaceholder="Cari model, kategori, atau label..."
+                initialSearch={filters.search ?? ''}
+                onSearch={search}
+                onCreate={
+                    permissions.includes(PERMISSIONS.CREATE_MODEL)
+                        ? () => {
+                              form.reset();
+                              form.clearErrors();
+                              setEditing(null);
+                              setShowForm(true);
+                          }
+                        : undefined
+                }
+                createLabel="Tambah model"
+                actions={(item) => (
+                    <div className="flex justify-end gap-1">
+                        {permissions.includes(PERMISSIONS.EDIT_MODEL) && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    form.setData({
+                                        nama: item.nama,
+                                        label: item.label ?? '',
+                                        kategori_id: String(item.kategori.id),
+                                        merek_id: String(item.merek.id),
+                                        jenis_id: item.jenis?.id ? String(item.jenis.id) : '',
+                                    });
+                                    form.clearErrors();
+                                    setEditing(item);
+                                    setShowForm(true);
+                                }}
+                                aria-label={`Edit ${item.nama}`}
+                            >
+                                <Edit3 />
+                            </Button>
                         )}
-                    />
-                </div>
-            </div>
-        </AppLayout>
+                        {permissions.includes(PERMISSIONS.DELETE_MODEL) && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => setPendingDelete(item)}
+                                aria-label={`Hapus ${item.nama}`}
+                            >
+                                <Trash2 />
+                            </Button>
+                        )}
+                    </div>
+                )}
+            />
+
+            <ConfirmDeleteDialog
+                open={Boolean(pendingDelete)}
+                onOpenChange={(open) => !open && setPendingDelete(null)}
+                description={`Model “${pendingDelete?.nama ?? ''}” akan dihapus. Pastikan tidak ada barang yang masih menggunakan model ini.`}
+                processing={form.processing}
+                onConfirm={() => {
+                    if (!pendingDelete) return;
+                    form.delete(route('model.destroy', pendingDelete.id), {
+                        preserveScroll: true,
+                        onSuccess: () => setPendingDelete(null),
+                    });
+                }}
+            />
+        </MasterDataPage>
     );
 }

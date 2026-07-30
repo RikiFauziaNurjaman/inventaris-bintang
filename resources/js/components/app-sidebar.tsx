@@ -2,7 +2,6 @@ import SidebarSection from '@/components/sidebar-section';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarGroupLabel,
     SidebarHeader,
@@ -11,6 +10,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { PERMISSIONS } from '@/constants/permission';
+import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Archive,
@@ -18,40 +18,44 @@ import {
     Boxes,
     Building2,
     ClipboardList,
-    Database,
     FileText,
+    HardDrive,
     Layers,
-    LayoutDashboard,
     LayoutGrid,
     Lock,
     MapPin,
     Package,
+    PackagePlus,
+    PackageSearch,
     Shapes,
     ShieldCheck,
+    ShoppingCart,
     Tags,
+    TriangleAlert,
+    Truck,
     Undo2,
     UserCog,
     Users,
-    HardDrive
+    Warehouse,
+    Wrench,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
-function filterMenuByPermissions(menuItems, userPermissions) {
-    return menuItems.reduce((acc, item) => {
-        // 1. Jika item memiliki children, filter children-nya terlebih dahulu
+type MenuItem = NavItem & {
+    permission?: string;
+    children?: MenuItem[];
+};
+
+function filterMenuByPermissions(menuItems: MenuItem[], userPermissions: string[]): MenuItem[] {
+    return menuItems.reduce<MenuItem[]>((acc, item) => {
         if (item.children) {
             const visibleChildren = filterMenuByPermissions(item.children, userPermissions);
-            // Jika ada setidaknya satu child yang terlihat, tampilkan parent menu
             if (visibleChildren.length > 0) {
                 acc.push({ ...item, children: visibleChildren });
             }
-        }
-        // 2. Jika item tidak memiliki permission, anggap publik dan tampilkan
-        else if (!item.permission) {
+        } else if (!item.permission) {
             acc.push(item);
-        }
-        // 3. Jika item punya permission, cek apakah user memilikinya
-        else if (userPermissions.includes(item.permission)) {
+        } else if (userPermissions.includes(item.permission)) {
             acc.push(item);
         }
 
@@ -60,7 +64,7 @@ function filterMenuByPermissions(menuItems, userPermissions) {
 }
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const { auth } = usePage<{ auth: { permissions?: string[] } }>().props;
     const userPermissions = auth.permissions || [];
 
     const platformNavItems = [
@@ -72,11 +76,12 @@ export function AppSidebar() {
         },
     ];
 
-    const masterDataNavItems = [
+    const operationalNavItems: MenuItem[] = [
         {
             title: 'Master Data',
-            icon: Database,
+            icon: Boxes,
             children: [
+                { title: 'Data Barang', href: '/barang', icon: PackageSearch, permission: PERMISSIONS.VIEW_BARANG_INVENTARIS },
                 { title: 'Kategori', href: '/kategori', icon: Layers, permission: PERMISSIONS.VIEW_KATEGORI },
                 { title: 'Merek', href: '/merek', icon: Tags, permission: PERMISSIONS.VIEW_MEREK },
                 { title: 'Model Barang', href: '/model', icon: Boxes, permission: PERMISSIONS.VIEW_MODEL },
@@ -87,18 +92,28 @@ export function AppSidebar() {
                 { title: 'Rak Barang', href: '/rak-barang', icon: Archive, permission: PERMISSIONS.VIEW_RAK_BARANG },
             ],
         },
-    ];
-
-    const transaksiNavItems = [
         {
             title: 'Transaksi',
-            href: '/transaksi',
-            icon: LayoutGrid,
-            permission: PERMISSIONS.VIEW_TRANSAKSI,
+            icon: ArrowLeftRight,
+            children: [
+                { title: 'Barang Masuk', href: '/barang-masuk', icon: PackagePlus, permission: PERMISSIONS.VIEW_BARANG_MASUK },
+                { title: 'Barang Keluar', href: '/barang-keluar', icon: Truck, permission: PERMISSIONS.VIEW_BARANG_KELUAR },
+                { title: 'Barang Kembali', href: '/barang-kembali', icon: Undo2, permission: PERMISSIONS.VIEW_BARANG_KEMBALI },
+            ],
         },
-    ];
-
-    const monitoringNavItems = [
+        {
+            title: 'Stok',
+            icon: Package,
+            children: [
+                { title: 'Stok Gudang', href: '/stok-gudang', icon: Warehouse, permission: PERMISSIONS.VIEW_STOK_GUDANG },
+                { title: 'Stok Distribusi', href: '/stok-distribusi', icon: Truck, permission: PERMISSIONS.VIEW_STOK_DISTRIBUSI },
+                { title: 'Total Barang', href: '/total-stock', icon: Boxes, permission: PERMISSIONS.VIEW_STOK_TOTAL },
+                { title: 'Stok Terjual', href: '/stok-terjual', icon: ShoppingCart, permission: PERMISSIONS.VIEW_STOK_TERJUAL },
+                { title: 'Stok Rusak', href: '/stock-rusak', icon: TriangleAlert, permission: PERMISSIONS.VIEW_STOK_RUSAK },
+                { title: 'Dalam Perbaikan', href: '/perbaikan', icon: Wrench, permission: PERMISSIONS.VIEW_STOK_DIPERBAIKI },
+                { title: 'Stock Opname', href: '/stock-opname', icon: ClipboardList, permission: PERMISSIONS.VIEW_STOCK_OPNAME },
+            ],
+        },
         {
             title: 'Monitoring',
             href: '/monitoring',
@@ -107,38 +122,11 @@ export function AppSidebar() {
         },
     ];
 
-    const stokNavItems = [
-        {
-            title: 'Stok',
-            icon: Package,
-            children: [
-                {
-                    title: 'Stok',
-                    href: '/stok',
-                    icon: Boxes,
-                    permission: PERMISSIONS.VIEW_STOK_DASHBOARD,
-                },
-                {
-                    title: 'Stock Opname',
-                    href: '/stock-opname',
-                    icon: ClipboardList,
-                    permission: PERMISSIONS.VIEW_STOCK_OPNAME,
-                },
-            ],
-        },
-    ];
-
     const laporanNavItems = [
         {
             title: 'Laporan',
             icon: FileText,
             children: [
-                {
-                    title: 'Dashboard Laporan',
-                    href: route('laporan.index'),
-                    icon: LayoutDashboard,
-                    permission: PERMISSIONS.VIEW_DASHBOARD_LAPORAN,
-                },
                 {
                     title: 'Laporan Barang Masuk',
                     href: route('laporan.masuk'),
@@ -188,17 +176,14 @@ export function AppSidebar() {
     ];
 
     const visiblePlatformNavItems = filterMenuByPermissions(platformNavItems, userPermissions);
-    const visibleMasterDataNavItems = filterMenuByPermissions(masterDataNavItems, userPermissions);
-    const visibleTransaksiNavItems = filterMenuByPermissions(transaksiNavItems, userPermissions);
-    const visibleMonitoringNavItems = filterMenuByPermissions(monitoringNavItems, userPermissions);
-    const visibleStokNavItems = filterMenuByPermissions(stokNavItems, userPermissions);
+    const visibleOperationalNavItems = filterMenuByPermissions(operationalNavItems, userPermissions);
     const visibleLaporanNavItems = filterMenuByPermissions(laporanNavItems, userPermissions);
     const visibleAksesNavItems = filterMenuByPermissions(aksesNavItems, userPermissions);
     const visibleSistemNavItems = filterMenuByPermissions(sistemNavItems, userPermissions);
 
     return (
         <Sidebar collapsible="icon" variant="sidebar">
-            <SidebarHeader>
+            <SidebarHeader className="border-b border-sidebar-border/80 p-3">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
@@ -210,7 +195,7 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="gap-1 py-3">
                 {/* Group 1: Platform */}
                 {visiblePlatformNavItems.length > 0 && (
                     <SidebarGroup className="px-2 py-0">
@@ -219,36 +204,13 @@ export function AppSidebar() {
                     </SidebarGroup>
                 )}
 
-                {/* Group 2: Master Data */}
-                {visibleMasterDataNavItems.length > 0 && (
+                {visibleOperationalNavItems.length > 0 && (
                     <SidebarGroup className="px-2 py-0">
-                        <SidebarGroupLabel>Master Data</SidebarGroupLabel>
-                        <SidebarSection items={visibleMasterDataNavItems} storageKey="sidebar-masterdata" />
+                        <SidebarGroupLabel>Operasional</SidebarGroupLabel>
+                        <SidebarSection items={visibleOperationalNavItems} storageKey="sidebar-operasional" />
                     </SidebarGroup>
                 )}
 
-                {visibleTransaksiNavItems.length > 0 && (
-                    <SidebarGroup className="px-2 py-0">
-                        <SidebarGroupLabel>Transaksi</SidebarGroupLabel>
-                        <SidebarSection items={visibleTransaksiNavItems} />
-                    </SidebarGroup>
-                )}
-
-                {visibleMonitoringNavItems.length > 0 && (
-                    <SidebarGroup className="px-2 py-0">
-                        <SidebarGroupLabel>Monitoring</SidebarGroupLabel>
-                        <SidebarSection items={visibleMonitoringNavItems} />
-                    </SidebarGroup>
-                )}
-
-                {visibleStokNavItems.length > 0 && (
-                    <SidebarGroup className="px-2 py-0">
-                        <SidebarGroupLabel>Stok</SidebarGroupLabel>
-                        <SidebarSection items={visibleStokNavItems} />
-                    </SidebarGroup>
-                )}
-
-                {/* Group 3: Laporan */}
                 {visibleLaporanNavItems.length > 0 && (
                     <SidebarGroup className="px-2 py-0">
                         <SidebarGroupLabel>Laporan</SidebarGroupLabel>
@@ -270,8 +232,6 @@ export function AppSidebar() {
                     </SidebarGroup>
                 )}
             </SidebarContent>
-
-            <SidebarFooter>{/* User info moved to Header */}</SidebarFooter>
         </Sidebar>
     );
 }

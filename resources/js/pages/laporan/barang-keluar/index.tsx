@@ -27,6 +27,8 @@ interface User {
 interface Paginator<T> {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
+    current_page: number;
+    per_page: number;
 }
 
 interface LaporanBarangKeluarProps extends PageProps {
@@ -41,8 +43,8 @@ interface LaporanBarangKeluarProps extends PageProps {
     };
 }
 
-export default function LaporanBarangKeluar({ auth, barangKeluarData, lokasiList, filters }: LaporanBarangKeluarProps) {
-    const { data, setData, get, reset } = useForm({
+export default function LaporanBarangKeluar({ barangKeluarData, lokasiList, filters }: LaporanBarangKeluarProps) {
+    const { data, setData, reset } = useForm({
         start_date: filters.start_date || '',
         end_date: filters.end_date || '',
         lokasi_id: filters.lokasi_id || '',
@@ -64,18 +66,24 @@ export default function LaporanBarangKeluar({ auth, barangKeluarData, lokasiList
         const routeName = format === 'pdf' ? 'laporan.keluar.pdf' : 'laporan.keluar.export';
         const query = pickBy(data);
         if (Object.keys(query).length === 0) return route(routeName);
-        return `${route(routeName)}?${new URLSearchParams(query as any).toString()}`;
+        return `${route(routeName)}?${new URLSearchParams(query as Record<string, string>).toString()}`;
     };
 
     const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { title: 'Laporan', href: '/laporan' },
+                { title: 'Barang Keluar', href: '/laporan/keluar' },
+            ]}
+        >
             <Head title="Laporan Barang Keluar" />
-            <div className="px-4 py-8 md:px-6 lg:px-8">
-                <div className="mx-auto max-w-7xl">
-                    <h1 className="mb-6 text-2xl font-bold text-gray-800">Laporan Barang Keluar</h1>
-                    <form onSubmit={applyFilters} className="mb-6 flex flex-wrap items-end gap-4 rounded-lg bg-white p-4 shadow-sm">
+            <div className="report-page px-4 py-6 md:px-6 lg:px-8">
+                <div className="w-full">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Laporan</p>
+                    <h1 className="mt-1 mb-6 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Barang Keluar</h1>
+                    <form onSubmit={applyFilters} className="report-filter mb-6 flex flex-wrap items-end gap-4 p-4">
                         <div>
                             <label htmlFor="start_date" className="mb-1 block text-sm text-gray-600">
                                 Dari Tanggal
@@ -167,7 +175,7 @@ export default function LaporanBarangKeluar({ auth, barangKeluarData, lokasiList
                                 </button>
 
                                 {dropdownOpen && (
-                                    <div className="ring-opacity-5 absolute right-0 z-10 mt-2 w-40 rounded-md bg-white shadow-lg ring-1 ring-black">
+                                    <div className="report-export-menu absolute right-0 z-10 mt-2 w-40 rounded-lg shadow-lg">
                                         <div className="py-1">
                                             <a
                                                 href={buildExportUrl()}
@@ -200,7 +208,7 @@ export default function LaporanBarangKeluar({ auth, barangKeluarData, lokasiList
                         </div>
                     </form>
 
-                    <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+                    <div className="report-table">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -214,23 +222,31 @@ export default function LaporanBarangKeluar({ auth, barangKeluarData, lokasiList
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
-                                    {barangKeluarData.data.map((item: BarangKeluarItem, index) => (
-                                        <tr key={item.transaksi_id}>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                                {(barangKeluarData.current_page - 1) * barangKeluarData.per_page + (index + 1)}
+                                    {barangKeluarData.data.length ? (
+                                        barangKeluarData.data.map((item: BarangKeluarItem, index) => (
+                                            <tr key={item.transaksi_id}>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                                    {(barangKeluarData.current_page - 1) * barangKeluarData.per_page + (index + 1)}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{item.tanggal}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                                    <div>{item.serial_number}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {item.model} / {item.merek}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{item.lokasi_tujuan}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{item.status_keluar}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{item.nama_user}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                                Tidak ada data.
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{item.tanggal}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                                <div>{item.serial_number}</div>
-                                                <div className="text-xs text-gray-500">
-                                                    {item.model} / {item.merek}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{item.lokasi_tujuan}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{item.status_keluar}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{item.nama_user}</td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>

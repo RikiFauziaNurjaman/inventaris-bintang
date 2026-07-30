@@ -37,6 +37,11 @@ export const PERMISSIONS = {
     EDIT_RAK_BARANG: 'edit-rak-barang',
     DELETE_RAK_BARANG: 'delete-rak-barang',
 
+    VIEW_BARANG_INVENTARIS: 'view-barang-inventaris',
+    CREATE_BARANG_INVENTARIS: 'create-barang-inventaris',
+    EDIT_BARANG_INVENTARIS: 'edit-barang-inventaris',
+    DELETE_BARANG_INVENTARIS: 'delete-barang-inventaris',
+
     // Transaksi
     VIEW_TRANSAKSI: 'view-transaksi',
 

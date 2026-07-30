@@ -27,6 +27,8 @@ interface User {
 interface Paginator<T> {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
+    current_page: number;
+    per_page: number;
 }
 
 interface LaporanMutasiProps extends PageProps {
@@ -39,8 +41,8 @@ interface LaporanMutasiProps extends PageProps {
     };
 }
 
-export default function Index({ auth, mutasiData, filters }: LaporanMutasiProps) {
-    const { data, setData, get, reset } = useForm({
+export default function Index({ mutasiData, filters }: LaporanMutasiProps) {
+    const { data, setData, reset } = useForm({
         start_date: filters.start_date || '',
         end_date: filters.end_date || '',
         search: filters.search || '',
@@ -48,7 +50,7 @@ export default function Index({ auth, mutasiData, filters }: LaporanMutasiProps)
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     // Fungsi untuk menerapkan filter
-    const applyFilters = (e: any) => {
+    const applyFilters = (e: React.FormEvent) => {
         e.preventDefault();
         const query = pickBy(data);
         router.get(route('laporan.mutasi'), query, {
@@ -69,23 +71,29 @@ export default function Index({ auth, mutasiData, filters }: LaporanMutasiProps)
         if (Object.keys(query).length === 0) {
             return route(routeName);
         }
-        return `${route(routeName)}?${new URLSearchParams(query as any).toString()}`;
+        return `${route(routeName)}?${new URLSearchParams(query as Record<string, string>).toString()}`;
     };
 
     const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { title: 'Laporan', href: '/laporan' },
+                { title: 'Mutasi Barang', href: '/laporan/mutasi' },
+            ]}
+        >
             <Head title="Laporan Mutasi Barang" />
 
-            <div className="px-4 py-6 md:px-6 lg:px-8">
-                <div className="mx-auto max-w-7xl">
+            <div className="report-page px-4 py-6 md:px-6 lg:px-8">
+                <div className="w-full">
                     <div className="mb-4">
-                        <h1 className="text-xl font-semibold text-gray-800">Laporan Mutasi Barang</h1>
+                        <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Laporan</p>
+                        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Mutasi Barang</h1>
                     </div>
 
                     {/* Filter Section */}
-                    <form onSubmit={applyFilters} className="mb-6 flex flex-wrap items-end gap-4 rounded-lg bg-white p-4 shadow-sm">
+                    <form onSubmit={applyFilters} className="report-filter mb-6 flex flex-wrap items-end gap-4 p-4">
                         <div>
                             <label htmlFor="start_date" className="mb-1 block text-sm text-gray-600">
                                 Dari Tanggal
@@ -158,7 +166,7 @@ export default function Index({ auth, mutasiData, filters }: LaporanMutasiProps)
                                 </button>
 
                                 {dropdownOpen && (
-                                    <div className="ring-opacity-5 absolute right-0 z-10 mt-2 w-40 rounded-md bg-white shadow-lg ring-1 ring-black">
+                                    <div className="report-export-menu absolute right-0 z-10 mt-2 w-40 rounded-lg shadow-lg">
                                         <div className="py-1">
                                             <a
                                                 href={buildExportUrl()}
@@ -192,7 +200,7 @@ export default function Index({ auth, mutasiData, filters }: LaporanMutasiProps)
                     </form>
 
                     {/* Data Table */}
-                    <div className="overflow-hidden rounded-lg border border-gray-200">
+                    <div className="report-table">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-100">
@@ -230,7 +238,9 @@ export default function Index({ auth, mutasiData, filters }: LaporanMutasiProps)
                                         ))
                                     ) : (
                                         <tr>
-                                            <td className="px-4 py-8 text-center text-sm text-gray-500">Tidak ada data mutasi yang ditemukan.</td>
+                                            <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-500">
+                                                Tidak ada data mutasi yang ditemukan.
+                                            </td>
                                         </tr>
                                     )}
                                 </tbody>

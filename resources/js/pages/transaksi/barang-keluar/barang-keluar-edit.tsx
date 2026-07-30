@@ -1,6 +1,6 @@
 // File: resources/js/Pages/transaksi/barang-keluar/BarangKeluarEdit.tsx
 
-import AppLayout from '@/layouts/app-layout';
+import { TransactionFormPage } from '@/components/transaction-page';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -102,7 +102,7 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, subLokasi
     };
 
     return (
-        <div className="relative mb-6 rounded-lg border-2 border-gray-200 p-4">
+        <div className="relative mb-6 rounded-xl border bg-muted/30 p-5">
             <h3 className="mb-3 text-lg font-semibold text-gray-700">Item #{index + 1}</h3>
             {onRemove && (
                 <button type="button" onClick={onRemove} className="absolute top-2 right-2 font-bold text-red-500 hover:text-red-700">
@@ -166,63 +166,67 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, subLokasi
             {/* Serial Numbers & Status */}
             <div className="mt-4">
                 <label className="mb-2 block text-sm font-semibold text-red-700">Serial Number & Status</label>
-            {item.keluar_info.map((info, infoIndex) => (
-                <div key={infoIndex} className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Serial Number</label>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="text"
-                                className="flex-1 rounded border-2 border-red-400 bg-red-50 p-2"
-                                value={info.serial_number}
-                                onChange={(e) => handleKeluarInfoChange(infoIndex, 'serial_number', e.target.value)}
-                                placeholder={`Serial #${infoIndex + 1}`}
-                                list={`serial-suggest-${index}-${infoIndex}`}
-                            />
-                            <datalist id={`serial-suggest-${index}-${infoIndex}`}>
-                                {availableSerialsForSuggestions.map((sn) => (
-                                    <option key={sn} value={sn} />
-                                ))}
-                            </datalist>
+                {item.keluar_info.map((info, infoIndex) => (
+                    <div key={infoIndex} className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase">Serial Number</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    className="flex-1 rounded border-2 border-red-400 bg-red-50 p-2"
+                                    value={info.serial_number}
+                                    onChange={(e) => handleKeluarInfoChange(infoIndex, 'serial_number', e.target.value)}
+                                    placeholder={`Serial #${infoIndex + 1}`}
+                                    list={`serial-suggest-${index}-${infoIndex}`}
+                                />
+                                <datalist id={`serial-suggest-${index}-${infoIndex}`}>
+                                    {availableSerialsForSuggestions.map((sn) => (
+                                        <option key={sn} value={sn} />
+                                    ))}
+                                </datalist>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Status</label>
-                        <select
-                            value={info.status_keluar}
-                            onChange={(e) => handleKeluarInfoChange(infoIndex, 'status_keluar', e.target.value)}
-                            className="w-full rounded border-2 border-blue-400 bg-blue-50 p-2"
-                        >
-                            <option value="dipinjamkan">Dipinjamkan</option>
-                            <option value="dijual">Dijual</option>
-                            <option value="maintenance">Maintenance</option>
-                        </select>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Sub Lokasi</label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase">Status</label>
                             <select
-                                className="flex-1 rounded border p-2 disabled:bg-gray-100"
-                                value={info.sub_lokasi}
-                                onChange={(e) => handleKeluarInfoChange(infoIndex, 'sub_lokasi', e.target.value)}
-                                disabled={subLokasiOptions.length === 0}
+                                value={info.status_keluar}
+                                onChange={(e) => handleKeluarInfoChange(infoIndex, 'status_keluar', e.target.value)}
+                                className="w-full rounded border-2 border-blue-400 bg-blue-50 p-2"
                             >
-                                <option value="">-- Sub Lokasi --</option>
-                                {subLokasiOptions.map((s) => (
-                                    <option key={s.id} value={s.nama}>
-                                        {s.nama} {s.lantai ? `(Lt. ${s.lantai})` : ''}
-                                    </option>
-                                ))}
+                                <option value="dipinjamkan">Dipinjamkan</option>
+                                <option value="dijual">Dijual</option>
+                                <option value="maintenance">Maintenance</option>
                             </select>
-                            {item.keluar_info.length > 1 && (
-                                <button type="button" className="text-sm text-red-600 hover:underline" onClick={() => removeSerialField(infoIndex)}>
-                                    Hapus
-                                </button>
-                            )}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase">Sub Lokasi</label>
+                            <div className="flex items-center gap-2">
+                                <select
+                                    className="flex-1 rounded border p-2 disabled:bg-gray-100"
+                                    value={info.sub_lokasi}
+                                    onChange={(e) => handleKeluarInfoChange(infoIndex, 'sub_lokasi', e.target.value)}
+                                    disabled={subLokasiOptions.length === 0}
+                                >
+                                    <option value="">-- Sub Lokasi --</option>
+                                    {subLokasiOptions.map((s) => (
+                                        <option key={s.id} value={s.nama}>
+                                            {s.nama} {s.lantai ? `(Lt. ${s.lantai})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                {item.keluar_info.length > 1 && (
+                                    <button
+                                        type="button"
+                                        className="text-sm text-red-600 hover:underline"
+                                        onClick={() => removeSerialField(infoIndex)}
+                                    >
+                                        Hapus
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            ))}
+                ))}
                 <button type="button" className="mt-1 text-sm text-blue-600 hover:underline" onClick={addSerialField}>
                     + Tambah Serial
                 </button>
@@ -309,88 +313,96 @@ export default function BarangKeluarEdit() {
     };
 
     return (
-        <AppLayout>
-            <div className="container mx-auto p-4">
-                <h1 className="mb-4 text-2xl font-bold">Edit Transaksi Barang Keluar</h1>
-                <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-md">
-                    {/* Header Form (Tanggal & Lokasi) */}
-                    <div className="mb-6 grid grid-cols-1 gap-6 border-b pb-6 md:grid-cols-3">
-                        <div>
-                            <label>Tanggal</label>
-                            <input
-                                type="date"
-                                className="mt-1 w-full rounded border p-2"
-                                value={data.tanggal}
-                                onChange={(e) => setData('tanggal', e.target.value)}
-                            />
-                            {errors.tanggal && <p className="text-sm text-red-500">{errors.tanggal}</p>}
-                        </div>
-                        <div>
-                            <label>Tujuan Distribusi</label>
-                            <select
-                                className="mt-1 w-full rounded border p-2"
-                                value={data.lokasi}
-                                onChange={(e) => {
-                                    setData('lokasi', e.target.value);
-                                }}
-                            >
-                                <option value="">-- Pilih Lokasi Tujuan --</option>
-                                {lokasiList.map((l) => (
-                                    <option key={l.id} value={l.nama}>
-                                        {l.nama}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.lokasi && <p className="text-sm text-red-500">{errors.lokasi}</p>}
-                        </div>
-                        <div>
-                            <label>PIC (Penanggung Jawab)</label>
-                            <input
-                                type="text"
-                                className="mt-1 w-full rounded border p-2"
-                                value={data.pic}
-                                onChange={(e) => setData('pic', e.target.value)}
-                                placeholder="Nama penanggung jawab..."
-                            />
-                            {errors.pic && <p className="text-sm text-red-500">{errors.pic}</p>}
-                        </div>
-                    </div>
-
-                    {/* Daftar Item */}
-                    {data.items.map((item, index) => (
-                        <ItemRow
-                            key={index}
-                            item={item}
-                            index={index}
-                            onItemChange={handleItemChange}
-                            onRemove={data.items.length > 1 ? () => removeItemRow(index) : undefined}
-                            errors={errors}
-                            lists={{ kategoriList, merekList, modelList, serialNumberList }}
-                            subLokasiOptions={subLokasiOptions}
-                            loadingSubLokasi={loadingSubLokasi}
+        <TransactionFormPage
+            title="Edit Barang Keluar"
+            description="Perbarui tujuan distribusi, PIC, dan unit pada transaksi ini."
+            backHref={route('barang-keluar.index')}
+        >
+            <form onSubmit={handleSubmit} className="transaction-form-card rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+                {/* Header Form (Tanggal & Lokasi) */}
+                <div className="mb-6 grid grid-cols-1 gap-6 border-b pb-6 md:grid-cols-3">
+                    <div>
+                        <label>Tanggal</label>
+                        <input
+                            type="date"
+                            className="mt-1 w-full rounded border p-2"
+                            value={data.tanggal}
+                            onChange={(e) => setData('tanggal', e.target.value)}
                         />
-                    ))}
-
-                    {/* Tombol Aksi */}
-                    <div className="mt-6 flex items-center justify-between">
-                        <button type="button" onClick={addItemRow} className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600">
-                            + Tambah Item
-                        </button>
-                        <div className="flex space-x-4">
-                            <Link href={route('barang-keluar.index')} className="rounded bg-gray-500 px-6 py-2 text-white hover:bg-gray-600">
-                                Kembali
-                            </Link>
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="rounded bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                Perbarui Transaksi
-                            </button>
-                        </div>
+                        {errors.tanggal && <p className="text-sm text-red-500">{errors.tanggal}</p>}
                     </div>
-                </form>
-            </div>
-        </AppLayout>
+                    <div>
+                        <label>Tujuan Distribusi</label>
+                        <select
+                            className="mt-1 w-full rounded border p-2"
+                            value={data.lokasi}
+                            onChange={(e) => {
+                                setData('lokasi', e.target.value);
+                            }}
+                        >
+                            <option value="">-- Pilih Lokasi Tujuan --</option>
+                            {lokasiList.map((l) => (
+                                <option key={l.id} value={l.nama}>
+                                    {l.nama}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.lokasi && <p className="text-sm text-red-500">{errors.lokasi}</p>}
+                    </div>
+                    <div>
+                        <label>PIC (Penanggung Jawab)</label>
+                        <input
+                            type="text"
+                            className="mt-1 w-full rounded border p-2"
+                            value={data.pic}
+                            onChange={(e) => setData('pic', e.target.value)}
+                            placeholder="Nama penanggung jawab..."
+                        />
+                        {errors.pic && <p className="text-sm text-red-500">{errors.pic}</p>}
+                    </div>
+                </div>
+
+                {/* Daftar Item */}
+                {data.items.map((item, index) => (
+                    <ItemRow
+                        key={index}
+                        item={item}
+                        index={index}
+                        onItemChange={handleItemChange}
+                        onRemove={data.items.length > 1 ? () => removeItemRow(index) : undefined}
+                        errors={errors}
+                        lists={{ kategoriList, merekList, modelList, serialNumberList }}
+                        subLokasiOptions={subLokasiOptions}
+                        loadingSubLokasi={loadingSubLokasi}
+                    />
+                ))}
+
+                {/* Tombol Aksi */}
+                <div className="mt-8 flex flex-col items-stretch justify-between gap-4 border-t pt-6 sm:flex-row sm:items-center">
+                    <button
+                        type="button"
+                        onClick={addItemRow}
+                        className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-400"
+                    >
+                        + Tambah Item
+                    </button>
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <Link
+                            href={route('barang-keluar.index')}
+                            className="rounded-lg border border-input bg-background px-5 py-2.5 text-center text-sm font-medium text-foreground hover:bg-accent"
+                        >
+                            Kembali
+                        </Link>
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                        >
+                            Perbarui Transaksi
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </TransactionFormPage>
     );
 }

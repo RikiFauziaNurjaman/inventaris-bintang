@@ -1,99 +1,105 @@
-import AppLayout from '@/layouts/app-layout';
-import { Link, router } from '@inertiajs/react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
+import { Column, DataTable } from '@/components/data-table';
+import { StockPage } from '@/components/stock-page';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { PERMISSIONS } from '@/constants/permission';
+import { Link, router, usePage } from '@inertiajs/react';
+import { Check, Eye } from 'lucide-react';
+import { useState } from 'react';
 
-interface Lokasi {
-    id: number;
-    nama: string;
-}
-
-interface User {
-    id: number;
-    name: string;
-}
-
-interface StockOpname {
+type StockOpname = {
     id: number;
     tanggal: string;
-    lokasi: Lokasi;
-    user: User;
+    lokasi?: { id: number; nama: string };
+    user?: { id: number; name: string };
     catatan: string | null;
-}
-
-interface Props extends PageProps {
+    approved_at?: string | null;
+};
+type Props = {
     data: {
         data: StockOpname[];
-        current_page: number;
-        last_page: number;
         links: { url: string | null; label: string; active: boolean }[];
+        from: number | null;
+        to: number | null;
+        total: number;
     };
-}
-
-const handleApprove = (id: number) => {
-    if (confirm('Yakin ingin meng-approve stock opname ini?')) {
-        router.post(`/stock-opname/${id}/approve`);
-    }
 };
 
 export default function StockOpnameIndex({ data }: Props) {
+    const { auth } = usePage<{ auth: { permissions?: string[] } }>().props;
+    const permissions = auth.permissions ?? [];
+    const [pendingApprove, setPendingApprove] = useState<StockOpname | null>(null);
+    const [processing, setProcessing] = useState(false);
+    const columns: Column<StockOpname>[] = [
+        { header: 'Tanggal', accessorKey: 'tanggal', className: 'w-36 whitespace-nowrap' },
+        { header: 'Lokasi', cell: (item) => item.lokasi?.nama || '—' },
+        { header: 'Petugas', cell: (item) => item.user?.name || '—' },
+        { header: 'Catatan', accessorKey: 'catatan', cell: (item) => item.catatan || '—' },
+        {
+            header: 'Status',
+            cell: (item) => (
+                <Badge className={item.approved_at ? 'bg-emerald-600 text-white' : undefined} variant={item.approved_at ? 'default' : 'secondary'}>
+                    {item.approved_at ? 'Disetujui' : 'Menunggu'}
+                </Badge>
+            ),
+        },
+    ];
+
     return (
-        <AppLayout>
-            <div className="p-6">
-                <div className="mb-4 flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Daftar Stock Opname</h1>
-                    <Link href="/stock-opname/create" className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                        + Tambah SO
-                    </Link>
-                </div>
+        <StockPage title="Stock Opname" description="Periksa kesesuaian stok fisik terhadap catatan sistem.">
+            <DataTable
+                data={data.data}
+                columns={columns}
+                links={data.links}
+                paginationMeta={data}
+                onCreate={permissions.includes(PERMISSIONS.CREATE_STOCK_OPNAME) ? () => router.visit(route('stock-opname.create')) : undefined}
+                createLabel="Tambah stock opname"
+                actions={(item) => (
+                    <div className="flex justify-end gap-1">
+                        <Button asChild variant="ghost" size="icon">
+                            <Link href={route('stock-opname.show', item.id)} aria-label={`Lihat stock opname ${item.id}`}>
+                                <Eye />
+                            </Link>
+                        </Button>
+                        {permissions.includes(PERMISSIONS.EDIT_STOCK_OPNAME) && !item.approved_at && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-emerald-700 hover:text-emerald-700 dark:text-emerald-400"
+                                onClick={() => setPendingApprove(item)}
+                                aria-label={`Setujui stock opname ${item.id}`}
+                            >
+                                <Check />
+                            </Button>
+                        )}
+                    </div>
+                )}
+            />
 
-                <div className="overflow-x-auto">
-                    <table className="min-w-full rounded bg-white shadow">
-                        <thead>
-                            <tr className="bg-gray-100">
-                                <th className="px-4 py-2 text-left">#</th>
-                                <th className="px-4 py-2 text-left">Tanggal</th>
-                                <th className="px-4 py-2 text-left">Lokasi</th>
-                                <th className="px-4 py-2 text-left">Petugas</th>
-                                <th className="px-4 py-2 text-left">Catatan</th>
-                                <th className="px-4 py-2 text-left">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.data.map((item, index) => (
-                                <tr key={item.id} className="border-t">
-                                    <td className="px-4 py-2">{index + 1}</td>
-                                    <td className="px-4 py-2">{item.tanggal}</td>
-                                    <td className="px-4 py-2">{item.lokasi?.nama}</td>
-                                    <td className="px-4 py-2">{item.user?.name}</td>
-                                    <td className="px-4 py-2">{item.catatan || '-'}</td>
-                                    <td className="px-4 py-2">
-                                        <button
-                                            onClick={() => handleApprove(item.id)}
-                                            className="rounded bg-green-600 px-3 py-1 text-white hover:bg-green-700"
-                                        >
-                                            Approve
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="mt-4 flex justify-center">
-                    {data.links.map((link, i) => (
-                        <Link
-                            key={i}
-                            href={link.url ?? '#'}
-                            className={`mx-1 rounded border px-3 py-1 text-sm ${
-                                link.active ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'
-                            } ${!link.url && 'cursor-not-allowed opacity-50'}`}
-                            disabled={!link.url}
-                        >
-                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                        </Link>
-                    ))}
-                </div>
-            </div>
-        </AppLayout>
+            <ConfirmDeleteDialog
+                open={Boolean(pendingApprove)}
+                onOpenChange={(open) => !open && setPendingApprove(null)}
+                title="Setujui stock opname?"
+                description="Hasil stock opname akan diterapkan pada data stok setelah disetujui."
+                confirmLabel="Setujui"
+                confirmVariant="default"
+                processing={processing}
+                onConfirm={() => {
+                    if (!pendingApprove) return;
+                    setProcessing(true);
+                    router.post(
+                        `/stock-opname/${pendingApprove.id}/approve`,
+                        {},
+                        {
+                            preserveScroll: true,
+                            onFinish: () => setProcessing(false),
+                            onSuccess: () => setPendingApprove(null),
+                        },
+                    );
+                }}
+            />
+        </StockPage>
     );
 }

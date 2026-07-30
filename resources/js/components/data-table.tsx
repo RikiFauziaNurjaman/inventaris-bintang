@@ -1,29 +1,38 @@
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { cn } from '@/lib/utils';
 import { Link, router } from '@inertiajs/react';
-import debounce from 'lodash.debounce';
-import { Plus, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Search, SearchX, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export type Column<T> = {
     header: string;
     accessorKey?: keyof T;
     cell?: (item: T, index: number) => React.ReactNode;
-    className?: string; // Standardize column width or alignment
+    className?: string;
 };
 
 type PaginationLink = { url: string | null; label: string; active: boolean };
+
+export type PaginationMeta = {
+    from: number | null;
+    to: number | null;
+    total: number;
+};
 
 type DataTableProps<T> = {
     data: T[];
     columns: Column<T>[];
     links?: PaginationLink[];
+    paginationMeta?: PaginationMeta;
     searchPlaceholder?: string;
     onSearch?: (term: string) => void;
     onCreate?: () => void;
     createLabel?: string;
-    actions?: (item: T) => React.ReactNode; // Optional custom actions column
-    actionWidth?: string; // Optional width for action column
+    actions?: (item: T) => React.ReactNode;
+    actionWidth?: string;
     initialSearch?: string;
     customFilters?: React.ReactNode;
 };
@@ -32,6 +41,7 @@ export function DataTable<T extends { id: number | string }>({
     data,
     columns,
     links,
+    paginationMeta,
     searchPlaceholder = 'Cari data...',
     onSearch,
     onCreate,
@@ -42,108 +52,105 @@ export function DataTable<T extends { id: number | string }>({
     customFilters,
 }: DataTableProps<T>) {
     const [search, setSearch] = useState(initialSearch);
+    const defaultSearch = useDebouncedCallback((value: string) => {
+        router.get(window.location.pathname, { search: value }, { preserveState: true, preserveScroll: true, replace: true });
+    });
+
+    useEffect(() => setSearch(initialSearch), [initialSearch]);
 
     const handleSearch = (value: string) => {
         setSearch(value);
-        if (onSearch) {
-            onSearch(value);
-        } else {
-            // Default Inertia search behavior if onSearch is not provided
-            const handleDebouncedSearch = debounce(() => {
-                router.get(
-                    window.location.pathname,
-                    { search: value },
-                    {
-                        preserveState: true,
-                        replace: true,
-                    },
-                );
-            }, 400);
-            handleDebouncedSearch();
-        }
+        (onSearch ?? defaultSearch)(value);
     };
 
-    // Cleanup debounce on unmount (optional but good practice)
-    useEffect(() => {
-        return () => {
-            // clean up
-        };
-    }, []);
+    const clearSearch = () => handleSearch('');
+    const rowStart = paginationMeta?.from ?? 1;
 
     return (
-        <div className="space-y-4">
-            {/* Header / Controls */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-1 items-center gap-2">
-                    <div className="relative flex-1 sm:max-w-[300px]">
-                        <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        <input
-                            type="text"
+        <section className="space-y-4" aria-label="Tabel data">
+            <div className="space-y-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative w-full sm:max-w-sm">
+                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            type="search"
                             placeholder={searchPlaceholder}
                             value={search}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            className="h-9 w-full rounded-md border border-gray-200 bg-white pr-4 pl-9 text-sm outline-none placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:placeholder:text-gray-400"
+                            onChange={(event) => handleSearch(event.target.value)}
+                            className="pr-9 pl-9"
+                            aria-label={searchPlaceholder}
                         />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={clearSearch}
+                                className="absolute top-1/2 right-2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                aria-label="Bersihkan pencarian"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        )}
                     </div>
-                    {customFilters}
+
+                    {onCreate && (
+                        <Button type="button" onClick={onCreate} className="shrink-0">
+                            <Plus />
+                            {createLabel}
+                        </Button>
+                    )}
                 </div>
 
-                {onCreate && (
-                    <button
-                        onClick={onCreate}
-                        className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:focus:ring-offset-zinc-950"
-                    >
-                        <Plus className="mr-2 h-4 w-4" />
-                        {createLabel}
-                    </button>
-                )}
+                {customFilters && <div className="rounded-xl border bg-muted/30 p-3">{customFilters}</div>}
             </div>
 
-            {/* Table Container */}
-            <div className="overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                 <Table>
-                    <TableHeader className="bg-slate-100 dark:bg-zinc-800/50">
-                        <TableRow className="hover:bg-slate-100 dark:hover:bg-zinc-800/50">
-                            {/* Auto Numbering Header */}
-                            <TableHead className="w-[50px] text-xs font-semibold tracking-wider text-slate-500 uppercase">No</TableHead>
-
-                            {columns.map((col, index) => (
-                                <TableHead key={index} className={cn('text-xs font-semibold tracking-wider text-slate-500 uppercase', col.className)}>
-                                    {col.header}
+                    <TableHeader className="bg-muted/60">
+                        <TableRow className="hover:bg-transparent">
+                            <TableHead className="w-14 text-xs font-semibold tracking-wider uppercase">No</TableHead>
+                            {columns.map((column, index) => (
+                                <TableHead key={index} className={cn('text-xs font-semibold tracking-wider uppercase', column.className)}>
+                                    {column.header}
                                 </TableHead>
                             ))}
-
                             {actions && (
-                                <TableHead
-                                    className={cn('pr-6 text-right text-xs font-semibold tracking-wider text-slate-500 uppercase', actionWidth)}
-                                >
+                                <TableHead className={cn('pr-5 text-right text-xs font-semibold tracking-wider uppercase', actionWidth)}>
                                     Aksi
                                 </TableHead>
                             )}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {data.length > 0 ? (
+                        {data.length ? (
                             data.map((item, index) => (
-                                <TableRow key={item.id} className="transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
-                                    <TableCell className="font-medium text-slate-700 dark:text-slate-300">{index + 1}</TableCell>
-
-                                    {columns.map((col, colIndex) => (
-                                        <TableCell key={colIndex} className="text-slate-700 dark:text-slate-300">
-                                            {col.cell ? col.cell(item, index) : col.accessorKey ? (item[col.accessorKey] as React.ReactNode) : null}
+                                <TableRow key={item.id}>
+                                    <TableCell className="font-medium text-muted-foreground">{rowStart + index}</TableCell>
+                                    {columns.map((column, columnIndex) => (
+                                        <TableCell key={columnIndex} className="text-foreground">
+                                            {column.cell
+                                                ? column.cell(item, index)
+                                                : column.accessorKey
+                                                  ? (item[column.accessorKey] as React.ReactNode)
+                                                  : null}
                                         </TableCell>
                                     ))}
-
-                                    {actions && <TableCell className="pr-6 text-right">{actions(item)}</TableCell>}
+                                    {actions && <TableCell className="pr-5 text-right">{actions(item)}</TableCell>}
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell
-                                    colSpan={columns.length + (actions ? 2 : 1)}
-                                    className="h-24 text-center text-slate-500 dark:text-slate-400"
-                                >
-                                    Tidak ada data ditemukan
+                                <TableCell colSpan={columns.length + (actions ? 2 : 1)} className="h-44 text-center">
+                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                        <SearchX className="size-8 stroke-1" />
+                                        <p className="text-sm font-medium text-foreground">
+                                            {search ? 'Data yang dicari tidak ditemukan' : 'Belum ada data'}
+                                        </p>
+                                        {search && (
+                                            <Button type="button" variant="link" size="sm" onClick={clearSearch}>
+                                                Bersihkan pencarian
+                                            </Button>
+                                        )}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )}
@@ -151,36 +158,50 @@ export function DataTable<T extends { id: number | string }>({
                 </Table>
             </div>
 
-            {/* Pagination */}
-            {links &&
-                links.length > 3 && ( // Only show if we have actual pages (Laravel usually gives prev, 1, next)
-                    <div className="flex justify-end pt-2">
-                        <div className="flex items-center gap-1 rounded-lg border border-gray-100 bg-white p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                            {links.map((link, i) => {
-                                // Clean up label (remove &laquo; etc)
-                                const label = link.label.replace('&laquo; Previous', 'Prev').replace('Next &raquo;', 'Next');
-
-                                return (
-                                    <Link
-                                        key={i}
-                                        href={link.url || '#'}
-                                        preserveState
-                                        preserveScroll
-                                        className={cn(
-                                            'inline-flex h-8 min-w-[32px] items-center justify-center rounded-md px-3 text-xs font-medium transition-colors',
-                                            link.active
-                                                ? 'bg-blue-600 text-white shadow-sm'
-                                                : !link.url
-                                                  ? 'pointer-events-none text-gray-300 dark:text-gray-600'
-                                                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-zinc-800 dark:hover:text-gray-200',
-                                        )}
-                                        dangerouslySetInnerHTML={{ __html: label }} // Keep arrow entities if we didn't replace them or want them
-                                    />
-                                );
-                            })}
-                        </div>
-                    </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {paginationMeta ? (
+                    <p className="text-xs text-muted-foreground">
+                        Menampilkan {paginationMeta.from ?? 0}–{paginationMeta.to ?? 0} dari {paginationMeta.total} data
+                    </p>
+                ) : (
+                    <span />
                 )}
-        </div>
+
+                {links && links.length > 3 && (
+                    <nav className="flex items-center justify-end gap-1" aria-label="Paginasi">
+                        {links.map((link, index) => {
+                            const isPrevious = index === 0;
+                            const isNext = index === links.length - 1;
+                            const label = link.label.replace(/&laquo;|&raquo;|Previous|Next/gi, '').trim();
+                            const content = isPrevious ? (
+                                <>
+                                    <ChevronLeft />
+                                    <span className="sr-only">Sebelumnya</span>
+                                </>
+                            ) : isNext ? (
+                                <>
+                                    <ChevronRight />
+                                    <span className="sr-only">Berikutnya</span>
+                                </>
+                            ) : (
+                                label
+                            );
+
+                            return link.url ? (
+                                <Button key={index} asChild variant={link.active ? 'default' : 'outline'} size="icon">
+                                    <Link href={link.url} preserveState preserveScroll aria-current={link.active ? 'page' : undefined}>
+                                        {content}
+                                    </Link>
+                                </Button>
+                            ) : (
+                                <Button key={index} variant="outline" size="icon" disabled>
+                                    {content}
+                                </Button>
+                            );
+                        })}
+                    </nav>
+                )}
+            </div>
+        </section>
     );
 }

@@ -5,8 +5,6 @@ namespace App\Http\Controllers\MasterData;
 use App\Enums\PermissionEnum;
 use App\Helpers\MasterDataHelper;
 use App\Http\Controllers\Controller;
-use App\Models\JenisBarang;
-use App\Models\KategoriBarang;
 use App\Models\MerekBarang;
 use App\Models\ModelBarang;
 use Illuminate\Http\Request;
@@ -17,10 +15,10 @@ class ModelBarangController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('can:' . PermissionEnum::VIEW_MODEL->value)->only(['index', 'show', 'search']);
-        $this->middleware('can:' . PermissionEnum::CREATE_MODEL->value)->only(['create', 'store']);
-        $this->middleware('can:' . PermissionEnum::EDIT_MODEL->value)->only(['edit', 'update']);
-        $this->middleware('can:' . PermissionEnum::DELETE_MODEL->value)->only(['destroy']);
+        $this->middleware('can:'.PermissionEnum::VIEW_MODEL->value)->only(['index', 'show', 'search']);
+        $this->middleware('can:'.PermissionEnum::CREATE_MODEL->value)->only(['create', 'store']);
+        $this->middleware('can:'.PermissionEnum::EDIT_MODEL->value)->only(['edit', 'update']);
+        $this->middleware('can:'.PermissionEnum::DELETE_MODEL->value)->only(['destroy']);
     }
 
     public function index(Request $request)
@@ -33,12 +31,12 @@ class ModelBarangController extends Controller
 
         // Label list
         $labelList = ModelBarang::selectRaw('label, COUNT(*) as total')
-                ->whereNotNull('label')
-                ->groupBy('label')
-                ->orderByDesc('total')
-                ->limit(20)
-                ->pluck('label')
-                ->toArray();
+            ->whereNotNull('label')
+            ->groupBy('label')
+            ->orderByDesc('total')
+            ->limit(20)
+            ->pluck('label')
+            ->toArray();
 
         return Inertia::render('master/model/index', [
             'modelBarang' => $model,
@@ -49,9 +47,6 @@ class ModelBarangController extends Controller
             'filters' => [
                 'search' => $request->input('search'),
             ],
-            'flash' => [
-                'message' => session('message'),
-            ]
         ]);
     }
 
@@ -72,7 +67,7 @@ class ModelBarangController extends Controller
             'merek_id' => 'required|exists:merek_barang,id',
             'jenis_id' => 'nullable|exists:jenis_barang,id',
             'deskripsi' => 'nullable|string|max:500',
-            'label'     => 'nullable|string',
+            'label' => 'nullable|string',
         ]);
 
         ModelBarang::create($request->only('nama', 'kategori_id', 'merek_id', 'jenis_id', 'deskripsi', 'label'));
@@ -84,12 +79,12 @@ class ModelBarangController extends Controller
     public function update(Request $request, ModelBarang $model)
     {
         $request->validate([
-            'nama' => 'required|string|max:255|unique:model_barang,nama,' . $model->id,
+            'nama' => 'required|string|max:255|unique:model_barang,nama,'.$model->id,
             'kategori_id' => 'required|exists:kategori_barang,id',
             'merek_id' => 'required|exists:merek_barang,id',
             'jenis_id' => 'nullable|exists:jenis_barang,id',
             'deskripsi' => 'nullable|string|max:500',
-            'label'     => 'nullable|string',
+            'label' => 'nullable|string',
         ]);
 
         $model->update($request->only('nama', 'kategori_id', 'merek_id', 'jenis_id', 'deskripsi', 'label'));

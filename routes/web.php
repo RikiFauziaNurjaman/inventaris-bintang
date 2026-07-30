@@ -1,15 +1,14 @@
 <?php
 
 use App\Enums\PermissionEnum;
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\Auth\Roles\PermissionController;
 use App\Http\Controllers\Auth\Roles\RoleController;
 use App\Http\Controllers\Auth\Roles\UserController;
-use App\Http\Controllers\Barang\BarangController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Laporan\LaporanBarangKeluarController;
 use App\Http\Controllers\Laporan\LaporanBarangKembaliController;
 use App\Http\Controllers\Laporan\LaporanBarangMasukController;
-use App\Http\Controllers\Laporan\LaporanSummaryController;
 use App\Http\Controllers\Laporan\MutasiBarangController;
 use App\Http\Controllers\MasterData\AsalBarangController;
 use App\Http\Controllers\MasterData\DataBarangController;
@@ -19,25 +18,22 @@ use App\Http\Controllers\MasterData\LokasiBarangController;
 use App\Http\Controllers\MasterData\MerekBarangController;
 use App\Http\Controllers\MasterData\ModelBarangController;
 use App\Http\Controllers\MasterData\RakBarangController;
+use App\Http\Controllers\Settings\DatabaseController;
 use App\Http\Controllers\Stock\Distribusi\StokDistribusiController;
 use App\Http\Controllers\Stock\Gudang\StockDiperbaikiController;
 use App\Http\Controllers\Stock\Gudang\StockOpnameController;
 use App\Http\Controllers\Stock\Gudang\StockRusakController;
 use App\Http\Controllers\Stock\Gudang\StockTerjualController;
 use App\Http\Controllers\Stock\Gudang\StokGudangController;
-use App\Http\Controllers\Stock\StockController;
 use App\Http\Controllers\Stock\TotalStockController;
-use App\Http\Controllers\Settings\DatabaseController;
 use App\Http\Controllers\Transaksi\BarangKeluarController;
 use App\Http\Controllers\Transaksi\BarangKembaliController;
 use App\Http\Controllers\Transaksi\BarangMasukController;
-use App\Http\Controllers\AiChatController;
 use App\Models\Barang;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -86,8 +82,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/monitoring/lokasi/{lokasi}', [\App\Http\Controllers\MonitoringController::class, 'showLokasi'])->name('monitoring.lokasi.detail');
     Route::get('/monitoring/lokasi/{lokasi}/export-pdf', [\App\Http\Controllers\MonitoringController::class, 'exportPdf'])->name('monitoring.lokasi.exportPdf');
 
-    Route::get('/barang/search', [DataBarangController::class, 'search'])->name('barang.search');
-    Route::resource('barang', DataBarangController::class);
+    Route::resource('barang', DataBarangController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::get('/permissions/search', [PermissionController::class, 'search'])->name('permission.search');
     Route::resource('permissions', PermissionController::class)->except(['show']);
@@ -101,11 +96,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('stock-opname', StockOpnameController::class);
     Route::post('/stock-opname/{id}/approve', [StockOpnameController::class, 'approve']);
 
-
-
-    Route::get('/transaksi', function () {
-        return Inertia::render('transaksi/index');
-    })->name('transaksi.index');
+    Route::redirect('/transaksi', '/dashboard')->name('transaksi.index');
 
     Route::resource('barang-masuk', BarangMasukController::class);
     Route::get('/ajax/model-barang', [BarangMasukController::class, 'getModelByKategoriMerek']);
@@ -130,11 +121,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/model-by-merek/{lokasiId}/{merekNama}', [BarangKembaliController::class, 'getModelByMerekDanLokasi']);
     Route::get('/api/serial-by-model/{lokasiId}/{modelNama}', [BarangKembaliController::class, 'getSerialByModelDanLokasi']);
 
-    Route::get('/stok', function () {
-        return Inertia::render('stock/index');
-    })->name('stok.index');
-
-    Route::resource('stok', StockController::class);
+    Route::redirect('/stok', '/dashboard')->name('stok.index');
 
     Route::get('/api/stok-gudang-detail/{modelBarang}', [StokGudangController::class, 'getDetailAsJson'])->name('api.stok-gudang.detail');
     Route::get('/stok-gudang', [StokGudangController::class, 'index'])->name('stok.gudang.index');
@@ -180,7 +167,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Laporan routes — dipindah ke dalam K6BypassAuth middleware group
     Route::prefix('laporan')->name('laporan.')->group(function () {
-        Route::get('/', [LaporanSummaryController::class, 'index'])->name('index');
+        Route::redirect('/', '/laporan/masuk')->name('index');
 
         Route::get('/masuk', [LaporanBarangMasukController::class, 'index'])->name('masuk');
         Route::get('/masuk/excel', [LaporanBarangMasukController::class, 'exportBarangMasukExcel'])->name('masuk.export');
@@ -204,6 +191,5 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/ai-chat/suggestions', [AiChatController::class, 'suggestions'])->name('api.ai-chat.suggestions');
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
-
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

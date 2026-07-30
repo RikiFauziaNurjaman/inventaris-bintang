@@ -1,6 +1,6 @@
+import { TransactionFormPage } from '@/components/transaction-page';
 import { BulkSerialInput } from '@/components/transaksi/BulkSerialInput';
 import { showTransactionPreview } from '@/components/transaksi/TransactionPreview';
-import AppLayout from '@/layouts/app-layout';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -105,7 +105,7 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
     };
 
     return (
-        <div className="relative mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="relative mb-6 rounded-xl border bg-muted/30 p-5">
             <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-zinc-800">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Item Pengembalian #{index + 1}</h3>
                 {onRemove && (
@@ -315,111 +315,103 @@ export default function BarangKembaliCreate() {
     };
 
     return (
-        <AppLayout>
-            <div className="min-h-screen bg-gray-50 p-4 sm:p-6 dark:bg-zinc-950">
-                <div className="mx-auto max-w-5xl">
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Buat Transaksi Barang Kembali</h1>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Kembalikan barang yang dipinjam ke gudang</p>
+        <TransactionFormPage
+            title="Tambah Barang Kembali"
+            description="Catat pengembalian barang beserta kondisi aktual setiap unit."
+            backHref={route('barang-kembali.index')}
+        >
+            <form onSubmit={handleSubmit} className="transaction-form-card rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+                {/* Header Form */}
+                <div className="mb-6 grid grid-cols-1 gap-6 border-b border-gray-100 pb-6 md:grid-cols-2 dark:border-zinc-800">
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Pengembalian</label>
+                        <input
+                            type="date"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                            value={data.tanggal}
+                            onChange={(e) => setData('tanggal', e.target.value)}
+                        />
+                        {errors.tanggal && <p className="text-xs text-red-500">{errors.tanggal}</p>}
                     </div>
-
-                    <form
-                        onSubmit={handleSubmit}
-                        className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-                    >
-                        {/* Header Form */}
-                        <div className="mb-6 grid grid-cols-1 gap-6 border-b border-gray-100 pb-6 md:grid-cols-2 dark:border-zinc-800">
-                            <div className="space-y-1">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Pengembalian</label>
-                                <input
-                                    type="date"
-                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                                    value={data.tanggal}
-                                    onChange={(e) => setData('tanggal', e.target.value)}
-                                />
-                                {errors.tanggal && <p className="text-xs text-red-500">{errors.tanggal}</p>}
-                            </div>
-                            <div className="space-y-1">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Lokasi Asal Barang</label>
-                                <select
-                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                                    value={data.lokasi}
-                                    onChange={(e) => setData('lokasi', e.target.value)}
-                                >
-                                    <option value="">-- Pilih Lokasi Asal --</option>
-                                    {lokasiList.map((l) => (
-                                        <option key={l.id} value={l.nama}>
-                                            {l.nama}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.lokasi && <p className="text-xs text-red-500">{errors.lokasi}</p>}
-                            </div>
-                        </div>
-
-                        {/* Daftar Item */}
-                        {data.items.map((item, index) => (
-                            <ItemRow
-                                key={index}
-                                item={item}
-                                index={index}
-                                onItemChange={handleItemChange}
-                                onRemove={data.items.length > 1 ? () => removeItemRow(index) : undefined}
-                                lokasiId={selectedLokasiId}
-                            />
-                        ))}
-
-                        {/* Tombol Aksi */}
-                        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-6 sm:flex-row dark:border-zinc-800">
-                            <button
-                                type="button"
-                                onClick={addItemRow}
-                                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                                disabled={!data.lokasi}
-                            >
-                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                Tambah Item
-                            </button>
-
-                            <div className="flex gap-3">
-                                <Link
-                                    href={route('barang-kembali.index')}
-                                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700"
-                                >
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
-                                    Kembali
-                                </Link>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-                                >
-                                    {processing ? (
-                                        <>
-                                            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                            </svg>
-                                            Menyimpan...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            Simpan Transaksi
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Lokasi Asal Barang</label>
+                        <select
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                            value={data.lokasi}
+                            onChange={(e) => setData('lokasi', e.target.value)}
+                        >
+                            <option value="">-- Pilih Lokasi Asal --</option>
+                            {lokasiList.map((l) => (
+                                <option key={l.id} value={l.nama}>
+                                    {l.nama}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.lokasi && <p className="text-xs text-red-500">{errors.lokasi}</p>}
+                    </div>
                 </div>
-            </div>
-        </AppLayout>
+
+                {/* Daftar Item */}
+                {data.items.map((item, index) => (
+                    <ItemRow
+                        key={index}
+                        item={item}
+                        index={index}
+                        onItemChange={handleItemChange}
+                        onRemove={data.items.length > 1 ? () => removeItemRow(index) : undefined}
+                        lokasiId={selectedLokasiId}
+                    />
+                ))}
+
+                {/* Tombol Aksi */}
+                <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-6 sm:flex-row dark:border-zinc-800">
+                    <button
+                        type="button"
+                        onClick={addItemRow}
+                        className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-500/15 disabled:opacity-50 dark:text-emerald-400"
+                        disabled={!data.lokasi}
+                    >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Tambah Item
+                    </button>
+
+                    <div className="flex gap-3">
+                        <Link
+                            href={route('barang-kembali.index')}
+                            className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-accent"
+                        >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Kembali
+                        </Link>
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+                        >
+                            {processing ? (
+                                <>
+                                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Menyimpan...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Simpan Transaksi
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </TransactionFormPage>
     );
 }

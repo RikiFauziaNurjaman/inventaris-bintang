@@ -1,113 +1,81 @@
-import AppLayout from '@/layouts/app-layout';
+import { Column, DataTable } from '@/components/data-table';
+import { StockPage } from '@/components/stock-page';
+import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
-import { ExternalLink, Printer } from 'lucide-react';
-import { useState } from 'react';
-import { DetailStokModal } from './detail';
+import { Download, ExternalLink } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
-interface StokDistribusiItem {
+type StokDistribusiItem = {
+    id: number;
     lokasi_id: number;
     lokasi: string;
     models: string[];
     jumlah_tersedia: number;
-}
+};
+type Props = {
+    stokDistribusi: Omit<StokDistribusiItem, 'id'>[];
+};
 
-interface Props {
-    stokDistribusi: StokDistribusiItem[];
-}
+export default function StokDistribusiIndex({ stokDistribusi }: Props) {
+    const [search, setSearch] = useState('');
+    const items = useMemo(
+        () =>
+            stokDistribusi
+                .map((item) => ({ ...item, id: item.lokasi_id }))
+                .filter((item) => `${item.lokasi} ${item.models.join(' ')}`.toLowerCase().includes(search.toLowerCase())),
+        [search, stokDistribusi],
+    );
 
-export default function Index({ stokDistribusi }: Props) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<StokDistribusiItem | null>(null);
-    const [detailData, setDetailData] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const columns: Column<StokDistribusiItem>[] = [
+        { header: 'Lokasi', accessorKey: 'lokasi', className: 'min-w-44' },
+        {
+            header: 'Barang Tersedia',
+            cell: (item) => (
+                <div>
+                    <p className="font-medium">{item.models.slice(0, 2).join(', ') || '—'}</p>
+                    {item.models.length > 2 && <p className="text-xs text-muted-foreground">+{item.models.length - 2} model lainnya</p>}
+                </div>
+            ),
+        },
+        {
+            header: 'Jumlah Unit',
+            cell: (item) => (
+                <span className="inline-flex min-w-9 justify-center rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    {item.jumlah_tersedia}
+                </span>
+            ),
+        },
+    ];
 
-    // Fungsi untuk menampilkan modal dan mengambil data detail
-    const handleShowDetail = async (item: StokDistribusiItem) => {
-        setSelectedItem(item);
-        setIsModalOpen(true);
-        setIsLoading(true);
-        setDetailData([]);
-
-        try {
-            const response = await fetch(route('api.stok-distribusi.detail', { modelBarang: item.model_id, lokasi: item.lokasi_id }));
-            if (!response.ok) throw new Error('Gagal mengambil data detail');
-            const data = await response.json();
-            setDetailData(data);
-        } catch (error) {
-            console.error('Fetch detail error:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
     return (
-        <AppLayout>
-            <div className="p-4">
-                {/* Simplified Header */}
-                <div className="mb-6 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-gray-800">Stok Distribusi</h1>
-                        <p className="text-gray-600">Data Semua Item Di Lokasi</p>
-                    </div>
-                    <button
-                        onClick={() => window.open(route('stok.distribusi.exportPdf'), '_blank')}
-                        className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 active:scale-95"
-                    >
-                        <Printer size={16} />
+        <StockPage
+            title="Stok Distribusi"
+            description="Pantau jumlah barang yang berada di setiap lokasi distribusi."
+            actions={
+                <Button asChild variant="outline">
+                    <a href={route('stok.distribusi.exportPdf')} target="_blank" rel="noreferrer">
+                        <Download />
                         Ekspor PDF
-                    </button>
-                </div>
-
-                {/* Simplified Table */}
-                <div className="overflow-hidden rounded-lg border border-gray-200">
-                    <table className="min-w-full">
-                        <thead className="bg-gray-100">
-                            <tr>
-                                <th className="border-b p-3 text-left text-sm font-medium text-gray-600">No</th>
-                                <th className="border-b p-3 text-left text-sm font-medium text-gray-600">Lokasi</th>
-                                <th className="border-b p-3 text-left text-sm font-medium text-gray-600">Nama Barang</th>
-                                <th className="border-b p-3 text-center text-sm font-medium text-gray-600">Jumlah Total</th>
-
-                                <th className="border-b p-3 text-center text-sm font-medium text-gray-600">Lokasi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {stokDistribusi.map((item, index) => (
-                                <tr key={index} className="hover:bg-gray-50">
-                                    <td className="border-b p-3 align-top text-sm">{index + 1}</td>
-                                    <td className="border-b p-3 align-top text-sm">{item.lokasi}</td>
-                                    <td className="border-b p-3 align-top text-sm">
-                                        {item.models.map((model, idx) => (
-                                            <div key={idx} className="mb-1">
-                                                {model}
-                                            </div>
-                                        ))}
-                                    </td>
-                                    <td className="border-b p-3 text-center align-top text-sm font-semibold">{item.jumlah_tersedia}</td>
-                                    <td className="border-b p-3 text-center align-top">
-                                        <Link
-                                            href={route('monitoring.lokasi.detail', item.lokasi_id)}
-                                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
-                                            title="Lihat semua barang di lokasi ini"
-                                        >
-                                            <ExternalLink size={14} />
-                                            Detail Lokasi
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Simplified Modal */}
-            <DetailStokModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                item={selectedItem}
-                details={detailData}
-                isLoading={isLoading}
+                    </a>
+                </Button>
+            }
+        >
+            <DataTable
+                data={items}
+                columns={columns}
+                initialSearch={search}
+                searchPlaceholder="Cari lokasi atau model..."
+                onSearch={setSearch}
+                actions={(item) => (
+                    <Button asChild variant="ghost" size="sm">
+                        <Link href={route('monitoring.lokasi.detail', item.lokasi_id)}>
+                            <ExternalLink />
+                            Detail lokasi
+                        </Link>
+                    </Button>
+                )}
+                actionWidth="w-36"
             />
-        </AppLayout>
+        </StockPage>
     );
 }

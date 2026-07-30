@@ -27,6 +27,8 @@ interface User {
 interface Paginator<T> {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
+    current_page: number;
+    per_page: number;
 }
 
 interface LaporanBarangKembaliProps extends PageProps {
@@ -41,7 +43,7 @@ interface LaporanBarangKembaliProps extends PageProps {
     };
 }
 
-export default function LaporanBarangKembali({ auth, barangKembaliData, lokasiList, filters }: LaporanBarangKembaliProps) {
+export default function LaporanBarangKembali({ barangKembaliData, lokasiList, filters }: LaporanBarangKembaliProps) {
     const { data, setData, reset } = useForm({
         start_date: filters.start_date || '',
         end_date: filters.end_date || '',
@@ -64,19 +66,25 @@ export default function LaporanBarangKembali({ auth, barangKembaliData, lokasiLi
         const routeName = format === 'pdf' ? 'laporan.kembali.pdf' : 'laporan.kembali.export';
         const query = pickBy(data);
         if (Object.keys(query).length === 0) return route(routeName);
-        return `${route(routeName)}?${new URLSearchParams(query as any).toString()}`;
+        return `${route(routeName)}?${new URLSearchParams(query as Record<string, string>).toString()}`;
     };
 
     const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
     return (
-        <AppLayout>
+        <AppLayout
+            breadcrumbs={[
+                { title: 'Laporan', href: '/laporan' },
+                { title: 'Barang Kembali', href: '/laporan/kembali' },
+            ]}
+        >
             <Head title="Laporan Barang Kembali" />
-            <div className="px-4 py-8 md:px-6 lg:px-8">
-                <div className="mx-auto max-w-7xl">
-                    <h1 className="mb-6 text-2xl font-bold text-gray-800">Laporan Barang Kembali</h1>
+            <div className="report-page px-4 py-6 md:px-6 lg:px-8">
+                <div className="w-full">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Laporan</p>
+                    <h1 className="mt-1 mb-6 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Barang Kembali</h1>
 
-                    <form onSubmit={applyFilters} className="mb-6 flex flex-wrap items-end gap-4 rounded-lg bg-white p-4 shadow-sm">
+                    <form onSubmit={applyFilters} className="report-filter mb-6 flex flex-wrap items-end gap-4 p-4">
                         <div>
                             <label htmlFor="start_date" className="mb-1 block text-sm text-gray-600">
                                 Dari Tanggal
@@ -168,7 +176,7 @@ export default function LaporanBarangKembali({ auth, barangKembaliData, lokasiLi
                                 </button>
 
                                 {dropdownOpen && (
-                                    <div className="ring-opacity-5 absolute right-0 z-10 mt-2 w-40 rounded-md bg-white shadow-lg ring-1 ring-black">
+                                    <div className="report-export-menu absolute right-0 z-10 mt-2 w-40 rounded-lg shadow-lg">
                                         <div className="py-1">
                                             <a
                                                 href={buildExportUrl()}
@@ -201,7 +209,7 @@ export default function LaporanBarangKembali({ auth, barangKembaliData, lokasiLi
                         </div>
                     </form>
 
-                    <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+                    <div className="report-table">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -238,7 +246,7 @@ export default function LaporanBarangKembali({ auth, barangKembaliData, lokasiLi
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={3} className="px-6 py-12 text-center text-gray-500">
+                                            <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
                                                 Tidak ada data.
                                             </td>
                                         </tr>

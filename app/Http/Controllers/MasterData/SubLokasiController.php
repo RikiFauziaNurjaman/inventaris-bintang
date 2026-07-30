@@ -2,16 +2,24 @@
 
 namespace App\Http\Controllers\MasterData;
 
+use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Lokasi;
 use App\Models\SubLokasi;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class SubLokasiController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:'.PermissionEnum::VIEW_LOKASI_DISTRIBUSI->value)->only(['index', 'getByLokasi']);
+        $this->middleware('can:'.PermissionEnum::CREATE_LOKASI_DISTRIBUSI->value)->only(['store']);
+        $this->middleware('can:'.PermissionEnum::EDIT_LOKASI_DISTRIBUSI->value)->only(['update']);
+        $this->middleware('can:'.PermissionEnum::DELETE_LOKASI_DISTRIBUSI->value)->only(['destroy']);
+    }
+
     public function index(Request $request)
     {
         $query = SubLokasi::with('lokasi:id,nama')
@@ -49,8 +57,6 @@ class SubLokasiController extends Controller
         ]);
 
         SubLokasi::create($validated);
-        
-
 
         return Redirect::back()->with('message', 'Sub-Lokasi berhasil ditambahkan.');
     }
@@ -84,8 +90,8 @@ class SubLokasiController extends Controller
     public function getByLokasi(Request $request)
     {
         $lokasiId = $request->input('lokasi_id');
-        
-        if (!$lokasiId) {
+
+        if (! $lokasiId) {
             return response()->json([]);
         }
 

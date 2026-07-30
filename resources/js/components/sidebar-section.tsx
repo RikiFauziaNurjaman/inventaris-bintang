@@ -11,6 +11,9 @@ type Props = {
     storageKey?: string;
 };
 
+const matchesUrl = (currentUrl: string, href?: string) =>
+    Boolean(href && (currentUrl === href || currentUrl.startsWith(`${href}/`) || currentUrl.startsWith(`${href}?`)));
+
 export default function SidebarSection({ items, storageKey = 'sidebar-open-menus' }: Props) {
     const page = usePage();
     const currentUrl = page.url;
@@ -29,7 +32,7 @@ export default function SidebarSection({ items, storageKey = 'sidebar-open-menus
         }
 
         items.forEach((item) => {
-            if (item.children?.some((child) => currentUrl.startsWith(child.href ?? '')) && !parsed[item.title]) {
+            if (item.children?.some((child) => matchesUrl(currentUrl, child.href)) && !parsed[item.title]) {
                 parsed[item.title] = true;
             }
         });
@@ -53,7 +56,7 @@ export default function SidebarSection({ items, storageKey = 'sidebar-open-menus
             {items.map((item) => {
                 const hasChildren = item.children && item.children.length > 0;
                 const isOpen = openMenus[item.title] || false;
-                const isActive = currentUrl.startsWith(item.href ?? '') || item.children?.some((child) => currentUrl.startsWith(child.href ?? ''));
+                const isActive = matchesUrl(currentUrl, item.href) || item.children?.some((child) => matchesUrl(currentUrl, child.href));
 
                 return (
                     <div key={item.title}>
@@ -62,8 +65,10 @@ export default function SidebarSection({ items, storageKey = 'sidebar-open-menus
                                 <SidebarMenuButton
                                     asChild={false}
                                     onClick={() => toggleMenu(item.title)}
+                                    isActive={isActive}
+                                    aria-expanded={isOpen}
                                     tooltip={{ children: item.title }}
-                                    className={`justify-between`}
+                                    className="justify-between"
                                 >
                                     <div className="flex items-center space-x-2">
                                         {item.icon && <item.icon />}
@@ -88,13 +93,13 @@ export default function SidebarSection({ items, storageKey = 'sidebar-open-menus
                                     animate={{ height: 'auto', opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
                                     transition={{ duration: 0.2 }}
-                                    className="mt-1 ml-6 space-y-1 overflow-hidden"
+                                    className="mt-1 ml-4 space-y-1 overflow-hidden border-l border-sidebar-border pl-2"
                                 >
                                     {item.children?.map((child) => (
                                         <SidebarMenuItem key={child.title}>
                                             <SidebarMenuButton
                                                 asChild
-                                                isActive={currentUrl.startsWith(child.href ?? '')}
+                                                isActive={matchesUrl(currentUrl, child.href)}
                                                 tooltip={{ children: child.title }}
                                             >
                                                 <Link href={child.href ?? '#'}>

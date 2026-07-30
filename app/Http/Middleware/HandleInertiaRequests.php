@@ -26,7 +26,7 @@ class HandleInertiaRequests extends Middleware
     public function version(Request $request): ?string
     {
         // Bypass Inertia Asset Versioning untuk load test k6 (mencegah 409 Conflict)
-        if ($request->hasHeader('X-Inertia') && !$request->hasHeader('X-Inertia-Version')) {
+        if ($request->hasHeader('X-Inertia') && ! $request->hasHeader('X-Inertia-Version')) {
             return null;
         }
 
@@ -51,6 +51,11 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
                 'permissions' => $request->user() ? $request->user()->getAllPermissions()->pluck('name') : [],
+            ],
+            'flash' => [
+                'message' => fn () => $request->session()->get('message'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
             ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),

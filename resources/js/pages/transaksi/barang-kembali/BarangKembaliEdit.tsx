@@ -1,6 +1,6 @@
 // File: resources/js/Pages/transaksi/barang-kembali/BarangKembaliEdit.tsx
 
-import AppLayout from '@/layouts/app-layout';
+import { TransactionFormPage } from '@/components/transaction-page';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -102,7 +102,7 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
     const removeSerialField = (infoIndex) => onItemChange(index, { ...item, kembali_info: item.kembali_info.filter((_, i) => i !== infoIndex) });
 
     return (
-        <div className="relative mb-6 rounded-lg border-2 border-gray-200 p-4">
+        <div className="relative mb-6 rounded-xl border bg-muted/30 p-5">
             <h3 className="mb-3 text-lg font-semibold text-gray-700">Item Pengembalian #{index + 1}</h3>
             {onRemove && (
                 <button type="button" onClick={onRemove} className="absolute top-2 right-2 font-bold text-red-500 hover:text-red-700">
@@ -262,74 +262,74 @@ export default function BarangKembaliEdit() {
     };
 
     return (
-        <AppLayout>
-            <div className="container mx-auto p-4">
-                <h1 className="mb-4 text-2xl font-bold">Edit Transaksi Barang Kembali</h1>
-                <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-md">
-                    <div className="mb-6 grid grid-cols-1 gap-6 border-b pb-6 md:grid-cols-2">
-                        <div>
-                            <label>Tanggal Pengembalian</label>
-                            <input
-                                type="date"
-                                className="mt-1 w-full rounded border p-2"
-                                value={data.tanggal}
-                                onChange={(e) => setData('tanggal', e.target.value)}
-                            />
-                            {errors.tanggal && <p className="text-sm text-red-500">{errors.tanggal}</p>}
-                        </div>
-                        <div>
-                            <label>Lokasi Asal Barang (Tempat Kembali)</label>
-                            <select
-                                className="mt-1 w-full rounded border p-2"
-                                value={data.lokasi}
-                                onChange={(e) => setData('lokasi', e.target.value)}
-                            >
-                                <option value="">-- Pilih Lokasi Asal --</option>
-                                {lokasiList.map((l) => (
-                                    <option key={l.id} value={l.nama}>
-                                        {l.nama}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.lokasi && <p className="text-sm text-red-500">{errors.lokasi}</p>}
-                        </div>
-                    </div>
-
-                    {data.items.map((item, index) => (
-                        <ItemRow
-                            key={index}
-                            item={item}
-                            index={index}
-                            onItemChange={handleItemChange}
-                            onRemove={data.items.length > 1 ? () => removeItemRow(index) : undefined}
-                            lokasiId={selectedLokasiId}
+        <TransactionFormPage
+            title="Edit Barang Kembali"
+            description="Perbarui lokasi asal dan kondisi unit yang dikembalikan."
+            backHref={route('barang-kembali.index')}
+        >
+            <form onSubmit={handleSubmit} className="transaction-form-card rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+                <div className="mb-6 grid grid-cols-1 gap-6 border-b pb-6 md:grid-cols-2">
+                    <div>
+                        <label>Tanggal Pengembalian</label>
+                        <input
+                            type="date"
+                            className="mt-1 w-full rounded border p-2"
+                            value={data.tanggal}
+                            onChange={(e) => setData('tanggal', e.target.value)}
                         />
-                    ))}
-
-                    <div className="mt-6 flex items-center justify-between">
-                        <button
-                            type="button"
-                            onClick={addItemRow}
-                            className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-                            disabled={!data.lokasi}
-                        >
-                            + Tambah Item
-                        </button>
-                        <div className="flex space-x-4">
-                            <Link href={route('barang-kembali.index')} className="rounded bg-gray-500 px-6 py-2 text-white hover:bg-gray-600">
-                                Kembali
-                            </Link>
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="rounded bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                Perbarui Transaksi
-                            </button>
-                        </div>
+                        {errors.tanggal && <p className="text-sm text-red-500">{errors.tanggal}</p>}
                     </div>
-                </form>
-            </div>
-        </AppLayout>
+                    <div>
+                        <label>Lokasi Asal Barang (Tempat Kembali)</label>
+                        <select className="mt-1 w-full rounded border p-2" value={data.lokasi} onChange={(e) => setData('lokasi', e.target.value)}>
+                            <option value="">-- Pilih Lokasi Asal --</option>
+                            {lokasiList.map((l) => (
+                                <option key={l.id} value={l.nama}>
+                                    {l.nama}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.lokasi && <p className="text-sm text-red-500">{errors.lokasi}</p>}
+                    </div>
+                </div>
+
+                {data.items.map((item, index) => (
+                    <ItemRow
+                        key={index}
+                        item={item}
+                        index={index}
+                        onItemChange={handleItemChange}
+                        onRemove={data.items.length > 1 ? () => removeItemRow(index) : undefined}
+                        lokasiId={selectedLokasiId}
+                    />
+                ))}
+
+                <div className="mt-8 flex flex-col items-stretch justify-between gap-4 border-t pt-6 sm:flex-row sm:items-center">
+                    <button
+                        type="button"
+                        onClick={addItemRow}
+                        className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-400"
+                        disabled={!data.lokasi}
+                    >
+                        + Tambah Item
+                    </button>
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <Link
+                            href={route('barang-kembali.index')}
+                            className="rounded-lg border border-input bg-background px-5 py-2.5 text-center text-sm font-medium text-foreground hover:bg-accent"
+                        >
+                            Kembali
+                        </Link>
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                        >
+                            Perbarui Transaksi
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </TransactionFormPage>
     );
 }

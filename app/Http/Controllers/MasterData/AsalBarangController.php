@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Enums\PermissionEnum;
-use App\Http\Controllers\Controller;
 use App\Helpers\MasterDataHelper;
+use App\Http\Controllers\Controller;
 use App\Models\AsalBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -14,29 +14,27 @@ class AsalBarangController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('can:' . PermissionEnum::VIEW_ASAL_BARANG->value)->only(['index', 'show', 'search']);
-        $this->middleware('can:' . PermissionEnum::CREATE_ASAL_BARANG->value)->only(['create', 'store']);
-        $this->middleware('can:' . PermissionEnum::EDIT_ASAL_BARANG->value)->only(['edit', 'update']);
-        $this->middleware('can:' . PermissionEnum::DELETE_ASAL_BARANG->value)->only(['destroy']);
+        $this->middleware('can:'.PermissionEnum::VIEW_ASAL_BARANG->value)->only(['index', 'show', 'search']);
+        $this->middleware('can:'.PermissionEnum::CREATE_ASAL_BARANG->value)->only(['create', 'store']);
+        $this->middleware('can:'.PermissionEnum::EDIT_ASAL_BARANG->value)->only(['edit', 'update']);
+        $this->middleware('can:'.PermissionEnum::DELETE_ASAL_BARANG->value)->only(['destroy']);
     }
 
     public function index(Request $request)
     {
         $asalBarang = AsalBarang::applyCaseInsensitiveSearch(
-                $request,
-                ['nama']
+            $request,
+            ['nama']
         )
-        ->latest()
-        ->paginate(10)
-        ->withQueryString();
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         return Inertia::render('master/asal-barang/index', [
             'asal' => $asalBarang,
             'filters' => [
                 'search' => $request->input('search'),
             ],
-            'flash' => [
-                'message' => session('message'),
-            ]
         ]);
     }
 
@@ -56,7 +54,7 @@ class AsalBarangController extends Controller
     {
 
         $request->validate([
-            'nama' => 'required|string|max:255|unique:asal_barang,nama,' . $asalBarang->id,
+            'nama' => 'required|string|max:255|unique:asal_barang,nama,'.$asalBarang->id,
         ]);
 
         $asalBarang->update($request->only('nama'));
@@ -73,4 +71,3 @@ class AsalBarangController extends Controller
         return Redirect::back()->with('message', 'Asal Barang berhasil dihapus.');
     }
 }
-

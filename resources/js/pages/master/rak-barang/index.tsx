@@ -1,295 +1,214 @@
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { Column, DataTable } from '@/components/data-table';
+import { MasterDataFormPanel } from '@/components/master-data-form-panel';
+import { MasterDataPage } from '@/components/master-data-page';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PERMISSIONS } from '@/constants/permission';
-import AppLayout from '@/layouts/app-layout';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import debounce from 'lodash.debounce';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { Edit3, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import { useState } from 'react';
 
+type Lokasi = { id: number; nama: string };
 type RakBarang = {
     id: number;
+    lokasi_id?: number;
     nama_rak: string;
-    baris?: string;
+    baris: string | null;
     kode_rak: string;
-    lokasi: {
-        id: number;
-        nama: string;
-    };
+    lokasi: Lokasi;
 };
-
-type Lokasi = {
-    id: number;
-    nama: string;
-};
-
-type PaginatedData<T> = {
-    data: T[];
-    links: {
-        url: string | null;
-        label: string;
-        active: boolean;
-    }[];
-    current_page: number;
-    last_page: number;
-    total: number;
-};
-
-type FlashProps = {
-    message?: string;
-};
-
 type Props = {
-    rakList: PaginatedData<RakBarang>;
-    lokasiList?: Lokasi[];
-    auth: {
-        permissions?: string[];
+    rakList: {
+        data: RakBarang[];
+        links: { url: string | null; label: string; active: boolean }[];
+        from: number | null;
+        to: number | null;
+        total: number;
     };
+    lokasiList?: Lokasi[];
+    filters: { search?: string };
 };
 
-export default function Index({ auth, rakList, lokasiList = [], filters }: Props & { filters: { search: string } }) {
-    const { flash } = usePage<{ flash: FlashProps }>().props;
+const selectClass =
+    'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
+
+export default function Index({ rakList, lokasiList = [], filters }: Props) {
+    const { auth } = usePage<{ auth: { permissions?: string[] } }>().props;
+    const permissions = auth.permissions ?? [];
     const [editing, setEditing] = useState<RakBarang | null>(null);
     const [showForm, setShowForm] = useState(false);
-    const [search, setSearch] = useState(filters.search || '');
-    const userPermissions = auth.permissions || [];
-
-    const form = useForm({
-        lokasi_id: '',
-        nama_rak: '',
-        baris: '',
-        kode_rak: '',
+    const [pendingDelete, setPendingDelete] = useState<RakBarang | null>(null);
+    const form = useForm({ lokasi_id: '', nama_rak: '', baris: '', kode_rak: '' });
+    const search = useDebouncedCallback((value: string) => {
+        router.get(route('rak-barang.index'), { search: value }, { preserveState: true, preserveScroll: true, replace: true });
     });
 
-    useEffect(() => {
-        if (flash?.message) {
-            toast.success(flash.message);
-            form.reset();
-        }
-    }, [flash]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editing) {
-            form.put(`/rak-barang/${editing.id}`, {
-                onSuccess: () => {
-                    setEditing(null);
-                    setShowForm(false);
-                },
-            });
-        } else {
-            form.post('/rak-barang', {
-                onSuccess: () => setShowForm(false),
-            });
-        }
-    };
-
-    const handleEdit = (item: RakBarang) => {
-        form.setData({
-            lokasi_id: item.lokasi.id.toString(),
-            nama_rak: item.nama_rak,
-            baris: item.baris || '',
-            kode_rak: item.kode_rak,
-        });
-        setEditing(item);
-        setShowForm(true);
-    };
-
-    const handleDelete = (id: number) => {
-        if (confirm('Yakin ingin menghapus rak ini?')) {
-            form.delete(`/rak-barang/${id}`);
-        }
-    };
-
-    const handleCancel = () => {
+    const closeForm = () => {
         form.reset();
+        form.clearErrors();
         setEditing(null);
         setShowForm(false);
     };
 
-    const handleSearch = (value: string) => {
-        setSearch(value);
-
-        debounce(() => {
-            router.get(
-                route('rak-barang.index'),
-                { search: value },
-                {
-                    preserveState: true,
-                    replace: true,
-                },
-            );
-        }, 400)();
+    const submit = (event: React.FormEvent) => {
+        event.preventDefault();
+        const options = { preserveScroll: true, onSuccess: closeForm };
+        if (editing) {
+            form.put(route('rak-barang.update', editing.id), options);
+        } else {
+            form.post(route('rak-barang.store'), options);
+        }
     };
 
-    const canCreateRak = userPermissions.includes(PERMISSIONS.CREATE_RAK_BARANG);
-    const canEditRak = userPermissions.includes(PERMISSIONS.EDIT_RAK_BARANG);
-    const canDeleteRak = userPermissions.includes(PERMISSIONS.DELETE_RAK_BARANG);
-
     const columns: Column<RakBarang>[] = [
-        {
-            header: 'Gudang/Lokasi',
-            accessorKey: 'lokasi',
-            cell: (item) => item.lokasi?.nama,
-        },
-        {
-            header: 'Nama Rak',
-            accessorKey: 'nama_rak',
-        },
-        {
-            header: 'Baris',
-            accessorKey: 'baris',
-            cell: (item) => item.baris || '-',
-        },
-        {
-            header: 'Kode Rak',
-            accessorKey: 'kode_rak',
-        },
+        { header: 'Gudang / Lokasi', accessorKey: 'lokasi', cell: (item) => item.lokasi?.nama || '—' },
+        { header: 'Nama Rak', accessorKey: 'nama_rak' },
+        { header: 'Kode Rak', accessorKey: 'kode_rak' },
+        { header: 'Baris', accessorKey: 'baris', cell: (item) => item.baris || '—' },
     ];
 
     return (
-        <AppLayout>
-            <div className="min-h-screen bg-gray-50 p-4 sm:p-6 dark:bg-zinc-950">
-                <Head title="Rak Barang" />
-
-                <div className="mx-auto max-w-7xl space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Data Rak Barang</h1>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Kelola daftar rak barang dan alokasi tempat.</p>
+        <MasterDataPage title="Rak Barang" description="Atur rak dan kode penyimpanan barang pada setiap gudang.">
+            {showForm && (
+                <MasterDataFormPanel title={editing ? 'Edit rak barang' : 'Tambah rak barang'} onClose={closeForm}>
+                    <form onSubmit={submit} className="grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="lokasi-rak">Gudang / lokasi</Label>
+                            <select
+                                id="lokasi-rak"
+                                value={form.data.lokasi_id}
+                                onChange={(event) => form.setData('lokasi_id', event.target.value)}
+                                className={selectClass}
+                                aria-invalid={Boolean(form.errors.lokasi_id)}
+                                required
+                            >
+                                <option value="">Pilih gudang</option>
+                                {lokasiList.map((lokasi) => (
+                                    <option key={lokasi.id} value={lokasi.id}>
+                                        {lokasi.nama}
+                                    </option>
+                                ))}
+                            </select>
+                            {form.errors.lokasi_id && <p className="text-sm text-destructive">{form.errors.lokasi_id}</p>}
                         </div>
-                    </div>
-
-                    {showForm && (
-                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                            <div className="mb-5 flex items-center justify-between">
-                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                                    {editing ? 'Edit Rak Barang' : 'Tambah Rak Baru'}
-                                </h2>
-                                <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600">
-                                    <span className="sr-only">Close</span>
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-200">Gudang/Lokasi</label>
-                                    <select
-                                        value={form.data.lokasi_id}
-                                        onChange={(e) => form.setData('lokasi_id', e.target.value)}
-                                        className="w-full rounded-md border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                                        required
-                                    >
-                                        <option value="">-- Pilih Gudang --</option>
-                                        {lokasiList.map((lokasi) => (
-                                            <option key={lokasi.id} value={lokasi.id}>
-                                                {lokasi.nama}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {form.errors.lokasi_id && <p className="mt-1 text-sm text-red-600">{form.errors.lokasi_id}</p>}
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-200">Nama Rak</label>
-                                        <input
-                                            type="text"
-                                            value={form.data.nama_rak}
-                                            onChange={(e) => form.setData('nama_rak', e.target.value)}
-                                            className="w-full rounded-md border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                                            required
-                                        />
-                                        {form.errors.nama_rak && <p className="mt-1 text-sm text-red-600">{form.errors.nama_rak}</p>}
-                                    </div>
-
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-200">Kode Rak</label>
-                                        <input
-                                            type="text"
-                                            value={form.data.kode_rak}
-                                            onChange={(e) => form.setData('kode_rak', e.target.value)}
-                                            className="w-full rounded-md border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                                            required
-                                        />
-                                        {form.errors.kode_rak && <p className="mt-1 text-sm text-red-600">{form.errors.kode_rak}</p>}
-                                    </div>
-
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-200">Baris</label>
-                                        <input
-                                            type="text"
-                                            value={form.data.baris}
-                                            onChange={(e) => form.setData('baris', e.target.value)}
-                                            className="w-full rounded-md border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                                        />
-                                        {form.errors.baris && <p className="mt-1 text-sm text-red-600">{form.errors.baris}</p>}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-end gap-3 pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={form.processing}
-                                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-                                    >
-                                        {editing ? 'Simpan Perubahan' : 'Simpan Rak'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleCancel}
-                                        className="rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-gray-50 hover:text-slate-900"
-                                    >
-                                        Batal
-                                    </button>
-                                </div>
-                            </form>
+                        <div className="space-y-2">
+                            <Label htmlFor="nama-rak">Nama rak</Label>
+                            <Input
+                                id="nama-rak"
+                                value={form.data.nama_rak}
+                                onChange={(event) => form.setData('nama_rak', event.target.value)}
+                                aria-invalid={Boolean(form.errors.nama_rak)}
+                                required
+                            />
+                            {form.errors.nama_rak && <p className="text-sm text-destructive">{form.errors.nama_rak}</p>}
                         </div>
-                    )}
+                        <div className="space-y-2">
+                            <Label htmlFor="kode-rak">Kode rak</Label>
+                            <Input
+                                id="kode-rak"
+                                value={form.data.kode_rak}
+                                onChange={(event) => form.setData('kode_rak', event.target.value)}
+                                aria-invalid={Boolean(form.errors.kode_rak)}
+                                required
+                            />
+                            {form.errors.kode_rak && <p className="text-sm text-destructive">{form.errors.kode_rak}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="baris-rak">Baris</Label>
+                            <Input
+                                id="baris-rak"
+                                value={form.data.baris}
+                                onChange={(event) => form.setData('baris', event.target.value)}
+                                aria-invalid={Boolean(form.errors.baris)}
+                            />
+                            {form.errors.baris && <p className="text-sm text-destructive">{form.errors.baris}</p>}
+                        </div>
+                        <div className="flex items-end gap-2 md:col-span-2">
+                            <Button type="submit" disabled={form.processing}>
+                                {form.processing ? 'Menyimpan...' : editing ? 'Simpan perubahan' : 'Simpan rak'}
+                            </Button>
+                            <Button type="button" variant="outline" onClick={closeForm}>
+                                Batal
+                            </Button>
+                        </div>
+                    </form>
+                </MasterDataFormPanel>
+            )}
 
-                    <DataTable
-                        data={rakList.data}
-                        columns={columns}
-                        links={rakList.links}
-                        searchPlaceholder="Cari rak barang..."
-                        onSearch={handleSearch}
-                        initialSearch={search}
-                        onCreate={
-                            canCreateRak
-                                ? () => {
-                                      setShowForm(true);
-                                      setEditing(null);
-                                      form.reset();
-                                  }
-                                : undefined
-                        }
-                        createLabel="Tambah Rak"
-                        actionWidth="w-[100px]"
-                        actions={(item) => (
-                            <div className="flex items-center justify-end gap-2">
-                                {canEditRak && (
-                                    <button
-                                        onClick={() => handleEdit(item)}
-                                        className="group hover:bg-opacity-100 rounded-full p-2 text-blue-600 transition-all hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                        title="Edit"
-                                    >
-                                        <Edit3 size={16} />
-                                    </button>
-                                )}
-                                {canDeleteRak && (
-                                    <button
-                                        onClick={() => handleDelete(item.id)}
-                                        className="group hover:bg-opacity-100 rounded-full p-2 text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                        title="Hapus"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
-                            </div>
+            <DataTable
+                data={rakList.data}
+                columns={columns}
+                links={rakList.links}
+                paginationMeta={rakList}
+                searchPlaceholder="Cari nama, kode, atau baris rak..."
+                initialSearch={filters.search ?? ''}
+                onSearch={search}
+                onCreate={
+                    permissions.includes(PERMISSIONS.CREATE_RAK_BARANG)
+                        ? () => {
+                              form.reset();
+                              form.clearErrors();
+                              setEditing(null);
+                              setShowForm(true);
+                          }
+                        : undefined
+                }
+                createLabel="Tambah rak"
+                actions={(item) => (
+                    <div className="flex justify-end gap-1">
+                        {permissions.includes(PERMISSIONS.EDIT_RAK_BARANG) && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    form.setData({
+                                        lokasi_id: String(item.lokasi?.id ?? item.lokasi_id ?? ''),
+                                        nama_rak: item.nama_rak,
+                                        kode_rak: item.kode_rak,
+                                        baris: item.baris ?? '',
+                                    });
+                                    form.clearErrors();
+                                    setEditing(item);
+                                    setShowForm(true);
+                                }}
+                                aria-label={`Edit ${item.nama_rak}`}
+                            >
+                                <Edit3 />
+                            </Button>
                         )}
-                    />
-                </div>
-            </div>
-        </AppLayout>
+                        {permissions.includes(PERMISSIONS.DELETE_RAK_BARANG) && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => setPendingDelete(item)}
+                                aria-label={`Hapus ${item.nama_rak}`}
+                            >
+                                <Trash2 />
+                            </Button>
+                        )}
+                    </div>
+                )}
+            />
+
+            <ConfirmDeleteDialog
+                open={Boolean(pendingDelete)}
+                onOpenChange={(open) => !open && setPendingDelete(null)}
+                description={`Rak “${pendingDelete?.nama_rak ?? ''}” akan dihapus. Pastikan tidak ada barang yang masih ditempatkan di rak ini.`}
+                processing={form.processing}
+                onConfirm={() => {
+                    if (!pendingDelete) return;
+                    form.delete(route('rak-barang.destroy', pendingDelete.id), {
+                        preserveScroll: true,
+                        onSuccess: () => setPendingDelete(null),
+                    });
+                }}
+            />
+        </MasterDataPage>
     );
 }

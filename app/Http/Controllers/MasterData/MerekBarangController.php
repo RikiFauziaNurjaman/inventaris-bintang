@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Enums\PermissionEnum;
-use App\Http\Controllers\Controller;
 use App\Helpers\MasterDataHelper;
+use App\Http\Controllers\Controller;
 use App\Models\MerekBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -14,33 +14,27 @@ class MerekBarangController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('can:' . PermissionEnum::VIEW_MEREK->value)->only(['index', 'show', 'search']);
-        $this->middleware('can:' . PermissionEnum::CREATE_MEREK->value)->only(['create', 'store']);
-        $this->middleware('can:' . PermissionEnum::EDIT_MEREK->value)->only(['edit', 'update']);
-        $this->middleware('can:' . PermissionEnum::DELETE_MEREK->value)->only(['destroy']);
+        $this->middleware('can:'.PermissionEnum::VIEW_MEREK->value)->only(['index', 'show', 'search']);
+        $this->middleware('can:'.PermissionEnum::CREATE_MEREK->value)->only(['create', 'store']);
+        $this->middleware('can:'.PermissionEnum::EDIT_MEREK->value)->only(['edit', 'update']);
+        $this->middleware('can:'.PermissionEnum::DELETE_MEREK->value)->only(['destroy']);
     }
 
     public function index(Request $request)
     {
-        
 
-            $merekPaginator = MerekBarang::query()
-                ->applyCaseInsensitiveSearch($request, ['nama'])
-                ->latest()
-                ->paginate(10)
-                ->withQueryString();
+        $merekPaginator = MerekBarang::query()
+            ->applyCaseInsensitiveSearch($request, ['nama'])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-            $data = [
-                // PERBAIKAN CRITICAL: Simpan dalam bentuk Array murni, bukan Objek Paginator
-                'merek' => $merekPaginator->toArray(), 
-                'filters' => [
-                    'search' => $request->input('search'),
-                ],
-            ];
-
-        // Flash message tidak bisa di-cache, tambahkan di luar cache
-        $data['flash'] = [
-            'message' => session('message'),
+        $data = [
+            // PERBAIKAN CRITICAL: Simpan dalam bentuk Array murni, bukan Objek Paginator
+            'merek' => $merekPaginator->toArray(),
+            'filters' => [
+                'search' => $request->input('search'),
+            ],
         ];
 
         return Inertia::render('master/merek/index', $data);
@@ -70,7 +64,7 @@ class MerekBarangController extends Controller
     public function update(Request $request, MerekBarang $merek)
     {
         $request->validate([
-            'nama' => 'required|string|max:255|unique:merek_barang,nama,' . $merek->id,
+            'nama' => 'required|string|max:255|unique:merek_barang,nama,'.$merek->id,
         ]);
 
         $merek->update($request->only('nama'));

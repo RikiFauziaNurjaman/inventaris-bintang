@@ -1,10 +1,15 @@
-import AppLayout from '@/layouts/app-layout';
+import { Column, DataTable } from '@/components/data-table';
+import { StockFilterField, StockPage } from '@/components/stock-page';
+import { Button } from '@/components/ui/button';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { router } from '@inertiajs/react';
-import { EyeIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Download, Eye, RotateCcw } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import { DetailStokModal } from './detail';
 
-interface StokItem {
+type StokItem = {
+    id: string;
     kategori: string;
     label: string;
     merek: string;
@@ -14,221 +19,195 @@ interface StokItem {
     jumlah_tersedia: number;
     jumlah_total: number;
     model_id: number;
-}
-
-interface FilterItem {
+};
+type FilterItem = { id: number; nama: string };
+type Filters = { search: string; kategori: string; merek: string; lokasi: string };
+type DetailBarang = {
     id: number;
-    nama: string;
-}
-
-interface Props {
+    serial_number: string;
+    status: string;
+    rak?: { kode_rak?: string };
+};
+type Props = {
     stokBarang: {
-        data: StokItem[];
-        links: any[];
-        meta: {
-            current_page: number;
-            last_page: number;
-        };
+        data: Omit<StokItem, 'id'>[];
+        links: { url: string | null; label: string; active: boolean }[];
+        from: number | null;
+        to: number | null;
+        total: number;
     };
-    filters: {
-        search: string;
-        kategori: string;
-        merek: string;
-        lokasi: string;
-    };
+    filters: Partial<Filters>;
     kategoriList: FilterItem[];
     merekList: FilterItem[];
     lokasiList: FilterItem[];
+};
+
+const selectClass =
+    'h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
+
+function StockCount({ value, tone = 'neutral' }: { value: number; tone?: 'neutral' | 'danger' | 'warning' | 'success' }) {
+    const styles = {
+        neutral: 'bg-muted text-foreground',
+        danger: 'bg-destructive/10 text-destructive',
+        warning: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+        success: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+    };
+
+    return <span className={`inline-flex min-w-8 justify-center rounded-full px-2.5 py-1 text-xs font-semibold ${styles[tone]}`}>{value}</span>;
 }
 
-export default function Index({ stokBarang, filters, kategoriList, merekList, lokasiList }: Props) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+export default function StokGudangIndex({ stokBarang, filters, kategoriList, merekList, lokasiList }: Props) {
+    const items = useMemo(() => stokBarang.data.map((item, index) => ({ ...item, id: `${item.model_id}-${index}` })), [stokBarang.data]);
+    const [filterData, setFilterData] = useState<Filters>({
+        search: filters.search ?? '',
+        kategori: filters.kategori ?? '',
+        merek: filters.merek ?? '',
+        lokasi: filters.lokasi ?? '',
+    });
     const [selectedItem, setSelectedItem] = useState<StokItem | null>(null);
-    const [detailData, setDetailData] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [detailData, setDetailData] = useState<DetailBarang[]>([]);
+    const [loadingDetail, setLoadingDetail] = useState(false);
 
-    const handleShowDetail = async (item: StokItem) => {
+    const visit = (next: Filters) => {
+        router.get(route('stok.gudang.index'), next, { preserveState: true, preserveScroll: true, replace: true });
+    };
+    const search = useDebouncedCallback((value: string) => visit({ ...filterData, search: value }));
+    const updateFilter = (key: keyof Filters, value: string) => {
+        const next = { ...filterData, [key]: value };
+        setFilterData(next);
+        visit(next);
+    };
+    const resetFilters = () => {
+        const reset = { search: '', kategori: '', merek: '', lokasi: '' };
+        setFilterData(reset);
+        visit(reset);
+    };
+
+    const openDetail = async (item: StokItem) => {
         setSelectedItem(item);
-        setIsModalOpen(true);
-        setIsLoading(true);
         setDetailData([]);
+        setLoadingDetail(true);
 
         try {
-            // Pastikan Anda sudah memiliki route dengan nama ini
-            const response = await fetch(route('api.stok-gudang.detail', { modelBarang: item.model_id }));
-
-            if (!response.ok) throw new Error('Network response was not ok.');
-            const data = await response.json();
-            setDetailData(data);
-        } catch (error) {
-            console.error('Gagal mengambil data detail:', error);
+            const response = await fetch(route('api.stok-gudang.detail', { modelBarang: item.model_id }), {
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) throw new Error();
+            setDetailData((await response.json()) as DetailBarang[]);
+        } catch {
+            toast.error('Detail stok gudang gagal dimuat.');
         } finally {
-            setIsLoading(false);
+            setLoadingDetail(false);
         }
     };
 
-    function updateQuery(params: Partial<typeof filters>) {
-        router.get(
-            route('stok-gudang.index'),
-            { ...filters, ...params },
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
-    }
+    const columns: Column<StokItem>[] = [
+        {
+            header: 'Barang',
+            cell: (item) => (
+                <div>
+                    <p className="font-medium">{[item.merek, item.model].filter(Boolean).join(' ')}</p>
+                    <p className="text-xs text-muted-foreground">{item.label || item.kategori}</p>
+                </div>
+            ),
+        },
+        { header: 'Kategori', accessorKey: 'kategori' },
+        { header: 'Total', cell: (item) => <StockCount value={item.jumlah_total} /> },
+        { header: 'Tersedia', cell: (item) => <StockCount value={item.jumlah_tersedia} tone="success" /> },
+        { header: 'Rusak', cell: (item) => <StockCount value={item.jumlah_rusak} tone="danger" /> },
+        { header: 'Perbaikan', cell: (item) => <StockCount value={item.jumlah_perbaikan} tone="warning" /> },
+    ];
 
     return (
-        <AppLayout>
-            <div className="p-4">
-                {/* Simplified Header */}
-                <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-gray-800">Stok Gudang</h1>
-                        <p className="text-gray-600">Data semua model barang di gudang.</p>
-                    </div>
-
-                    {/* Export Button - Simplified */}
-                    <a
-                        href={route('stock.gudang.exportPdf', filters)}
-                        target="_blank"
-                        className="inline-flex items-center rounded bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-700"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                            />
-                        </svg>
+        <StockPage
+            title="Stok Gudang"
+            description="Pantau ketersediaan dan kondisi barang di seluruh gudang."
+            actions={
+                <Button asChild variant="outline">
+                    <a href={route('stock.gudang.exportPdf', filterData)} target="_blank" rel="noreferrer">
+                        <Download />
                         Ekspor PDF
                     </a>
-                </div>
-
-                {/* Simplified Filters */}
-                <div className="mb-4 flex flex-wrap gap-2">
-                    <input
-                        type="text"
-                        placeholder="Cari nama barang..."
-                        value={filters.search}
-                        onChange={(e) => updateQuery({ search: e.target.value })}
-                        className="rounded border border-gray-300 px-2.5 py-1 text-sm"
-                    />
-                    <select
-                        value={filters.kategori}
-                        onChange={(e) => updateQuery({ kategori: e.target.value })}
-                        className="rounded border border-gray-300 px-2.5 py-1 text-sm"
+                </Button>
+            }
+        >
+            <DataTable
+                data={items}
+                columns={columns}
+                links={stokBarang.links}
+                paginationMeta={stokBarang}
+                initialSearch={filterData.search}
+                searchPlaceholder="Cari model barang..."
+                onSearch={(value) => {
+                    setFilterData((current) => ({ ...current, search: value }));
+                    search(value);
+                }}
+                customFilters={
+                    <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
+                        <StockFilterField label="Kategori">
+                            <select
+                                value={filterData.kategori}
+                                onChange={(event) => updateFilter('kategori', event.target.value)}
+                                className={selectClass}
+                            >
+                                <option value="">Semua kategori</option>
+                                {kategoriList.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.nama}
+                                    </option>
+                                ))}
+                            </select>
+                        </StockFilterField>
+                        <StockFilterField label="Merek">
+                            <select value={filterData.merek} onChange={(event) => updateFilter('merek', event.target.value)} className={selectClass}>
+                                <option value="">Semua merek</option>
+                                {merekList.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.nama}
+                                    </option>
+                                ))}
+                            </select>
+                        </StockFilterField>
+                        <StockFilterField label="Gudang">
+                            <select
+                                value={filterData.lokasi}
+                                onChange={(event) => updateFilter('lokasi', event.target.value)}
+                                className={selectClass}
+                            >
+                                <option value="">Semua gudang</option>
+                                {lokasiList.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.nama}
+                                    </option>
+                                ))}
+                            </select>
+                        </StockFilterField>
+                        <Button type="button" variant="outline" onClick={resetFilters} className="self-end">
+                            <RotateCcw />
+                            Reset filter
+                        </Button>
+                    </div>
+                }
+                actions={(item) => (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDetail(item)}
+                        aria-label={`Lihat detail ${item.merek} ${item.model}`}
                     >
-                        <option value="">Semua Kategori</option>
-                        {kategoriList.map((k) => (
-                            <option key={k.id} value={k.id}>
-                                {k.nama}
-                            </option>
-                        ))}
-                    </select>
-                    <select
-                        value={filters.merek}
-                        onChange={(e) => updateQuery({ merek: e.target.value })}
-                        className="rounded border border-gray-300 px-2.5 py-1 text-sm"
-                    >
-                        <option value="">Semua Merek</option>
-                        {merekList.map((m) => (
-                            <option key={m.id} value={m.id}>
-                                {m.nama}
-                            </option>
-                        ))}
-                    </select>
-                    <select
-                        value={filters.lokasi}
-                        onChange={(e) => updateQuery({ lokasi: e.target.value })}
-                        className="rounded border border-gray-300 px-2.5 py-1 text-sm"
-                    >
-                        <option value="">Semua Lokasi</option>
-                        {lokasiList.map((l) => (
-                            <option key={l.id} value={l.id}>
-                                {l.nama}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Simplified Table */}
-                <div className="overflow-hidden rounded-lg border border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-100">
-                            <tr>
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">No</th>
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Kategori</th>
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Nama Barang</th>
-                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Merek Model</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium text-gray-600">Stok</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium text-gray-600">Rusak</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium text-gray-600">Diperbaiki</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium text-gray-600">Sisa</th>
-                                <th className="px-4 py-2 text-center text-xs font-medium text-gray-600">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 bg-white">
-                            {stokBarang.data.map((item, idx) => (
-                                <tr key={idx} className="hover:bg-gray-50">
-                                    <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-700">{idx + 1}</td>
-                                    <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-700">{item.kategori}</td>
-                                    <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-700">{item.label}</td>
-                                    <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-700">
-                                        {item.merek} {item.model}
-                                    </td>
-                                    <td className="px-4 py-3 text-center text-sm whitespace-nowrap">
-                                        <span className="inline-block rounded bg-green-100 px-1.5 text-xs text-green-800">{item.jumlah_total}</span>
-                                    </td>
-                                    <td className="px-4 py-3 text-center text-sm whitespace-nowrap">
-                                        <span className="inline-block rounded bg-red-100 px-1.5 text-xs text-red-800">{item.jumlah_rusak}</span>
-                                    </td>
-                                    <td className="px-4 py-3 text-center text-sm whitespace-nowrap">
-                                        <span className="inline-block rounded bg-yellow-100 px-1.5 text-xs text-yellow-800">
-                                            {item.jumlah_perbaikan}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-center text-sm font-medium whitespace-nowrap text-gray-900">
-                                        {item.jumlah_tersedia}
-                                    </td>
-                                    <td className="px-4 py-3 text-center text-sm whitespace-nowrap">
-                                        <button
-                                            onClick={() => handleShowDetail(item)}
-                                            className="text-blue-600 hover:text-blue-800"
-                                            title="Lihat Detail"
-                                        >
-                                            <EyeIcon className="h-5 w-5" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Simplified Pagination */}
-                <div className="mt-3 flex justify-end gap-1">
-                    {stokBarang.links.map((link, i) => (
-                        <button
-                            key={i}
-                            onClick={() => link.url && router.visit(link.url)}
-                            disabled={!link.url}
-                            className={`rounded px-2.5 py-1 text-xs ${link.active ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Simplified Modal */}
-            <DetailStokModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                item={selectedItem}
-                details={detailData}
-                isLoading={isLoading}
+                        <Eye />
+                    </Button>
+                )}
             />
-        </AppLayout>
+
+            <DetailStokModal
+                isOpen={Boolean(selectedItem)}
+                onClose={() => setSelectedItem(null)}
+                item={selectedItem ?? undefined}
+                details={detailData}
+                isLoading={loadingDetail}
+            />
+        </StockPage>
     );
 }

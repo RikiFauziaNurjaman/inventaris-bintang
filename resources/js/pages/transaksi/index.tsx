@@ -1,65 +1,90 @@
+import { TransactionPage } from '@/components/transaction-page';
+import { Card, CardContent } from '@/components/ui/card';
 import { PERMISSIONS } from '@/constants/permission';
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, PackagePlus, Truck, Undo2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Link, usePage } from '@inertiajs/react';
+import { ArrowRight, PackagePlus, Truck, Undo2, type LucideIcon } from 'lucide-react';
 
-const cards = [
+type TransactionCard = {
+    title: string;
+    description: string;
+    href: string;
+    icon: LucideIcon;
+    tone: string;
+    permission: string;
+};
+
+const cards: TransactionCard[] = [
     {
         title: 'Barang Masuk',
-        description: 'Catat semua barang yang masuk ke gudang.',
+        description: 'Catat penerimaan unit baru beserta serial number dan lokasi gudangnya.',
         href: '/barang-masuk',
-        color: 'bg-green-600',
-        icon: <PackagePlus className="h-10 w-10 text-white opacity-90" />,
+        icon: PackagePlus,
+        tone: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
         permission: PERMISSIONS.VIEW_BARANG_MASUK,
     },
     {
         title: 'Barang Keluar',
-        description: 'Kelola distribusi barang keluar.',
+        description: 'Kelola distribusi, peminjaman, penjualan, dan dokumen barang keluar.',
         href: '/barang-keluar',
-        color: 'bg-blue-600',
-        icon: <Truck className="h-10 w-10 text-white opacity-90" />,
+        icon: Truck,
+        tone: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
         permission: PERMISSIONS.VIEW_BARANG_KELUAR,
     },
     {
         title: 'Barang Kembali',
-        description: 'Data barang yang kembali dari distribusi.',
+        description: 'Catat pengembalian unit dan kondisi aktualnya setelah digunakan.',
         href: '/barang-kembali',
-        color: 'bg-yellow-500',
-        icon: <Undo2 className="h-10 w-10 text-white opacity-90" />,
+        icon: Undo2,
+        tone: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
         permission: PERMISSIONS.VIEW_BARANG_KEMBALI,
     },
 ];
 
 export default function TransaksiIndex() {
-    const { auth } = usePage().props;
-    const userPermissions = auth.permissions || [];
-    const visibleCards = cards.filter((card) => !card.permission || userPermissions.includes(card.permission));
+    const { auth } = usePage<{ auth: { permissions?: string[] } }>().props;
+    const permissions = auth.permissions ?? [];
+    const visibleCards = cards.filter((card) => permissions.includes(card.permission));
+
     return (
-        <AppLayout>
-            <Head title="Transaksi" />
+        <TransactionPage title="Ringkasan Transaksi" description="Pilih alur transaksi inventaris yang ingin dikerjakan.">
+            {visibleCards.length ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {visibleCards.map((card) => {
+                        const Icon = card.icon;
 
-            <div className="p-6">
-                <h1 className="mb-6 text-2xl font-bold text-gray-800 dark:text-white">Transaksi</h1>
-
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {visibleCards.map((card) => (
-                        <Link
-                            key={card.href}
-                            href={card.href}
-                            className={`group block rounded-xl p-6 text-white shadow transition duration-200 hover:shadow-lg ${card.color}`}
-                        >
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-2">
-                                    {card.icon}
-                                    <h2 className="text-xl font-semibold">{card.title}</h2>
-                                    <p className="text-sm opacity-90">{card.description}</p>
-                                </div>
-                                <ArrowRight className="mt-2 h-6 w-6 opacity-80 transition group-hover:translate-x-1" />
-                            </div>
-                        </Link>
-                    ))}
+                        return (
+                            <Link
+                                key={card.href}
+                                href={card.href}
+                                className="group rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            >
+                                <Card className="h-full transition-colors group-hover:border-primary/40 group-hover:bg-accent/30">
+                                    <CardContent className="flex h-full flex-col gap-5 p-6">
+                                        <div className={cn('flex size-11 items-center justify-center rounded-lg', card.tone)}>
+                                            <Icon className="size-5" />
+                                        </div>
+                                        <div className="flex-1 space-y-1.5">
+                                            <h2 className="font-semibold text-foreground">{card.title}</h2>
+                                            <p className="text-sm leading-6 text-muted-foreground">{card.description}</p>
+                                        </div>
+                                        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+                                            Buka transaksi
+                                            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                                        </span>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        );
+                    })}
                 </div>
-            </div>
-        </AppLayout>
+            ) : (
+                <Card>
+                    <CardContent className="p-8 text-center text-sm text-muted-foreground">
+                        Anda belum memiliki akses ke transaksi inventaris.
+                    </CardContent>
+                </Card>
+            )}
+        </TransactionPage>
     );
 }

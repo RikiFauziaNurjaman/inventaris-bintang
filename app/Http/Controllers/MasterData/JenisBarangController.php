@@ -6,7 +6,6 @@ use App\Enums\PermissionEnum;
 use App\Helpers\MasterDataHelper;
 use App\Http\Controllers\Controller;
 use App\Models\JenisBarang;
-use App\Models\KategoriBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -16,10 +15,10 @@ class JenisBarangController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('can:' . PermissionEnum::VIEW_JENIS->value)->only(['index', 'show', 'search']);
-        $this->middleware('can:' . PermissionEnum::CREATE_JENIS->value)->only(['create', 'store']);
-        $this->middleware('can:' . PermissionEnum::EDIT_JENIS->value)->only(['edit', 'update']);
-        $this->middleware('can:' . PermissionEnum::DELETE_JENIS->value)->only(['destroy']);
+        $this->middleware('can:'.PermissionEnum::VIEW_JENIS->value)->only(['index', 'show', 'search']);
+        $this->middleware('can:'.PermissionEnum::CREATE_JENIS->value)->only(['create', 'store']);
+        $this->middleware('can:'.PermissionEnum::EDIT_JENIS->value)->only(['edit', 'update']);
+        $this->middleware('can:'.PermissionEnum::DELETE_JENIS->value)->only(['destroy']);
     }
 
     public function index(Request $request)
@@ -36,9 +35,6 @@ class JenisBarangController extends Controller
             'filters' => [
                 'search' => $request->input('search'),
             ],
-            'flash' => [
-                'message' => session('message'),
-            ]
         ]);
     }
 
@@ -88,8 +84,8 @@ class JenisBarangController extends Controller
     public function getByKategori(Request $request)
     {
         $kategoriId = $request->input('kategori_id');
-        
-        if (!$kategoriId) {
+
+        if (! $kategoriId) {
             return response()->json([]);
         }
 

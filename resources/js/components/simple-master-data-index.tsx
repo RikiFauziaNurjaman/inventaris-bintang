@@ -5,38 +5,38 @@ import { MasterDataPage } from '@/components/master-data-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PERMISSIONS } from '@/constants/permission';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { Edit3, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
-type Kategori = { id: number; nama: string };
-type JenisBarang = { id: number; nama: string; kategori: Kategori };
+type Item = { id: number; nama: string };
 type Props = {
-    jenisBarang: {
-        data: JenisBarang[];
+    title: string;
+    description: string;
+    noun: string;
+    routeName: string;
+    data: {
+        data: Item[];
         links: { url: string | null; label: string; active: boolean }[];
         from: number | null;
         to: number | null;
         total: number;
     };
-    kategoriBarang: Kategori[];
-    filters: { search?: string };
+    search?: string;
+    permissions: { create: string; edit: string; delete: string };
+    placeholder: string;
 };
 
-const selectClass =
-    'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50';
-
-export default function Index({ jenisBarang, kategoriBarang, filters }: Props) {
+export function SimpleMasterDataIndex({ title, description, noun, routeName, data, search: initialSearch, permissions, placeholder }: Props) {
     const { auth } = usePage<{ auth: { permissions?: string[] } }>().props;
-    const permissions = auth.permissions ?? [];
-    const [editing, setEditing] = useState<JenisBarang | null>(null);
+    const userPermissions = auth.permissions ?? [];
+    const [editing, setEditing] = useState<Item | null>(null);
     const [showForm, setShowForm] = useState(false);
-    const [pendingDelete, setPendingDelete] = useState<JenisBarang | null>(null);
-    const form = useForm({ nama: '', kategori_id: '' });
+    const [pendingDelete, setPendingDelete] = useState<Item | null>(null);
+    const form = useForm({ nama: '' });
     const search = useDebouncedCallback((value: string) => {
-        router.get(route('jenis-barang.index'), { search: value }, { preserveState: true, preserveScroll: true, replace: true });
+        router.get(route(`${routeName}.index`), { search: value }, { preserveState: true, preserveScroll: true, replace: true });
     });
 
     const closeForm = () => {
@@ -50,56 +50,34 @@ export default function Index({ jenisBarang, kategoriBarang, filters }: Props) {
         event.preventDefault();
         const options = { preserveScroll: true, onSuccess: closeForm };
         if (editing) {
-            form.put(route('jenis-barang.update', editing.id), options);
+            form.put(route(`${routeName}.update`, editing.id), options);
         } else {
-            form.post(route('jenis-barang.store'), options);
+            form.post(route(`${routeName}.store`), options);
         }
     };
 
-    const columns: Column<JenisBarang>[] = [
-        { header: 'Nama Jenis', accessorKey: 'nama' },
-        { header: 'Kategori', accessorKey: 'kategori', cell: (item) => item.kategori?.nama || '—' },
-    ];
+    const columns: Column<Item>[] = [{ header: `Nama ${noun}`, accessorKey: 'nama' }];
 
     return (
-        <MasterDataPage title="Jenis Barang" description="Kelola jenis inventaris di dalam setiap kategori.">
+        <MasterDataPage title={title} description={description}>
             {showForm && (
-                <MasterDataFormPanel title={editing ? 'Edit jenis barang' : 'Tambah jenis barang'} onClose={closeForm}>
+                <MasterDataFormPanel title={`${editing ? 'Edit' : 'Tambah'} ${noun.toLowerCase()}`} onClose={closeForm}>
                     <form onSubmit={submit} className="grid gap-5 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label htmlFor="nama-jenis">Nama jenis</Label>
+                            <Label htmlFor={`nama-${routeName}`}>Nama {noun.toLowerCase()}</Label>
                             <Input
-                                id="nama-jenis"
+                                id={`nama-${routeName}`}
                                 value={form.data.nama}
                                 onChange={(event) => form.setData('nama', event.target.value)}
-                                placeholder="Contoh: Laptop"
+                                placeholder={placeholder}
                                 aria-invalid={Boolean(form.errors.nama)}
                                 required
                             />
                             {form.errors.nama && <p className="text-sm text-destructive">{form.errors.nama}</p>}
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="kategori-jenis">Kategori</Label>
-                            <select
-                                id="kategori-jenis"
-                                value={form.data.kategori_id}
-                                onChange={(event) => form.setData('kategori_id', event.target.value)}
-                                className={selectClass}
-                                aria-invalid={Boolean(form.errors.kategori_id)}
-                                required
-                            >
-                                <option value="">Pilih kategori</option>
-                                {kategoriBarang.map((kategori) => (
-                                    <option key={kategori.id} value={kategori.id}>
-                                        {kategori.nama}
-                                    </option>
-                                ))}
-                            </select>
-                            {form.errors.kategori_id && <p className="text-sm text-destructive">{form.errors.kategori_id}</p>}
-                        </div>
-                        <div className="flex gap-2 md:col-span-2">
+                        <div className="flex items-end gap-2 md:col-span-2">
                             <Button type="submit" disabled={form.processing}>
-                                {form.processing ? 'Menyimpan...' : editing ? 'Simpan perubahan' : 'Simpan jenis'}
+                                {form.processing ? 'Menyimpan...' : editing ? 'Simpan perubahan' : `Simpan ${noun.toLowerCase()}`}
                             </Button>
                             <Button type="button" variant="outline" onClick={closeForm}>
                                 Batal
@@ -110,15 +88,15 @@ export default function Index({ jenisBarang, kategoriBarang, filters }: Props) {
             )}
 
             <DataTable
-                data={jenisBarang.data}
+                data={data.data}
                 columns={columns}
-                links={jenisBarang.links}
-                paginationMeta={jenisBarang}
-                searchPlaceholder="Cari jenis barang..."
-                initialSearch={filters.search ?? ''}
+                links={data.links}
+                paginationMeta={data}
+                searchPlaceholder={`Cari ${noun.toLowerCase()}...`}
+                initialSearch={initialSearch ?? ''}
                 onSearch={search}
                 onCreate={
-                    permissions.includes(PERMISSIONS.CREATE_JENIS)
+                    userPermissions.includes(permissions.create)
                         ? () => {
                               form.reset();
                               form.clearErrors();
@@ -127,16 +105,16 @@ export default function Index({ jenisBarang, kategoriBarang, filters }: Props) {
                           }
                         : undefined
                 }
-                createLabel="Tambah jenis"
+                createLabel={`Tambah ${noun.toLowerCase()}`}
                 actions={(item) => (
                     <div className="flex justify-end gap-1">
-                        {permissions.includes(PERMISSIONS.EDIT_JENIS) && (
+                        {userPermissions.includes(permissions.edit) && (
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => {
-                                    form.setData({ nama: item.nama, kategori_id: String(item.kategori.id) });
+                                    form.setData('nama', item.nama);
                                     form.clearErrors();
                                     setEditing(item);
                                     setShowForm(true);
@@ -146,7 +124,7 @@ export default function Index({ jenisBarang, kategoriBarang, filters }: Props) {
                                 <Edit3 />
                             </Button>
                         )}
-                        {permissions.includes(PERMISSIONS.DELETE_JENIS) && (
+                        {userPermissions.includes(permissions.delete) && (
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -165,11 +143,11 @@ export default function Index({ jenisBarang, kategoriBarang, filters }: Props) {
             <ConfirmDeleteDialog
                 open={Boolean(pendingDelete)}
                 onOpenChange={(open) => !open && setPendingDelete(null)}
-                description={`Jenis “${pendingDelete?.nama ?? ''}” akan dihapus. Tindakan ini tidak dapat dibatalkan.`}
+                description={`${noun} “${pendingDelete?.nama ?? ''}” akan dihapus. Tindakan ini tidak dapat dibatalkan.`}
                 processing={form.processing}
                 onConfirm={() => {
                     if (!pendingDelete) return;
-                    form.delete(route('jenis-barang.destroy', pendingDelete.id), {
+                    form.delete(route(`${routeName}.destroy`, pendingDelete.id), {
                         preserveScroll: true,
                         onSuccess: () => setPendingDelete(null),
                     });

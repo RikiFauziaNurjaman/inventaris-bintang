@@ -42,6 +42,11 @@ enum PermissionEnum: string
     case EDIT_RAK_BARANG = 'edit-rak-barang';
     case DELETE_RAK_BARANG = 'delete-rak-barang';
 
+    case VIEW_BARANG_INVENTARIS = 'view-barang-inventaris';
+    case CREATE_BARANG_INVENTARIS = 'create-barang-inventaris';
+    case EDIT_BARANG_INVENTARIS = 'edit-barang-inventaris';
+    case DELETE_BARANG_INVENTARIS = 'delete-barang-inventaris';
+
     // Transaksi
     case VIEW_BARANG_MASUK = 'view-barang-masuk';
     case CREATE_BARANG_MASUK = 'create-barang-masuk';
