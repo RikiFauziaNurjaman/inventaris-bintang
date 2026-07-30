@@ -44,8 +44,8 @@ const cards: StockCard[] = [
     },
     {
         key: 'total',
-        title: 'Total Barang',
-        description: 'Seluruh unit inventaris yang tercatat.',
+        title: 'Ringkasan Stok',
+        description: 'Rekap unit per model dan lokasi.',
         href: '/total-stock',
         icon: Boxes,
         tone: 'bg-violet-500/10 text-violet-700 dark:text-violet-400',

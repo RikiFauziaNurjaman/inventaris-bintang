@@ -112,7 +112,7 @@ export function AppSidebar() {
             children: [
                 { title: 'Stok Gudang', href: '/stok-gudang', icon: Warehouse, permission: PERMISSIONS.VIEW_STOK_GUDANG },
                 { title: 'Stok Distribusi', href: '/stok-distribusi', icon: Truck, permission: PERMISSIONS.VIEW_STOK_DISTRIBUSI },
-                { title: 'Total Barang', href: '/total-stock', icon: Boxes, permission: PERMISSIONS.VIEW_STOK_TOTAL },
+                { title: 'Ringkasan Stok', href: '/total-stock', icon: Boxes, permission: PERMISSIONS.VIEW_STOK_TOTAL },
                 { title: 'Stok Terjual', href: '/stok-terjual', icon: ShoppingCart, permission: PERMISSIONS.VIEW_STOK_TERJUAL },
                 { title: 'Stok Rusak', href: '/stock-rusak', icon: TriangleAlert, permission: PERMISSIONS.VIEW_STOK_RUSAK },
                 { title: 'Dalam Perbaikan', href: '/perbaikan', icon: Wrench, permission: PERMISSIONS.VIEW_STOK_DIPERBAIKI },

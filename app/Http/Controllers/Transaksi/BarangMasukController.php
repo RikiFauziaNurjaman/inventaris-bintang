@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Transaksi;
 
+use App\Helpers\BarangActivityHelper;
 use App\Helpers\MasterDataHelper;
 use App\Helpers\StockHelpers;
 use App\Http\Controllers\Controller;
@@ -19,6 +20,7 @@ use App\Models\RakBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BarangMasukController extends Controller
@@ -29,7 +31,7 @@ class BarangMasukController extends Controller
         $query = BarangMasuk::with([
             'asal',
             'details.barang.modelBarang.kategori',
-            'details.barang.modelBarang.merek'
+            'details.barang.modelBarang.merek',
         ]);
 
         // Filter tanggal
@@ -52,7 +54,7 @@ class BarangMasukController extends Controller
         // Filter merek
         if ($request->filled('merek')) {
             $query->whereHas('details.barang.modelBarang.merek', function ($q) use ($request) {
-                $q->whereRaw('LOWER(nama) LIKE ?', ['%' . strtolower($request->merek) . '%']);
+                $q->whereRaw('LOWER(nama) LIKE ?', ['%'.strtolower($request->merek).'%']);
             });
         }
 
@@ -72,7 +74,7 @@ class BarangMasukController extends Controller
 
         // Sorting
         $sort = $request->input('sort_by', 'desc');
-        if (!in_array($sort, ['asc', 'desc'])) {
+        if (! in_array($sort, ['asc', 'desc'])) {
             $sort = 'desc';
         }
 
@@ -91,6 +93,7 @@ class BarangMasukController extends Controller
         $barangMasukData = ($perPage === 'all')
             ? $barangMasuk->map(function ($bm) {
                 $detail = $bm->details->first();
+
                 return [
                     'id' => $bm->id,
                     'tanggal' => $bm->tanggal,
@@ -102,6 +105,7 @@ class BarangMasukController extends Controller
             })
             : $barangMasuk->through(function ($bm) {
                 $detail = $bm->details->first();
+
                 return [
                     'id' => $bm->id,
                     'tanggal' => $bm->tanggal,
@@ -137,7 +141,7 @@ class BarangMasukController extends Controller
 
     public function getModelByKategoriMerek(Request $request)
     {
-        if (!$request->filled('jenis_barang')) {
+        if (! $request->filled('jenis_barang')) {
             return response()->json([]);
         }
 
@@ -150,7 +154,7 @@ class BarangMasukController extends Controller
 
     public function getJenisBarang(Request $request)
     {
-        if (!$request->filled('kategori')) {
+        if (! $request->filled('kategori')) {
             return response()->json([]);
         }
 
@@ -161,14 +165,13 @@ class BarangMasukController extends Controller
         return response()->json($jenisBarang);
     }
 
-
     public function getJenisByKategori(Request $request)
     {
         $kategori = $request->input('kategori');
 
         $kategoriModel = KategoriBarang::where('nama', $kategori)->first();
 
-        if (!$kategoriModel) {
+        if (! $kategoriModel) {
             return response()->json([]);
         }
 
@@ -193,8 +196,8 @@ class BarangMasukController extends Controller
     {
         $request->validate([
             'tanggal' => 'required|date',
-            'asal_barang'   => 'nullable|string|max:100',
-            'items' =>  'required|array|min:1',
+            'asal_barang' => 'nullable|string|max:100',
+            'items' => 'required|array|min:1',
             'items.*.kategori' => 'required|string|max:100',
             'items.*.merek' => 'required|string|max:100',
             'items.*.model' => 'required|string|max:100',
@@ -212,11 +215,10 @@ class BarangMasukController extends Controller
             }
 
             $barangMasuk = BarangMasuk::create([
-                'tanggal'   => $request->tanggal,
-                'asal_barang_id'    => $asal?->id,
-                'user_id'   => auth()->id(),
+                'tanggal' => $request->tanggal,
+                'asal_barang_id' => $asal?->id,
+                'user_id' => auth()->id(),
             ]);
-
 
             $lokasiGudang = Lokasi::where('is_gudang', true)->firstOrFail();
 
@@ -228,21 +230,21 @@ class BarangMasukController extends Controller
 
             foreach ($request->items as $item) {
                 $kategori = KategoriBarang::firstOrCreate(['nama' => $item['kategori']]);
-                $merk     = MerekBarang::firstOrCreate(['nama' => $item['merek']]);
-                $jenis    = JenisBarang::firstOrCreate([
+                $merk = MerekBarang::firstOrCreate(['nama' => $item['merek']]);
+                $jenis = JenisBarang::firstOrCreate([
                     'kategori_id' => $kategori->id,
                     'nama' => $item['jenis_barang'],
                 ]);
-                $model    = ModelBarang::firstOrCreate([
+                $model = ModelBarang::firstOrCreate([
                     'kategori_id' => $kategori->id,
-                    'merek_id'    => $merk->id,
-                    'jenis_id'    => $jenis->id,
-                    'nama'        => $item['model'],
+                    'merek_id' => $merk->id,
+                    'jenis_id' => $jenis->id,
+                    'nama' => $item['model'],
                 ]);
 
                 // Track stock updates per model + lokasi
                 $stockKey = "{$model->id}_{$lokasiGudang->id}";
-                if (!isset($stockUpdates[$stockKey])) {
+                if (! isset($stockUpdates[$stockKey])) {
                     $stockUpdates[$stockKey] = [
                         'model_id' => $model->id,
                         'lokasi_id' => $lokasiGudang->id,
@@ -272,7 +274,7 @@ class BarangMasukController extends Controller
                         'lokasi_asal_id' => null,
                         'lokasi_tujuan_id' => $lokasiGudang->id,
                         'tanggal' => $request->tanggal,
-                        'keterangan' => 'Barang masuk dari sumber ' . ($asal?->nama ?? 'manual'),
+                        'keterangan' => 'Barang masuk dari sumber '.($asal?->nama ?? 'manual'),
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];
@@ -282,12 +284,12 @@ class BarangMasukController extends Controller
             }
 
             // Batch insert details
-            if (!empty($detailsToInsert)) {
+            if (! empty($detailsToInsert)) {
                 BarangMasukDetail::insert($detailsToInsert);
             }
 
             // Batch insert mutasi
-            if (!empty($mutasiToInsert)) {
+            if (! empty($mutasiToInsert)) {
                 MutasiBarang::insert($mutasiToInsert);
             }
 
@@ -296,6 +298,7 @@ class BarangMasukController extends Controller
                 StockHelpers::barangMasuk($update['model_id'], $update['lokasi_id'], $update['jumlah']);
             }
         });
+
         return redirect()->route('barang-masuk.index')->with('success', 'Transaksi barang berhasil dicatat.');
     }
 
@@ -309,7 +312,9 @@ class BarangMasukController extends Controller
         $items = [];
         foreach ($groupedDetails as $modelId => $details) {
             $firstDetail = $details->first();
-            if (!$firstDetail || !$firstDetail->barang) continue;
+            if (! $firstDetail || ! $firstDetail->barang) {
+                continue;
+            }
 
             $modelBarang = $firstDetail->barang->modelBarang;
 
@@ -397,7 +402,7 @@ class BarangMasukController extends Controller
                 $merek = MerekBarang::firstOrCreate(['nama' => $item['merek']]);
                 $jenis = JenisBarang::firstOrCreate(['kategori_id' => $kategori->id, 'nama' => $item['jenis_barang']]);
                 $model = ModelBarang::firstOrCreate(['kategori_id' => $kategori->id, 'merek_id' => $merek->id, 'jenis_id' => $jenis->id, 'nama' => $item['model']]);
-                $rak = !empty($item['rak']) ? RakBarang::firstOrCreate(['nama' => $item['rak']]) : null;
+                $rak = ! empty($item['rak']) ? RakBarang::firstOrCreate(['nama' => $item['rak']]) : null;
 
                 // Loop untuk setiap serial number
                 foreach ($item['serial_numbers'] as $serial) {
@@ -422,7 +427,7 @@ class BarangMasukController extends Controller
                         'lokasi_asal_id' => null,
                         'lokasi_tujuan_id' => $lokasiGudang->id,
                         'tanggal' => $request->tanggal,
-                        'keterangan' => 'Barang masuk dari ' . ($asal?->nama ?? 'manual'),
+                        'keterangan' => 'Barang masuk dari '.($asal?->nama ?? 'manual'),
                     ]);
 
                     // Tambah stok untuk model baru
@@ -475,33 +480,42 @@ class BarangMasukController extends Controller
 
         // Kirim data yang sudah ditransformasi ke view
         return Inertia::render('transaksi/barang-masuk/barang-masuk-detail', [
-            'barangMasuk' => $data
+            'barangMasuk' => $data,
         ]);
     }
 
     public function destroy(BarangMasuk $barang_masuk)
     {
-        DB::transaction(function () use ($barang_masuk) {
-            foreach ($barang_masuk->details as $detail) {
-                $barang = $detail->barang;
+        try {
+            DB::transaction(function () use ($barang_masuk) {
+                $barang_masuk = BarangMasuk::with('details')->lockForUpdate()->findOrFail($barang_masuk->id);
+                $barangList = Barang::whereIn('id', $barang_masuk->details->pluck('barang_id'))
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
 
-                if ($barang) {
+                foreach ($barangList as $barang) {
+                    if ($reason = BarangActivityHelper::blockReason($barang)) {
+                        throw ValidationException::withMessages([
+                            'barang_masuk' => "Transaksi tidak dapat dibatalkan karena serial {$barang->serial_number} {$reason}.",
+                        ]);
+                    }
+                }
+
+                foreach ($barangList as $barang) {
                     MutasiBarang::where('barang_id', $barang->id)->delete();
-
                     StockHelpers::barangKeluar($barang->model_id, $barang->lokasi_id, 1);
-
                     $barang->delete();
                 }
-            }
 
-            // 4. Hapus detail barang masuk (biasanya terhapus otomatis jika ada cascade on delete)
-            $barang_masuk->details()->delete();
-
-            // 5. Hapus data utama barang masuk
-            $barang_masuk->delete();
-        });
+                $barang_masuk->details()->delete();
+                $barang_masuk->delete();
+            });
+        } catch (ValidationException $exception) {
+            return back()->with('error', $exception->errors()['barang_masuk'][0]);
+        }
 
         return redirect()->route('barang-masuk.index')
-            ->with('success', 'Data barang masuk dan semua item terkait berhasil dihapus.');
+            ->with('success', 'Transaksi barang masuk berhasil dibatalkan dan stok telah disesuaikan.');
     }
 }

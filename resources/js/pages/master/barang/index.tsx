@@ -1,4 +1,4 @@
-import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
+import { BarcodeScannerDialog } from '@/components/barcode-scanner-dialog';
 import { Column, DataTable } from '@/components/data-table';
 import { MasterDataFormPanel } from '@/components/master-data-form-panel';
 import { MasterDataPage } from '@/components/master-data-page';
@@ -9,7 +9,7 @@ import { PERMISSIONS } from '@/constants/permission';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { cn } from '@/lib/utils';
 import { router, useForm, usePage } from '@inertiajs/react';
-import { Camera, Edit3, RotateCcw, Trash2 } from 'lucide-react';
+import { Camera, Download, Edit3, RotateCcw } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 type NamedItem = { id: number; nama: string };
@@ -52,9 +52,6 @@ type Props = {
         lokasiList: string[];
         statusList: string[];
         kondisiList: string[];
-        modelList: ModelOption[];
-        asalList: NamedItem[];
-        gudangList: Lokasi[];
         rakList: Rak[];
         subLokasiList: SubLokasi[];
     };
@@ -62,12 +59,6 @@ type Props = {
 
 const selectClass =
     'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50';
-
-function localDate() {
-    const date = new Date();
-    const pad = (value: number) => String(value).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
 
 const statusLabels: Record<string, string> = {
     baik: 'Baik',
@@ -103,7 +94,6 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
     const permissions = auth.permissions ?? [];
     const [editing, setEditing] = useState<Barang | null>(null);
     const [showForm, setShowForm] = useState(false);
-    const [pendingDelete, setPendingDelete] = useState<Barang | null>(null);
     const [scannerOpen, setScannerOpen] = useState(false);
     const [activeFilters, setActiveFilters] = useState({
         kategori: filters.kategori ?? '',
@@ -112,10 +102,6 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
         kondisi: filters.kondisi ?? '',
     });
     const form = useForm({
-        tanggal: localDate(),
-        model_id: '',
-        asal_id: '',
-        lokasi_id: '',
         rak_id: '',
         sub_lokasi_id: '',
         serial_number: '',
@@ -125,9 +111,9 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
     });
 
     const availableRacks = useMemo(() => {
-        const locationId = editing ? editing.lokasi?.id : Number(form.data.lokasi_id);
+        const locationId = editing?.lokasi?.id;
         return filterOptions.rakList.filter((rack) => rack.lokasi_id === locationId);
-    }, [editing, filterOptions.rakList, form.data.lokasi_id]);
+    }, [editing, filterOptions.rakList]);
     const availableSubLocations = useMemo(() => {
         const locationId = editing?.lokasi?.id;
         return filterOptions.subLokasiList.filter((subLokasi) => subLokasi.lokasi_id === locationId);
@@ -145,30 +131,8 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
         setShowForm(false);
     };
 
-    const openCreate = () => {
-        form.setData({
-            tanggal: localDate(),
-            model_id: '',
-            asal_id: '',
-            lokasi_id: '',
-            rak_id: '',
-            sub_lokasi_id: '',
-            serial_number: '',
-            kondisi_awal: 'baru',
-            pic: '',
-            catatan: '',
-        });
-        form.clearErrors();
-        setEditing(null);
-        setShowForm(true);
-    };
-
     const openEdit = (item: Barang) => {
         form.setData({
-            tanggal: '',
-            model_id: '',
-            asal_id: '',
-            lokasi_id: '',
             rak_id: item.rak ? String(item.rak.id) : '',
             sub_lokasi_id: item.sub_lokasi ? String(item.sub_lokasi.id) : '',
             serial_number: item.serial_number,
@@ -183,29 +147,16 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
-        if (editing) {
-            form.transform((data) => ({
-                serial_number: data.serial_number,
-                kondisi_awal: data.kondisi_awal,
-                rak_id: data.rak_id || null,
-                sub_lokasi_id: data.sub_lokasi_id || null,
-                pic: data.pic || null,
-                catatan: data.catatan || null,
-            })).put(route('barang.update', editing.id), { preserveScroll: true, onSuccess: closeForm });
-            return;
-        }
-
+        if (!editing) return;
         form.transform((data) => ({
-            tanggal: data.tanggal,
-            model_id: data.model_id,
-            asal_id: data.asal_id || null,
-            lokasi_id: data.lokasi_id,
-            rak_id: data.rak_id || null,
             serial_number: data.serial_number,
             kondisi_awal: data.kondisi_awal,
+            rak_id: data.rak_id || null,
+            sub_lokasi_id: data.sub_lokasi_id || null,
             pic: data.pic || null,
             catatan: data.catatan || null,
-        })).post(route('barang.store'), { preserveScroll: true, onSuccess: closeForm });
+        }));
+        form.put(route('barang.update', editing.id), { preserveScroll: true, onSuccess: closeForm });
     };
 
     const columns: Column<Barang>[] = [
@@ -251,106 +202,40 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
         setActiveFilters(next);
         visitWithFilters(next);
     };
+    const resetFilters = () => {
+        const reset = { kategori: '', lokasi: '', status: '', kondisi: '' };
+        setActiveFilters(reset);
+        visitWithFilters(reset);
+    };
+    const hasActiveFilters = Object.values(activeFilters).some(Boolean);
 
     return (
-        <MasterDataPage title="Data Barang" description="Kelola setiap unit inventaris beserta serial number, kondisi, dan penempatannya.">
-            {showForm && (
-                <MasterDataFormPanel title={editing ? 'Edit data barang' : 'Tambah data barang'} onClose={closeForm}>
-                    {editing && (
-                        <div className="mb-5 grid gap-3 rounded-lg border bg-muted/35 p-4 text-sm sm:grid-cols-3">
-                            <div>
-                                <p className="text-xs text-muted-foreground">Model</p>
-                                <p className="font-medium">
-                                    {editing.model_barang?.merek?.nama} {editing.model_barang?.nama}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">Lokasi</p>
-                                <p className="font-medium">{editing.lokasi?.nama || '—'}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">Status</p>
-                                <div className="mt-1">
-                                    <StatusBadge status={editing.status} />
-                                </div>
+        <MasterDataPage
+            title="Data Barang"
+            description="Lihat unit inventaris dan koreksi metadata aman. Penambahan atau pembatalan dilakukan melalui Transaksi Barang Masuk."
+        >
+            {showForm && editing && (
+                <MasterDataFormPanel title="Edit data barang" onClose={closeForm}>
+                    <div className="mb-5 grid gap-3 rounded-lg border bg-muted/35 p-4 text-sm sm:grid-cols-3">
+                        <div>
+                            <p className="text-xs text-muted-foreground">Model</p>
+                            <p className="font-medium">
+                                {editing.model_barang?.merek?.nama} {editing.model_barang?.nama}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-muted-foreground">Lokasi</p>
+                            <p className="font-medium">{editing.lokasi?.nama || '—'}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-muted-foreground">Status</p>
+                            <div className="mt-1">
+                                <StatusBadge status={editing.status} />
                             </div>
                         </div>
-                    )}
+                    </div>
 
                     <form onSubmit={submit} className="grid gap-5 md:grid-cols-2">
-                        {!editing && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="tanggal-barang">Tanggal masuk</Label>
-                                    <Input
-                                        id="tanggal-barang"
-                                        type="date"
-                                        value={form.data.tanggal}
-                                        onChange={(event) => form.setData('tanggal', event.target.value)}
-                                        aria-invalid={Boolean(form.errors.tanggal)}
-                                        required
-                                    />
-                                    {form.errors.tanggal && <p className="text-sm text-destructive">{form.errors.tanggal}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="model-barang">Model barang</Label>
-                                    <select
-                                        id="model-barang"
-                                        value={form.data.model_id}
-                                        onChange={(event) => form.setData('model_id', event.target.value)}
-                                        className={selectClass}
-                                        aria-invalid={Boolean(form.errors.model_id)}
-                                        required
-                                    >
-                                        <option value="">Pilih model</option>
-                                        {filterOptions.modelList.map((model) => (
-                                            <option key={model.id} value={model.id}>
-                                                {model.merek?.nama} {model.nama} · {model.jenis?.nama}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {form.errors.model_id && <p className="text-sm text-destructive">{form.errors.model_id}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="asal-barang">Asal barang</Label>
-                                    <select
-                                        id="asal-barang"
-                                        value={form.data.asal_id}
-                                        onChange={(event) => form.setData('asal_id', event.target.value)}
-                                        className={selectClass}
-                                        aria-invalid={Boolean(form.errors.asal_id)}
-                                    >
-                                        <option value="">Tanpa asal</option>
-                                        {filterOptions.asalList.map((asal) => (
-                                            <option key={asal.id} value={asal.id}>
-                                                {asal.nama}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {form.errors.asal_id && <p className="text-sm text-destructive">{form.errors.asal_id}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="gudang-barang">Gudang</Label>
-                                    <select
-                                        id="gudang-barang"
-                                        value={form.data.lokasi_id}
-                                        onChange={(event) => form.setData((data) => ({ ...data, lokasi_id: event.target.value, rak_id: '' }))}
-                                        className={selectClass}
-                                        aria-invalid={Boolean(form.errors.lokasi_id)}
-                                        required
-                                    >
-                                        <option value="">Pilih gudang</option>
-                                        {filterOptions.gudangList.map((lokasi) => (
-                                            <option key={lokasi.id} value={lokasi.id}>
-                                                {lokasi.nama}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {form.errors.lokasi_id && <p className="text-sm text-destructive">{form.errors.lokasi_id}</p>}
-                                </div>
-                            </>
-                        )}
-
                         <div className="space-y-2">
                             <Label htmlFor="serial-barang">Serial number</Label>
                             <div className="flex gap-2">
@@ -367,6 +252,11 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
                                 </Button>
                             </div>
                             {form.errors.serial_number && <p className="text-sm text-destructive">{form.errors.serial_number}</p>}
+                            {!form.errors.serial_number && (
+                                <p className="text-xs text-muted-foreground">
+                                    Serial hanya dapat dikoreksi sebelum barang memiliki aktivitas transaksi atau audit Stock Opname.
+                                </p>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="kondisi-barang">Kondisi awal</Label>
@@ -383,7 +273,7 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
                             </select>
                             {form.errors.kondisi_awal && <p className="text-sm text-destructive">{form.errors.kondisi_awal}</p>}
                         </div>
-                        {(!editing || editing.lokasi?.is_gudang) && (
+                        {editing.lokasi?.is_gudang && (
                             <div className="space-y-2">
                                 <Label htmlFor="rak-barang">Rak</Label>
                                 <select
@@ -391,7 +281,6 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
                                     value={form.data.rak_id}
                                     onChange={(event) => form.setData('rak_id', event.target.value)}
                                     className={selectClass}
-                                    disabled={!editing && !form.data.lokasi_id}
                                     aria-invalid={Boolean(form.errors.rak_id)}
                                 >
                                     <option value="">Tanpa rak</option>
@@ -404,7 +293,7 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
                                 {form.errors.rak_id && <p className="text-sm text-destructive">{form.errors.rak_id}</p>}
                             </div>
                         )}
-                        {editing && !editing.lokasi?.is_gudang && (
+                        {!editing.lokasi?.is_gudang && (
                             <div className="space-y-2">
                                 <Label htmlFor="sub-lokasi-barang">Sub-lokasi</Label>
                                 <select
@@ -448,7 +337,7 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
                         </div>
                         <div className="flex gap-2 md:col-span-2">
                             <Button type="submit" disabled={form.processing}>
-                                {form.processing ? 'Menyimpan...' : editing ? 'Simpan perubahan' : 'Simpan barang'}
+                                {form.processing ? 'Menyimpan...' : 'Simpan perubahan'}
                             </Button>
                             <Button type="button" variant="outline" onClick={closeForm}>
                                 Batal
@@ -457,6 +346,15 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
                     </form>
                 </MasterDataFormPanel>
             )}
+
+            <div className="flex justify-end">
+                <Button asChild variant="outline">
+                    <a href={route('barang.exportPdf', { ...activeFilters, search: filters.search ?? '' })} target="_blank" rel="noreferrer">
+                        <Download />
+                        Ekspor PDF
+                    </a>
+                </Button>
+            </div>
 
             <DataTable
                 data={barangList.data}
@@ -467,87 +365,65 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
                 initialSearch={filters.search ?? ''}
                 onSearch={search}
                 customFilters={
-                    <div className="flex flex-1 flex-wrap gap-2">
-                        {(
-                            [
-                                ['kategori', 'Semua kategori', filterOptions.kategoriList],
-                                ['lokasi', 'Semua lokasi', filterOptions.lokasiList],
-                                ['status', 'Semua status', filterOptions.statusList],
-                                ['kondisi', 'Semua kondisi', filterOptions.kondisiList],
-                            ] as const
-                        ).map(([key, label, options]) => (
-                            <select
-                                key={key}
-                                value={activeFilters[key]}
-                                onChange={(event) => updateFilter(key, event.target.value)}
-                                className={`${selectClass} w-auto min-w-36`}
-                                aria-label={label}
-                            >
-                                <option value="">{label}</option>
-                                {options.map((option) => (
-                                    <option key={option} value={option}>
-                                        {statusLabels[option] ?? (option === 'baru' ? 'Baru' : option === 'second' ? 'Second' : option)}
-                                    </option>
-                                ))}
-                            </select>
-                        ))}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
-                                const reset = { kategori: '', lokasi: '', status: '', kondisi: '' };
-                                setActiveFilters(reset);
-                                router.get(route('barang.index'), {}, { preserveScroll: true, replace: true });
-                            }}
-                            aria-label="Reset filter"
-                        >
-                            <RotateCcw />
-                        </Button>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-medium">Filter data</p>
+                                <p className="text-xs text-muted-foreground">Pilih satu atau beberapa filter untuk mempersempit hasil.</p>
+                            </div>
+                            <Button type="button" variant="outline" size="sm" onClick={resetFilters} disabled={!hasActiveFilters}>
+                                <RotateCcw />
+                                Reset
+                            </Button>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {(
+                                [
+                                    ['kategori', 'Kategori', 'Semua kategori', filterOptions.kategoriList],
+                                    ['lokasi', 'Lokasi', 'Semua lokasi', filterOptions.lokasiList],
+                                    ['status', 'Status', 'Semua status', filterOptions.statusList],
+                                    ['kondisi', 'Kondisi', 'Semua kondisi', filterOptions.kondisiList],
+                                ] as const
+                            ).map(([key, fieldLabel, placeholder, options]) => (
+                                <div key={key} className="space-y-1.5">
+                                    <Label htmlFor={`filter-${key}`} className="text-xs text-muted-foreground">
+                                        {fieldLabel}
+                                    </Label>
+                                    <select
+                                        id={`filter-${key}`}
+                                        value={activeFilters[key]}
+                                        onChange={(event) => updateFilter(key, event.target.value)}
+                                        className={selectClass}
+                                    >
+                                        <option value="">{placeholder}</option>
+                                        {options.map((option) => (
+                                            <option key={option} value={option}>
+                                                {statusLabels[option] ?? (option === 'baru' ? 'Baru' : option === 'second' ? 'Second' : option)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 }
-                onCreate={permissions.includes(PERMISSIONS.CREATE_BARANG_INVENTARIS) ? openCreate : undefined}
-                createLabel="Tambah barang"
-                actions={(item) => (
-                    <div className="flex justify-end gap-1">
-                        {permissions.includes(PERMISSIONS.EDIT_BARANG_INVENTARIS) && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openEdit(item)}
-                                aria-label={`Edit ${item.serial_number}`}
-                            >
-                                <Edit3 />
-                            </Button>
-                        )}
-                        {permissions.includes(PERMISSIONS.DELETE_BARANG_INVENTARIS) && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => setPendingDelete(item)}
-                                aria-label={`Hapus ${item.serial_number}`}
-                            >
-                                <Trash2 />
-                            </Button>
-                        )}
-                    </div>
-                )}
+                actions={
+                    permissions.includes(PERMISSIONS.EDIT_BARANG_INVENTARIS)
+                        ? (item) => (
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openEdit(item)}
+                                  aria-label={`Edit ${item.serial_number}`}
+                              >
+                                  <Edit3 />
+                              </Button>
+                          )
+                        : undefined
+                }
             />
 
-            <ConfirmDeleteDialog
-                open={Boolean(pendingDelete)}
-                onOpenChange={(open) => !open && setPendingDelete(null)}
-                title="Hapus data barang?"
-                description={`Barang dengan serial “${pendingDelete?.serial_number ?? ''}” hanya akan dihapus bila belum memiliki aktivitas inventaris.`}
-                processing={form.processing}
-                onConfirm={() => {
-                    if (!pendingDelete) return;
-                    form.delete(route('barang.destroy', pendingDelete.id), { preserveScroll: true, onSuccess: () => setPendingDelete(null) });
-                }}
-            />
             <BarcodeScannerDialog
                 open={scannerOpen}
                 onOpenChange={setScannerOpen}
@@ -560,4 +436,3 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
         </MasterDataPage>
     );
 }
-import { BarcodeScannerDialog } from '@/components/barcode-scanner-dialog';

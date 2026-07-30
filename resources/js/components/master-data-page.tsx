@@ -17,14 +17,15 @@ type Props = PropsWithChildren<{
 }>;
 
 export function MasterDataPage({ title, description, breadcrumbs, children }: Props) {
-    const { flash } = usePage<{ flash?: Flash }>().props;
-    const currentUrl = usePage().url;
+    const page = usePage<{ flash?: Flash }>();
+    const { flash } = page.props;
+    const currentUrl = page.url;
 
     useEffect(() => {
         const success = flash?.success || flash?.message;
         if (success) toast.success(success);
         if (flash?.error) toast.error(flash.error);
-    }, [flash?.error, flash?.message, flash?.success]);
+    }, [flash]);
 
     const pageBreadcrumbs = breadcrumbs ?? [{ title, href: currentUrl.split('?')[0] }];
 

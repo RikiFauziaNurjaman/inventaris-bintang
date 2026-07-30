@@ -1,29 +1,27 @@
 import { Column, DataTable } from '@/components/data-table';
 import { StockFilterField, StockPage } from '@/components/stock-page';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { PERMISSIONS } from '@/constants/permission';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
-import { cn } from '@/lib/utils';
 import { router, usePage } from '@inertiajs/react';
-import { Download, MoreHorizontal, RefreshCw, RotateCcw } from 'lucide-react';
+import { Download, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
-type Barang = {
+type StockRow = {
     id: number;
-    serial_number: string;
-    label?: string | null;
     merek?: string | null;
     model?: string | null;
     kategori?: string | null;
     jenis?: string | null;
-    nama_rak?: string | null;
-    kode_rak?: string | null;
-    baris?: string | null;
-    status_awal?: string | null;
-    kondisi?: string | null;
     lokasi?: string | null;
+    total: number;
+    baik: number;
+    dipinjamkan: number;
+    rusak: number;
+    perbaikan: number;
+    terjual: number;
+    dimusnahkan: number;
 };
+type Summary = Omit<StockRow, 'id' | 'merek' | 'model' | 'kategori' | 'jenis' | 'lokasi'>;
 type Filters = {
     search: string;
     kategori: string;
@@ -33,14 +31,14 @@ type Filters = {
     kondisi: string;
 };
 type PageProps = {
-    auth: { permissions?: string[] };
     barangList: {
-        data: Barang[];
+        data: StockRow[];
         links: { url: string | null; label: string; active: boolean }[];
         from: number | null;
         to: number | null;
         total: number;
     };
+    summary: Summary;
     filters?: Partial<Filters>;
     filterOptions: {
         kategoriList: string[];
@@ -53,7 +51,6 @@ type PageProps = {
 
 const selectClass =
     'h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
-
 const statusLabels: Record<string, string> = {
     baik: 'Baik',
     bagus: 'Baik',
@@ -66,39 +63,8 @@ const statusLabels: Record<string, string> = {
     menunggu: 'Menunggu',
 };
 
-function StatusBadge({ value }: { value?: string | null }) {
-    const status = value?.toLowerCase() ?? '';
-    return (
-        <span
-            className={cn(
-                'inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground',
-                ['baik', 'bagus'].includes(status) && 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-                ['rusak', 'dimusnahkan'].includes(status) && 'bg-destructive/10 text-destructive',
-                ['diperbaiki', 'maintenance', 'menunggu'].includes(status) && 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-                status === 'dipinjamkan' && 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-            )}
-        >
-            {statusLabels[status] ?? value ?? '—'}
-        </span>
-    );
-}
-
-function ConditionBadge({ value }: { value?: string | null }) {
-    return (
-        <span
-            className={cn(
-                'inline-flex rounded-full px-2.5 py-1 text-xs font-medium',
-                value === 'baru' ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400' : 'bg-slate-500/10 text-slate-700 dark:text-slate-300',
-            )}
-        >
-            {value === 'baru' ? 'Baru' : value === 'second' ? 'Second' : value || '—'}
-        </span>
-    );
-}
-
 export default function TotalStockIndex() {
-    const { auth, barangList, filters = {}, filterOptions } = usePage<PageProps>().props;
-    const canEdit = (auth.permissions ?? []).includes(PERMISSIONS.EDIT_STOK_TOTAL);
+    const { barangList, summary, filters = {}, filterOptions } = usePage<PageProps>().props;
     const [filterData, setFilterData] = useState<Filters>({
         search: filters.search ?? '',
         kategori: filters.kategori ?? '',
@@ -122,41 +88,35 @@ export default function TotalStockIndex() {
         setFilterData(reset);
         visit(reset);
     };
+    const count = (value: number) => Number(value ?? 0).toLocaleString('id-ID');
 
-    const columns: Column<Barang>[] = [
+    const columns: Column<StockRow>[] = [
         {
-            header: 'Serial Number',
-            accessorKey: 'serial_number',
-            cell: (item) => <span className="font-mono text-xs font-medium">{item.serial_number}</span>,
+            header: 'Lokasi',
+            cell: (item) => <span className="font-medium">{item.lokasi || 'Tanpa lokasi'}</span>,
         },
         {
             header: 'Barang',
             cell: (item) => (
                 <div>
-                    <p className="font-medium">{[item.merek, item.model].filter(Boolean).join(' ') || item.label || '—'}</p>
+                    <p className="font-medium">{[item.merek, item.model].filter(Boolean).join(' ') || 'Tanpa model'}</p>
                     <p className="text-xs text-muted-foreground">{[item.kategori, item.jenis].filter(Boolean).join(' · ') || 'Tanpa klasifikasi'}</p>
                 </div>
             ),
         },
-        {
-            header: 'Penempatan',
-            cell: (item) => (
-                <div>
-                    <p>{item.lokasi || '—'}</p>
-                    <p className="text-xs text-muted-foreground">
-                        {[item.nama_rak, item.kode_rak, item.baris].filter(Boolean).join(' · ') || 'Tanpa rak'}
-                    </p>
-                </div>
-            ),
-        },
-        { header: 'Status', cell: (item) => <StatusBadge value={item.status_awal} /> },
-        { header: 'Kondisi', cell: (item) => <ConditionBadge value={item.kondisi} /> },
+        { header: 'Total', cell: (item) => <span className="font-semibold">{count(item.total)}</span> },
+        { header: 'Baik', cell: (item) => count(item.baik) },
+        { header: 'Dipinjamkan', cell: (item) => count(item.dipinjamkan) },
+        { header: 'Rusak', cell: (item) => count(item.rusak) },
+        { header: 'Perbaikan', cell: (item) => count(item.perbaikan) },
+        { header: 'Terjual', cell: (item) => count(item.terjual) },
+        { header: 'Dimusnahkan', cell: (item) => count(item.dimusnahkan) },
     ];
 
     return (
         <StockPage
-            title="Total Barang"
-            description="Lihat seluruh unit inventaris beserta status, kondisi, dan penempatannya."
+            title="Ringkasan Stok"
+            description="Rekap jumlah inventaris per model dan lokasi. Pengelolaan setiap serial tetap dilakukan melalui Data Barang."
             actions={
                 <Button asChild variant="outline">
                     <a href={route('total-stock.exportPdf', filterData)} target="_blank" rel="noreferrer">
@@ -166,13 +126,27 @@ export default function TotalStockIndex() {
                 </Button>
             }
         >
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                    ['Total unit', summary.total],
+                    ['Status baik', summary.baik],
+                    ['Dipinjamkan', summary.dipinjamkan],
+                    ['Perlu tindak lanjut', Number(summary.rusak) + Number(summary.perbaikan)],
+                ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl border bg-card p-4 shadow-xs">
+                        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+                        <p className="mt-1 text-2xl font-semibold tracking-tight">{count(Number(value))}</p>
+                    </div>
+                ))}
+            </div>
+
             <DataTable
                 data={barangList.data}
                 columns={columns}
                 links={barangList.links}
                 paginationMeta={barangList}
                 initialSearch={filterData.search}
-                searchPlaceholder="Cari serial, barang, atau lokasi..."
+                searchPlaceholder="Cari model, merek, kategori, jenis, atau lokasi..."
                 onSearch={(value) => {
                     setFilterData((current) => ({ ...current, search: value }));
                     search(value);
@@ -204,33 +178,6 @@ export default function TotalStockIndex() {
                             Reset filter
                         </Button>
                     </div>
-                }
-                actions={
-                    canEdit
-                        ? (item) => (
-                              <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                      <Button type="button" variant="ghost" size="icon" aria-label={`Aksi ${item.serial_number}`}>
-                                          <MoreHorizontal />
-                                      </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                          onSelect={() =>
-                                              router.patch(
-                                                  route('total-stock.updateKondisi', item.id),
-                                                  { kondisi: item.kondisi === 'baru' ? 'second' : 'baru' },
-                                                  { preserveScroll: true },
-                                              )
-                                          }
-                                      >
-                                          <RefreshCw />
-                                          Ubah menjadi {item.kondisi === 'baru' ? 'Second' : 'Baru'}
-                                      </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                              </DropdownMenu>
-                          )
-                        : undefined
                 }
             />
         </StockPage>

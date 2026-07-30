@@ -83,7 +83,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/monitoring/lokasi/{lokasi}', [\App\Http\Controllers\MonitoringController::class, 'showLokasi'])->name('monitoring.lokasi.detail');
     Route::get('/monitoring/lokasi/{lokasi}/export-pdf', [\App\Http\Controllers\MonitoringController::class, 'exportPdf'])->name('monitoring.lokasi.exportPdf');
 
-    Route::resource('barang', DataBarangController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::get('/barang/export-pdf', [DataBarangController::class, 'exportPdf'])->name('barang.exportPdf');
+    Route::resource('barang', DataBarangController::class)->only(['index', 'update']);
 
     Route::get('/permissions/search', [PermissionController::class, 'search'])->name('permission.search');
     Route::resource('permissions', PermissionController::class)->except(['show']);
@@ -168,8 +169,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stok-distribusi/export-pdf', [StokDistribusiController::class, 'exportPdf'])->name('stok.distribusi.exportPdf');
     Route::get('/api/stok-distribusi-detail/{modelBarang}/{lokasi}', [StokDistribusiController::class, 'getDetailAsJson'])->name('api.stok-distribusi.detail');
 
-    Route::resource('total-stock', TotalStockController::class)->only(['index', 'destroy']);
-    Route::patch('/total-stock/{id}/kondisi', [TotalStockController::class, 'updateKondisi'])->name('total-stock.updateKondisi');
+    Route::resource('total-stock', TotalStockController::class)->only(['index']);
     Route::get('/total-stock/export-pdf', [TotalStockController::class, 'exportPdf'])->name('total-stock.exportPdf');
 
     // Database Backup & Import

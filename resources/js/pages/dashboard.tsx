@@ -70,8 +70,8 @@ type MetricConfig = {
 const stockMetrics: MetricConfig[] = [
     {
         key: 'total',
-        title: 'Total Barang',
-        description: 'Seluruh inventaris tercatat',
+        title: 'Ringkasan Stok',
+        description: 'Rekap seluruh inventaris',
         href: '/total-stock',
         icon: Boxes,
         tone: 'bg-violet-500/10 text-violet-700 dark:text-violet-400',

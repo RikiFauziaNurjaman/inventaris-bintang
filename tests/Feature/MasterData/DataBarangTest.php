@@ -3,6 +3,8 @@
 use App\Enums\PermissionEnum;
 use App\Models\AsalBarang;
 use App\Models\Barang;
+use App\Models\BarangMasuk;
+use App\Models\BarangMasukDetail;
 use App\Models\JenisBarang;
 use App\Models\KategoriBarang;
 use App\Models\Lokasi;
@@ -11,6 +13,7 @@ use App\Models\ModelBarang;
 use App\Models\MutasiBarang;
 use App\Models\RakBarang;
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 
@@ -44,19 +47,37 @@ function inventoryUser(array $permissions): User
     return $user;
 }
 
-function inventoryPayload(array $fixture, array $overrides = []): array
+function inventoryBarang(array $fixture, string $serial = 'SN-001'): array
 {
-    return array_merge([
+    $user = User::factory()->create();
+    $barangMasuk = BarangMasuk::create([
         'tanggal' => '2026-07-30',
+        'asal_barang_id' => $fixture['asal']->id,
+        'user_id' => $user->id,
+    ]);
+    $barang = Barang::create([
         'model_id' => $fixture['model']->id,
+        'jenis_barang_id' => $fixture['model']->jenis_id,
         'asal_id' => $fixture['asal']->id,
         'lokasi_id' => $fixture['gudang']->id,
         'rak_id' => $fixture['rak']->id,
-        'serial_number' => 'SN-001',
+        'serial_number' => $serial,
         'kondisi_awal' => 'baru',
+        'status' => 'baik',
         'pic' => 'Petugas Gudang',
         'catatan' => 'Unit uji',
-    ], $overrides);
+    ]);
+    BarangMasukDetail::create(['barang_masuk_id' => $barangMasuk->id, 'barang_id' => $barang->id]);
+    MutasiBarang::create([
+        'barang_id' => $barang->id,
+        'user_id' => $user->id,
+        'lokasi_asal_id' => null,
+        'lokasi_tujuan_id' => $fixture['gudang']->id,
+        'tanggal' => '2026-07-30',
+        'keterangan' => 'Barang masuk',
+    ]);
+
+    return compact('barang', 'barangMasuk');
 }
 
 test('data barang dilindungi permission khusus', function () {
@@ -102,70 +123,29 @@ test('daftar barang mendukung pencarian dan pagination', function () {
             ->has('barangList.data', 1));
 });
 
-test('menambah barang mencatat transaksi mutasi dan rekap stok', function () {
+test('pdf data barang mengikuti permission dan filter aktif', function () {
     $fixture = inventoryFixture();
-    $user = inventoryUser([PermissionEnum::CREATE_BARANG_INVENTARIS->value]);
+    inventoryBarang($fixture);
 
-    $this->actingAs($user)
-        ->post(route('barang.store'), inventoryPayload($fixture))
-        ->assertRedirect(route('barang.index'))
-        ->assertSessionHas('message');
+    $this->actingAs(User::factory()->create())
+        ->get(route('barang.exportPdf'))
+        ->assertForbidden();
 
-    $barang = Barang::where('serial_number', 'SN-001')->firstOrFail();
-    $this->assertDatabaseHas('barang_masuk_detail', ['barang_id' => $barang->id]);
-    $this->assertDatabaseHas('mutasi_barang', [
-        'barang_id' => $barang->id,
-        'lokasi_asal_id' => null,
-        'lokasi_tujuan_id' => $fixture['gudang']->id,
-    ]);
-    $this->assertDatabaseHas('rekap_stok_barang', [
-        'model_id' => $fixture['model']->id,
-        'lokasi_id' => $fixture['gudang']->id,
-        'jumlah_total' => 1,
-        'jumlah_tersedia' => 1,
-    ]);
+    $viewer = inventoryUser([PermissionEnum::VIEW_BARANG_INVENTARIS->value]);
+    $this->actingAs($viewer)
+        ->get(route('barang.exportPdf', ['search' => 'SN-001', 'kondisi' => 'baru']))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
 });
 
-test('validasi menolak serial duplikat model tanpa jenis dan rak dari lokasi lain', function () {
-    $fixture = inventoryFixture();
-    $user = inventoryUser([PermissionEnum::CREATE_BARANG_INVENTARIS->value]);
-    Barang::create([
-        'model_id' => $fixture['model']->id,
-        'jenis_barang_id' => $fixture['model']->jenis_id,
-        'lokasi_id' => $fixture['gudang']->id,
-        'serial_number' => 'SN-001',
-        'kondisi_awal' => 'baru',
-        'status' => 'baik',
-    ]);
-
-    $this->actingAs($user)
-        ->from(route('barang.index'))
-        ->post(route('barang.store'), inventoryPayload($fixture))
-        ->assertSessionHasErrors('serial_number');
-
-    $modelTanpaJenis = ModelBarang::create([
-        'kategori_id' => $fixture['model']->kategori_id,
-        'merek_id' => $fixture['model']->merek_id,
-        'nama' => 'Tanpa Jenis',
-    ]);
-    $this->actingAs($user)
-        ->from(route('barang.index'))
-        ->post(route('barang.store'), inventoryPayload($fixture, ['model_id' => $modelTanpaJenis->id, 'serial_number' => 'SN-002']))
-        ->assertSessionHasErrors('model_id');
-
-    $gudangLain = Lokasi::create(['nama' => 'Gudang Lain', 'alamat' => 'Bandung', 'is_gudang' => true]);
-    $rakLain = RakBarang::create(['lokasi_id' => $gudangLain->id, 'nama_rak' => 'Rak B', 'kode_rak' => 'B-01']);
-    $this->actingAs($user)
-        ->from(route('barang.index'))
-        ->post(route('barang.store'), inventoryPayload($fixture, ['rak_id' => $rakLain->id, 'serial_number' => 'SN-003']))
-        ->assertSessionHasErrors('rak_id');
+test('tambah dan hapus barang hanya tersedia melalui transaksi barang masuk', function () {
+    expect(Route::has('barang.store'))->toBeFalse()
+        ->and(Route::has('barang.destroy'))->toBeFalse();
 });
 
 test('edit hanya menerima metadata aman', function () {
     $fixture = inventoryFixture();
-    $creator = inventoryUser([PermissionEnum::CREATE_BARANG_INVENTARIS->value]);
-    $this->actingAs($creator)->post(route('barang.store'), inventoryPayload($fixture));
-    $barang = Barang::where('serial_number', 'SN-001')->firstOrFail();
+    ['barang' => $barang] = inventoryBarang($fixture);
     $editor = inventoryUser([PermissionEnum::EDIT_BARANG_INVENTARIS->value]);
 
     $this->actingAs($editor)
@@ -194,37 +174,48 @@ test('edit hanya menerima metadata aman', function () {
             'model_id' => $fixture['model']->id,
         ])
         ->assertSessionHasErrors('model_id');
+
+    MutasiBarang::create([
+        'barang_id' => $barang->id,
+        'user_id' => $editor->id,
+        'lokasi_asal_id' => $fixture['gudang']->id,
+        'lokasi_tujuan_id' => $fixture['gudang']->id,
+        'tanggal' => '2026-07-31',
+        'keterangan' => 'Aktivitas lanjutan',
+    ]);
+
+    $this->actingAs($editor)
+        ->from(route('barang.index'))
+        ->put(route('barang.update', $barang), [
+            'serial_number' => 'SN-TIDAK-BOLEH-DIUBAH',
+            'kondisi_awal' => 'second',
+            'rak_id' => $fixture['rak']->id,
+            'sub_lokasi_id' => null,
+            'pic' => 'PIC Baru',
+            'catatan' => 'Catatan baru',
+        ])
+        ->assertSessionHasErrors('serial_number');
 });
 
-test('hapus membatalkan stok barang baru tetapi menolak barang yang sudah bergerak', function () {
+test('pembatalan transaksi barang masuk ditolak setelah barang beraktivitas', function () {
     $fixture = inventoryFixture();
-    $user = inventoryUser([
-        PermissionEnum::CREATE_BARANG_INVENTARIS->value,
-        PermissionEnum::DELETE_BARANG_INVENTARIS->value,
-    ]);
+    ['barang' => $barang, 'barangMasuk' => $barangMasuk] = inventoryBarang($fixture);
+    $user = User::factory()->create();
 
-    $this->actingAs($user)->post(route('barang.store'), inventoryPayload($fixture));
-    $barang = Barang::where('serial_number', 'SN-001')->firstOrFail();
-    $this->actingAs($user)->delete(route('barang.destroy', $barang))->assertSessionHas('message');
-    $this->assertDatabaseMissing('barang', ['id' => $barang->id]);
-    $this->assertDatabaseHas('rekap_stok_barang', [
-        'model_id' => $fixture['model']->id,
-        'lokasi_id' => $fixture['gudang']->id,
-        'jumlah_total' => 0,
-        'jumlah_tersedia' => 0,
-    ]);
-
-    $this->actingAs($user)->post(route('barang.store'), inventoryPayload($fixture, ['serial_number' => 'SN-002']));
-    $barangAktif = Barang::where('serial_number', 'SN-002')->firstOrFail();
     MutasiBarang::create([
-        'barang_id' => $barangAktif->id,
+        'barang_id' => $barang->id,
         'user_id' => $user->id,
         'lokasi_asal_id' => $fixture['gudang']->id,
         'lokasi_tujuan_id' => $fixture['gudang']->id,
         'tanggal' => '2026-07-31',
-        'keterangan' => 'Aktivitas uji',
+        'keterangan' => 'Aktivitas lanjutan',
     ]);
 
-    $this->actingAs($user)->delete(route('barang.destroy', $barangAktif))->assertSessionHas('error');
-    $this->assertDatabaseHas('barang', ['id' => $barangAktif->id]);
+    $this->actingAs($user)
+        ->from(route('barang-masuk.index'))
+        ->delete(route('barang-masuk.destroy', $barangMasuk))
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseHas('barang', ['id' => $barang->id]);
+    $this->assertDatabaseHas('barang_masuk', ['id' => $barangMasuk->id]);
 });

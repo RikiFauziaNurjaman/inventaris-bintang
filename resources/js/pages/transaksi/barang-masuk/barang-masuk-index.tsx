@@ -218,7 +218,7 @@ export default function BarangMasukIndex() {
                                 size="icon"
                                 className="text-destructive hover:text-destructive"
                                 onClick={() => setPendingDelete(item)}
-                                aria-label={`Hapus transaksi ${item.id}`}
+                                aria-label={`Batalkan transaksi ${item.id}`}
                             >
                                 <Trash2 />
                             </Button>
@@ -231,7 +231,8 @@ export default function BarangMasukIndex() {
             <ConfirmDeleteDialog
                 open={Boolean(pendingDelete)}
                 onOpenChange={(open) => !open && setPendingDelete(null)}
-                description="Transaksi barang masuk dan dampak stok terkait akan dihapus sesuai aturan sistem."
+                title="Batalkan transaksi barang masuk?"
+                description="Seluruh unit dalam transaksi ini akan dibatalkan dan stok disesuaikan. Tindakan ditolak jika salah satu unit sudah memiliki aktivitas lanjutan."
                 processing={deleting}
                 onConfirm={() => {
                     if (!pendingDelete) return;
