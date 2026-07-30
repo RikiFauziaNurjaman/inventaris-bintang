@@ -78,6 +78,8 @@ const stateClasses: Record<ScanState, string> = {
     unknown: 'border-destructive/30 bg-destructive/10 text-destructive',
 };
 const statusLabels = { active: 'Aktif', submitted: 'Menunggu review', approved: 'Disetujui', cancelled: 'Dibatalkan' };
+const formatDate = (value: string) =>
+    new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 
 export default function Show({ data, items, progress, filters }: Props) {
     const { auth } = usePage<{ auth: { user: { id: number }; permissions?: string[] } }>().props;
@@ -129,18 +131,20 @@ export default function Show({ data, items, progress, filters }: Props) {
                         </Link>
                     </Button>
                     {items && (
-                        <>
-                            <Button asChild variant="outline">
-                                <a href={route('stock-opname.export', data.id)}>
-                                    <Download />
-                                    Export CSV
-                                </a>
-                            </Button>
-                            <Button type="button" variant="outline" onClick={() => window.print()}>
+                        <Button asChild variant="outline">
+                            <a href={route('stock-opname.export', data.id)}>
+                                <Download />
+                                Export CSV
+                            </a>
+                        </Button>
+                    )}
+                    {data.status === 'approved' && (
+                        <Button asChild variant="outline">
+                            <a href={route('stock-opname.pdf', data.id)} target="_blank" rel="noreferrer">
                                 <Printer />
-                                Cetak
-                            </Button>
-                        </>
+                                Cetak PDF
+                            </a>
+                        </Button>
                     )}
                     {data.status === 'active' && canScan && (
                         <Button asChild>
@@ -167,7 +171,7 @@ export default function Show({ data, items, progress, filters }: Props) {
         >
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Informasi stock opname">
                 {[
-                    ['Tanggal', data.tanggal],
+                    ['Tanggal', formatDate(data.tanggal)],
                     ['Lokasi', data.lokasi?.nama || '—'],
                     ['Pembuat sesi', data.user?.name || '—'],
                     ['Status', statusLabels[data.status]],

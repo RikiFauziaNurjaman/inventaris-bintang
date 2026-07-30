@@ -102,6 +102,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/stock-opname/{stockOpname}/reopen', [StockOpnameController::class, 'reopen'])->name('stock-opname.reopen');
     Route::post('/stock-opname/{stockOpname}/approve', [StockOpnameController::class, 'approve'])->name('stock-opname.approve');
     Route::get('/stock-opname/{stockOpname}/export', [StockOpnameController::class, 'export'])->name('stock-opname.export');
+    Route::get('/stock-opname/{stockOpname}/pdf', [StockOpnameController::class, 'pdf'])->name('stock-opname.pdf');
     Route::resource('stock-opname', StockOpnameController::class)
         ->parameters(['stock-opname' => 'stockOpname'])
         ->only(['index', 'create', 'store', 'show', 'destroy']);

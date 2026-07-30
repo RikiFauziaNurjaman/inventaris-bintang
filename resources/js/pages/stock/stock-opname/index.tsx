@@ -35,6 +35,8 @@ const statuses: Record<OpnameStatus, { label: string; className: string }> = {
     approved: { label: 'Disetujui', className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
     cancelled: { label: 'Dibatalkan', className: 'border-muted-foreground/30 bg-muted text-muted-foreground' },
 };
+const formatDate = (value: string) =>
+    new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 
 export default function StockOpnameIndex({ data, filters }: Props) {
     const { auth } = usePage<{ auth: { user: { id: number }; permissions?: string[] } }>().props;
@@ -43,7 +45,7 @@ export default function StockOpnameIndex({ data, filters }: Props) {
     const [pendingApprove, setPendingApprove] = useState<StockOpname | null>(null);
     const [processing, setProcessing] = useState(false);
     const columns: Column<StockOpname>[] = [
-        { header: 'Tanggal', accessorKey: 'tanggal', className: 'w-36 whitespace-nowrap' },
+        { header: 'Tanggal', cell: (item) => formatDate(item.tanggal), className: 'w-40 whitespace-nowrap' },
         { header: 'Lokasi', cell: (item) => item.lokasi?.nama || '—' },
         { header: 'Pembuat', cell: (item) => item.user?.name || '—' },
         { header: 'Catatan', accessorKey: 'catatan', cell: (item) => item.catatan || '—' },

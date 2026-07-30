@@ -184,6 +184,33 @@ test('approval mengunci audit tanpa mengubah barang atau rekap stok', function (
         ->assertStatus(409);
 });
 
+test('pdf hasil opname hanya tersedia setelah audit disetujui', function () {
+    $fixture = opnameFixture();
+    $creator = opnameUser([
+        PermissionEnum::CREATE_STOCK_OPNAME->value,
+        PermissionEnum::VIEW_STOCK_OPNAME->value,
+    ]);
+    $approver = opnameUser([PermissionEnum::APPROVE_STOCK_OPNAME->value]);
+
+    $this->actingAs($creator)->post(route('stock-opname.store'), [
+        'tanggal' => '2026-07-30',
+        'lokasi_id' => $fixture['lokasi']->id,
+    ]);
+    $opname = StockOpname::firstOrFail();
+
+    $this->actingAs($creator)
+        ->get(route('stock-opname.pdf', $opname))
+        ->assertStatus(409);
+
+    $this->actingAs($creator)->post(route('stock-opname.submit', $opname));
+    $this->actingAs($approver)->post(route('stock-opname.approve', $opname));
+
+    $this->actingAs($creator)
+        ->get(route('stock-opname.pdf', $opname))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});
+
 test('cek aset menampilkan status pendaftaran dan kecocokan lokasi', function () {
     $fixture = opnameFixture();
     $viewer = opnameUser([PermissionEnum::VIEW_BARANG_INVENTARIS->value]);

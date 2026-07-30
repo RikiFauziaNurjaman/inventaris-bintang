@@ -32,6 +32,13 @@ class LoginRequest extends FormRequest
         ];
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'name' => trim((string) $this->input('name', $this->input('email'))),
+        ]);
+    }
+
     /**
      * Attempt to authenticate the request's credentials.
      *
@@ -40,8 +47,10 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+        $login = $this->string('name')->toString();
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
 
-        if (! Auth::attempt($this->only('name', 'password'), $this->boolean('remember'))) {
+        if (! Auth::attempt([$field => $login, 'password' => $this->input('password')], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -68,7 +77,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
+            'name' => __('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),

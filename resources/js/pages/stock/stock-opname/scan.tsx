@@ -62,6 +62,7 @@ const stateLabels: Record<ScanState, string> = {
 export default function Scan({ data, progress: initialProgress }: Props) {
     const page = usePage<{ auth: { user: { id: number }; permissions?: string[] } }>();
     const permissions = page.props.auth.permissions ?? [];
+    const isOwner = page.props.auth.user.id === data.user_id;
     const canManage = page.props.auth.user.id === data.user_id || permissions.includes(PERMISSIONS.EDIT_STOCK_OPNAME);
     const [progress, setProgress] = useState(initialProgress);
     const [serial, setSerial] = useState('');
@@ -161,25 +162,27 @@ export default function Scan({ data, progress: initialProgress }: Props) {
                 </div>
             }
         >
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                {[
-                    ['Expected', progress.expected],
-                    ['Ditemukan', progress.found],
-                    ['Belum ditemukan', progress.pending],
-                    ['Salah lokasi', progress.wrong_location],
-                    ['Tidak diharapkan', progress.unexpected],
-                    ['Tidak terdaftar', progress.unknown],
-                ].map(([label, value]) => (
-                    <Card key={label}>
-                        <CardContent className="p-4">
-                            <p className="text-xs font-medium text-muted-foreground">{label}</p>
-                            <p className="mt-1 text-2xl font-semibold">{value}</p>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+            {isOwner && (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                    {[
+                        ['Expected', progress.expected],
+                        ['Ditemukan', progress.found],
+                        ['Belum ditemukan', progress.pending],
+                        ['Salah lokasi', progress.wrong_location],
+                        ['Tidak diharapkan', progress.unexpected],
+                        ['Tidak terdaftar', progress.unknown],
+                    ].map(([label, value]) => (
+                        <Card key={label}>
+                            <CardContent className="p-4">
+                                <p className="text-xs font-medium text-muted-foreground">{label}</p>
+                                <p className="mt-1 text-2xl font-semibold">{value}</p>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,.5fr)]">
+            <div className={isOwner ? 'grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,.5fr)]' : 'grid gap-4'}>
                 <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
                     <div className="border-b p-5">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -270,24 +273,28 @@ export default function Scan({ data, progress: initialProgress }: Props) {
                     </div>
                 </section>
 
-                <aside className="h-fit rounded-2xl border bg-card p-5 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <Users className="size-5 text-primary" />
-                        <h2 className="font-semibold">Kontributor</h2>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">{progress.contributors.length} petugas telah melakukan scan.</p>
-                    <div className="mt-4 space-y-2">
-                        {progress.contributors.map((user) => (
-                            <div key={user.id} className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2.5">
-                                <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                                    {user.name.slice(0, 1).toUpperCase()}
-                                </span>
-                                <span className="truncate text-sm font-medium">{user.name}</span>
-                            </div>
-                        ))}
-                        {!progress.contributors.length && <p className="py-5 text-center text-sm text-muted-foreground">Belum ada kontributor.</p>}
-                    </div>
-                </aside>
+                {isOwner && (
+                    <aside className="h-fit rounded-2xl border bg-card p-5 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <Users className="size-5 text-primary" />
+                            <h2 className="font-semibold">Kontributor</h2>
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">{progress.contributors.length} petugas telah melakukan scan.</p>
+                        <div className="mt-4 space-y-2">
+                            {progress.contributors.map((user) => (
+                                <div key={user.id} className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2.5">
+                                    <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                                        {user.name.slice(0, 1).toUpperCase()}
+                                    </span>
+                                    <span className="truncate text-sm font-medium">{user.name}</span>
+                                </div>
+                            ))}
+                            {!progress.contributors.length && (
+                                <p className="py-5 text-center text-sm text-muted-foreground">Belum ada kontributor.</p>
+                            )}
+                        </div>
+                    </aside>
+                )}
             </div>
 
             <BarcodeScannerDialog

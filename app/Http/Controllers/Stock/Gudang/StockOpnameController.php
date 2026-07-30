@@ -8,6 +8,7 @@ use App\Models\Barang;
 use App\Models\Lokasi;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,7 @@ class StockOpnameController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('can:'.PermissionEnum::VIEW_STOCK_OPNAME->value)->only(['show', 'export']);
+        $this->middleware('can:'.PermissionEnum::VIEW_STOCK_OPNAME->value)->only(['show', 'export', 'pdf']);
         $this->middleware('can:'.PermissionEnum::CREATE_STOCK_OPNAME->value)->only(['create', 'store']);
         $this->middleware('can:'.PermissionEnum::APPROVE_STOCK_OPNAME->value)->only(['approve']);
     }
@@ -344,6 +345,38 @@ class StockOpnameController extends Controller
                 });
             fclose($output);
         }, 'stock-opname-'.$stockOpname->id.'.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    public function pdf(StockOpname $stockOpname)
+    {
+        abort_unless($stockOpname->status === 'approved', 409, 'PDF hanya tersedia setelah stock opname disetujui.');
+
+        $stockOpname->load([
+            'lokasi:id,nama,alamat',
+            'user:id,name',
+            'approvedBy:id,name',
+            'details.modelBarang.kategori:id,nama',
+            'details.modelBarang.merek:id,nama',
+        ]);
+
+        $items = collect();
+        $progress = null;
+        if ($stockOpname->workflow_version >= 2) {
+            $items = $stockOpname->items()
+                ->with(['modelBarang.merek:id,nama', 'modelBarang.kategori:id,nama', 'barang.lokasi:id,nama', 'scannedBy:id,name'])
+                ->orderByRaw("CASE state WHEN 'wrong_location' THEN 1 WHEN 'unexpected' THEN 2 WHEN 'unknown' THEN 3 WHEN 'pending' THEN 4 ELSE 5 END")
+                ->orderBy('serial_number')
+                ->get();
+            $progress = $this->progressData($stockOpname, false);
+        }
+
+        return Pdf::loadView('reports.stock_opname_pdf', [
+            'opname' => $stockOpname,
+            'items' => $items,
+            'progress' => $progress,
+            'printedBy' => auth()->user(),
+        ])->setPaper('a4', 'landscape')
+            ->stream('laporan-stock-opname-'.$stockOpname->id.'.pdf');
     }
 
     private function authorizeSessionManager(StockOpname $stockOpname): void
