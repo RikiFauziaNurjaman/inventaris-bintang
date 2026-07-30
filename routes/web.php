@@ -5,6 +5,7 @@ use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\Auth\Roles\PermissionController;
 use App\Http\Controllers\Auth\Roles\RoleController;
 use App\Http\Controllers\Auth\Roles\UserController;
+use App\Http\Controllers\CekAsetController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Laporan\LaporanBarangKeluarController;
 use App\Http\Controllers\Laporan\LaporanBarangKembaliController;
@@ -93,8 +94,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/users/search', [UserController::class, 'search'])->name('user.search');
     Route::resource('users', UserController::class)->except(['show']);
 
-    Route::resource('stock-opname', StockOpnameController::class);
-    Route::post('/stock-opname/{id}/approve', [StockOpnameController::class, 'approve']);
+    Route::get('/stock-opname/{stockOpname}/scan', [StockOpnameController::class, 'scan'])->name('stock-opname.scan');
+    Route::post('/stock-opname/{stockOpname}/scans', [StockOpnameController::class, 'storeScan'])->name('stock-opname.scans.store');
+    Route::delete('/stock-opname/{stockOpname}/scans/{item}', [StockOpnameController::class, 'destroyScan'])->name('stock-opname.scans.destroy');
+    Route::get('/stock-opname/{stockOpname}/progress', [StockOpnameController::class, 'progress'])->name('stock-opname.progress');
+    Route::post('/stock-opname/{stockOpname}/submit', [StockOpnameController::class, 'submit'])->name('stock-opname.submit');
+    Route::post('/stock-opname/{stockOpname}/reopen', [StockOpnameController::class, 'reopen'])->name('stock-opname.reopen');
+    Route::post('/stock-opname/{stockOpname}/approve', [StockOpnameController::class, 'approve'])->name('stock-opname.approve');
+    Route::get('/stock-opname/{stockOpname}/export', [StockOpnameController::class, 'export'])->name('stock-opname.export');
+    Route::resource('stock-opname', StockOpnameController::class)
+        ->parameters(['stock-opname' => 'stockOpname'])
+        ->only(['index', 'create', 'store', 'show', 'destroy']);
+
+    Route::get('/cek-aset', [CekAsetController::class, 'index'])->name('cek-aset.index');
+    Route::get('/cek-aset/lookup', [CekAsetController::class, 'lookup'])->name('cek-aset.lookup');
 
     Route::redirect('/transaksi', '/dashboard')->name('transaksi.index');
 

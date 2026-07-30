@@ -2,137 +2,437 @@
 
 namespace App\Http\Controllers\Stock\Gudang;
 
-use App\Helpers\StockOpnameHelper;
+use App\Enums\PermissionEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Barang;
-use App\Models\KategoriBarang;
 use App\Models\Lokasi;
-use App\Models\MerekBarang;
-use App\Models\ModelBarang;
-use App\Models\RekapStokBarang;
 use App\Models\StockOpname;
-use App\Models\StockOpnameDetail;
+use App\Models\StockOpnameItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class StockOpnameController extends Controller
 {
-    public function index()
+    public function __construct()
     {
-        $data = StockOpname::with('lokasi', 'user')->latest()->paginate(10);
-        return inertia('stock/stock-opname/index', ['data' => $data]);
+        $this->middleware('can:'.PermissionEnum::VIEW_STOCK_OPNAME->value)->only(['show', 'export']);
+        $this->middleware('can:'.PermissionEnum::CREATE_STOCK_OPNAME->value)->only(['create', 'store']);
+        $this->middleware('can:'.PermissionEnum::APPROVE_STOCK_OPNAME->value)->only(['approve']);
+    }
+
+    public function index(Request $request)
+    {
+        $canView = auth()->user()->can(PermissionEnum::VIEW_STOCK_OPNAME->value);
+        abort_unless($canView || auth()->user()->can(PermissionEnum::PARTICIPATE_STOCK_OPNAME->value), 403);
+
+        $data = StockOpname::with('lokasi:id,nama', 'user:id,name')
+            ->when(! $canView, fn ($query) => $query->where('status', 'active'))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = mb_strtolower(trim($request->string('search')->toString()));
+                $query->where(function ($query) use ($search) {
+                    $query->whereRaw('LOWER(catatan) LIKE ?', ["%{$search}%"])
+                        ->orWhereHas('lokasi', fn ($lokasi) => $lokasi->whereRaw('LOWER(nama) LIKE ?', ["%{$search}%"]))
+                        ->orWhereHas('user', fn ($user) => $user->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"]));
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return inertia('stock/stock-opname/index', [
+            'data' => $data,
+            'filters' => $request->only(['status', 'search']),
+        ]);
     }
 
     public function create()
     {
-        $lokasi = Lokasi::all();
-        $modelBarang = ModelBarang::with(['kategori:id,nama', 'merek:id,nama'])->get();
-
-        $kategori = KategoriBarang::select('id', 'nama')->get();
-        $merek = MerekBarang::select('id', 'nama')->get();
-        $serialPerModel = ModelBarang::with('barang')
-            ->get()
-            ->mapWithKeys(fn($m) => [
-                $m->id => $m->barang->pluck('serial_number')->toArray(),
-            ]);
-
         return inertia('stock/stock-opname/create', [
-            'lokasi' => $lokasi,
-            'modelBarang' => $modelBarang,
-            'kategori' => $kategori,
-            'merek' => $merek,
-            'serialPerModel' => $serialPerModel,
+            'lokasi' => Lokasi::orderBy('nama')->get(['id', 'nama']),
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tanggal' => 'required|date',
-            'lokasi_id' => 'required|exists:lokasi,id',
-            'catatan' => 'nullable|string',
-            'details' => 'required|array',
-            'details.*.model_id' => 'required|exists:model_barang,id',
-            'details.*.serial_numbers' => 'required|array|min:1',
-            'details.*.serial_numbers.*' => 'required|string|max:255',
-            'details.*.catatan' => 'nullable|string',
+            'tanggal' => ['required', 'date'],
+            'lokasi_id' => ['required', 'integer', 'exists:lokasi,id'],
+            'catatan' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $stockOpname = null;
+        $stockOpname = DB::transaction(function () use ($validated) {
+            Lokasi::whereKey($validated['lokasi_id'])->lockForUpdate()->firstOrFail();
 
-        DB::transaction(function () use ($validated, &$stockOpname) {
+            if (StockOpname::where('lokasi_id', $validated['lokasi_id'])->where('status', 'active')->exists()) {
+                throw ValidationException::withMessages([
+                    'lokasi_id' => 'Masih ada sesi stock opname aktif pada lokasi ini.',
+                ]);
+            }
+
             $stockOpname = StockOpname::create([
-                'tanggal' => $validated['tanggal'],
-                'lokasi_id' => $validated['lokasi_id'],
-                'catatan' => $validated['catatan'] ?? null,
+                ...$validated,
                 'user_id' => auth()->id(),
+                'status' => 'active',
+                'started_at' => now(),
             ]);
 
-            foreach ($validated['details'] as $item) {
-                $modelId = $item['model_id'];
-                $serialFisik = array_map('trim', $item['serial_numbers']);
+            Barang::where('lokasi_id', $validated['lokasi_id'])
+                ->whereNotIn('status', ['dijual', 'dimusnahkan'])
+                ->select(['id', 'model_id', 'serial_number', 'status'])
+                ->chunkById(500, function ($barang) use ($stockOpname) {
+                    $now = now();
+                    StockOpnameItem::insert($barang->map(fn ($item) => [
+                        'stock_opname_id' => $stockOpname->id,
+                        'barang_id' => $item->id,
+                        'model_id' => $item->model_id,
+                        'serial_number' => trim($item->serial_number),
+                        'normalized_serial' => self::normalizeSerial($item->serial_number),
+                        'state' => 'pending',
+                        'status_snapshot' => $item->status,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])->all());
+                });
 
-                $serialSistem = Barang::where('model_id', $modelId)
-                    ->where('lokasi_id', $validated['lokasi_id'])
-                    ->pluck('serial_number')
-                    ->map(fn($sn) => trim($sn))
-                    ->toArray();
+            return $stockOpname;
+        });
 
-                $hilang = array_values(array_diff($serialSistem, $serialFisik));
-                $baruMuncul = array_values(array_diff($serialFisik, $serialSistem));
+        return redirect()->route('stock-opname.scan', $stockOpname)
+            ->with('success', 'Sesi stock opname dimulai.');
+    }
 
-                StockOpnameDetail::create([
-                    'stock_opname_id' => $stockOpname->id,
-                    'model_id' => $modelId,
-                    'jumlah_sistem' => count($serialSistem),
-                    'jumlah_fisik' => count($serialFisik),
-                    'selisih' => count($serialFisik) - count($serialSistem),
-                    'catatan' => $item['catatan'] ?? null,
-                    'serial_hilang' => json_encode($hilang),
-                    'serial_baru' => json_encode($baruMuncul),
+    public function scan(StockOpname $stockOpname)
+    {
+        $this->authorizeSessionParticipant($stockOpname);
+        $stockOpname->load('lokasi:id,nama', 'user:id,name');
+
+        return inertia('stock/stock-opname/scan', [
+            'data' => $stockOpname,
+            'progress' => $this->progressData($stockOpname),
+        ]);
+    }
+
+    public function storeScan(Request $request, StockOpname $stockOpname)
+    {
+        $this->authorizeSessionParticipant($stockOpname);
+        $validated = $request->validate([
+            'serial_number' => ['required', 'string', 'max:255'],
+        ]);
+        $rawSerial = trim($validated['serial_number']);
+        $normalized = self::normalizeSerial($rawSerial);
+
+        if ($normalized === '') {
+            return response()->json(['message' => 'Serial number wajib diisi.'], 422);
+        }
+
+        [$result, $item] = DB::transaction(function () use ($stockOpname, $normalized, $rawSerial) {
+            // ponytail: one session lock serializes scans; use per-serial locks only if measured throughput requires it.
+            $session = StockOpname::whereKey($stockOpname->id)->lockForUpdate()->firstOrFail();
+            abort_unless($session->status === 'active', 409, 'Sesi stock opname sudah tidak aktif.');
+
+            $item = StockOpnameItem::where('stock_opname_id', $session->id)
+                ->where('normalized_serial', $normalized)
+                ->lockForUpdate()
+                ->first();
+
+            if ($item) {
+                if ($item->state !== 'pending') {
+                    return ['duplicate', $item];
+                }
+
+                $item->update([
+                    'state' => 'found',
+                    'scanned_by' => auth()->id(),
+                    'scanned_at' => now(),
                 ]);
+
+                return ['found', $item];
+            }
+
+            $barang = Barang::whereRaw('UPPER(TRIM(serial_number)) = ?', [$normalized])->first();
+            $state = ! $barang
+                ? 'unknown'
+                : ($barang->lokasi_id !== $session->lokasi_id ? 'wrong_location' : 'unexpected');
+
+            $item = StockOpnameItem::create([
+                'stock_opname_id' => $session->id,
+                'barang_id' => $barang?->id,
+                'model_id' => $barang?->model_id,
+                'serial_number' => $barang?->serial_number ?? $rawSerial,
+                'normalized_serial' => $normalized,
+                'state' => $state,
+                'status_snapshot' => $barang?->status,
+                'scanned_by' => auth()->id(),
+                'scanned_at' => now(),
+            ]);
+
+            return [$state, $item];
+        });
+
+        $item->load('modelBarang.merek:id,nama', 'barang.lokasi:id,nama', 'scannedBy:id,name');
+
+        return response()->json([
+            'result' => $result,
+            'item' => $this->itemData($item),
+            'progress' => $this->progressData($stockOpname),
+        ]);
+    }
+
+    public function destroyScan(StockOpname $stockOpname, StockOpnameItem $item)
+    {
+        $this->authorizeSessionParticipant($stockOpname);
+        abort_unless($item->stock_opname_id === $stockOpname->id, 404);
+
+        DB::transaction(function () use ($stockOpname, $item) {
+            $session = StockOpname::whereKey($stockOpname->id)->lockForUpdate()->firstOrFail();
+            abort_unless($session->status === 'active', 409, 'Sesi stock opname sudah tidak aktif.');
+
+            $item->refresh();
+            $canManage = auth()->id() === $session->user_id
+                || auth()->user()->can(PermissionEnum::EDIT_STOCK_OPNAME->value);
+            abort_unless($canManage || auth()->id() === $item->scanned_by, 403);
+
+            if ($item->state === 'found') {
+                $item->update(['state' => 'pending', 'scanned_by' => null, 'scanned_at' => null]);
+            } elseif ($item->state !== 'pending') {
+                $item->delete();
             }
         });
 
-        return redirect()->route('stock-opname.show', $stockOpname->id ?? null)
-        ->with('success', 'Stock Opname berhasil disimpan. Periksa dan approve jika sudah sesuai.');
-
+        return response()->json(['progress' => $this->progressData($stockOpname)]);
     }
 
-    public function approve($id)
+    public function progress(StockOpname $stockOpname)
     {
-        $stockOpname = StockOpname::with('details')->findOrFail($id);
+        abort_unless(
+            auth()->user()->can(PermissionEnum::VIEW_STOCK_OPNAME->value)
+            || auth()->user()->can(PermissionEnum::PARTICIPATE_STOCK_OPNAME->value)
+            || auth()->id() === $stockOpname->user_id
+            || auth()->user()->can(PermissionEnum::EDIT_STOCK_OPNAME->value),
+            403
+        );
 
-        if ($stockOpname->approved_at) {
-            return back()->with('error', 'Stock Opname sudah di-approve sebelumnya.');
-        }
+        return response()->json($this->progressData($stockOpname));
+    }
 
+    public function submit(StockOpname $stockOpname)
+    {
+        $this->authorizeSessionManager($stockOpname);
         DB::transaction(function () use ($stockOpname) {
-            foreach ($stockOpname->details as $detail) {
-                StockOpnameHelper::syncBarangDenganOpname($detail, $stockOpname->lokasi_id);
-            }
+            $session = StockOpname::whereKey($stockOpname->id)->lockForUpdate()->firstOrFail();
+            abort_unless($session->status === 'active', 409, 'Hanya sesi aktif yang dapat dikirim.');
+            $session->update(['status' => 'submitted', 'submitted_at' => now()]);
+        });
 
-            $stockOpname->update([
+        return redirect()->route('stock-opname.show', $stockOpname)->with('success', 'Stock opname dikirim untuk direview.');
+    }
+
+    public function reopen(StockOpname $stockOpname)
+    {
+        $this->authorizeSessionManager($stockOpname);
+        DB::transaction(function () use ($stockOpname) {
+            Lokasi::whereKey($stockOpname->lokasi_id)->lockForUpdate()->firstOrFail();
+            $session = StockOpname::whereKey($stockOpname->id)->lockForUpdate()->firstOrFail();
+            abort_unless($session->status === 'submitted', 409, 'Hanya sesi menunggu review yang dapat dibuka kembali.');
+            abort_if(
+                StockOpname::where('lokasi_id', $session->lokasi_id)
+                    ->where('status', 'active')
+                    ->where('id', '!=', $session->id)
+                    ->exists(),
+                409,
+                'Lokasi ini sudah memiliki sesi stock opname aktif.'
+            );
+            $session->update(['status' => 'active', 'submitted_at' => null]);
+        });
+
+        return redirect()->route('stock-opname.scan', $stockOpname)->with('success', 'Sesi stock opname dibuka kembali.');
+    }
+
+    public function approve(StockOpname $stockOpname)
+    {
+        DB::transaction(function () use ($stockOpname) {
+            $session = StockOpname::whereKey($stockOpname->id)->lockForUpdate()->firstOrFail();
+            abort_unless($session->status === 'submitted', 409, 'Stock opname harus dikirim sebelum disetujui.');
+            $session->update([
+                'status' => 'approved',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
             ]);
         });
 
-        return back()->with('success', 'Stock Opname berhasil di-approve.');
+        return back()->with('success', 'Audit stock opname berhasil disetujui tanpa mengubah data stok.');
     }
 
-    public function show($id)
+    public function destroy(StockOpname $stockOpname)
     {
-        $stockOpname = StockOpname::with([
-            'user', 'lokasi',
-            'details.modelBarang.kategori',
-            'details.modelBarang.merek'
-        ])->findOrFail($id);
+        $canCancel = auth()->id() === $stockOpname->user_id
+            || auth()->user()->can(PermissionEnum::DELETE_STOCK_OPNAME->value);
+        abort_unless($canCancel, 403);
+        DB::transaction(function () use ($stockOpname) {
+            $session = StockOpname::whereKey($stockOpname->id)->lockForUpdate()->firstOrFail();
+            abort_unless($session->status === 'active', 409, 'Hanya sesi aktif yang dapat dibatalkan.');
+            $session->update(['status' => 'cancelled']);
+        });
+
+        return redirect()->route('stock-opname.index')->with('success', 'Sesi stock opname dibatalkan.');
+    }
+
+    public function show(Request $request, StockOpname $stockOpname)
+    {
+        $stockOpname->load([
+            'user:id,name',
+            'lokasi:id,nama',
+            'approvedBy:id,name',
+            'details.modelBarang.kategori:id,nama',
+            'details.modelBarang.merek:id,nama',
+        ]);
+
+        $items = null;
+        if ($stockOpname->workflow_version >= 2) {
+            $state = $request->string('state')->toString();
+            $search = trim($request->string('search')->toString());
+            $items = $stockOpname->items()
+                ->with(['modelBarang.merek:id,nama', 'modelBarang.kategori:id,nama', 'barang.lokasi:id,nama', 'scannedBy:id,name'])
+                ->when($state, fn ($query) => $query->where('state', $state))
+                ->when($search, fn ($query) => $query->where('normalized_serial', 'like', '%'.self::normalizeSerial($search).'%'))
+                ->orderByRaw("CASE WHEN state = 'pending' THEN 0 ELSE 1 END")
+                ->orderByDesc('scanned_at')
+                ->paginate(25)
+                ->withQueryString()
+                ->through(fn ($item) => $this->itemData($item));
+        }
 
         return inertia('stock/stock-opname/show', [
             'data' => $stockOpname,
+            'items' => $items,
+            'progress' => $items ? $this->progressData($stockOpname, false) : null,
+            'filters' => $request->only(['state', 'search']),
         ]);
     }
 
+    public function export(StockOpname $stockOpname)
+    {
+        $stockOpname->load('lokasi:id,nama');
 
+        return response()->streamDownload(function () use ($stockOpname) {
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['Serial Number', 'Status Temuan', 'Model', 'Status Saat Mulai', 'Petugas', 'Waktu Scan'], ';', '"', '');
+
+            $stockOpname->items()
+                ->with('modelBarang:id,nama', 'scannedBy:id,name')
+                ->orderBy('state')
+                ->chunk(500, function ($items) use ($output) {
+                    foreach ($items as $item) {
+                        fputcsv(
+                            $output,
+                            [
+                                $item->serial_number,
+                                $item->state,
+                                $item->modelBarang?->nama,
+                                $item->status_snapshot,
+                                $item->scannedBy?->name,
+                                $item->scanned_at?->format('Y-m-d H:i:s'),
+                            ],
+                            ';',
+                            '"',
+                            ''
+                        );
+                    }
+                });
+            fclose($output);
+        }, 'stock-opname-'.$stockOpname->id.'.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    private function authorizeSessionManager(StockOpname $stockOpname): void
+    {
+        abort_unless(
+            auth()->id() === $stockOpname->user_id
+            || auth()->user()->can(PermissionEnum::EDIT_STOCK_OPNAME->value),
+            403
+        );
+    }
+
+    private function authorizeSessionParticipant(StockOpname $stockOpname): void
+    {
+        abort_unless(
+            auth()->id() === $stockOpname->user_id
+            || auth()->user()->can(PermissionEnum::PARTICIPATE_STOCK_OPNAME->value)
+            || auth()->user()->can(PermissionEnum::EDIT_STOCK_OPNAME->value),
+            403
+        );
+    }
+
+    private function progressData(StockOpname $stockOpname, bool $withRecent = true): array
+    {
+        $counts = $stockOpname->items()
+            ->selectRaw('state, COUNT(*) as total')
+            ->groupBy('state')
+            ->pluck('total', 'state');
+        $pending = (int) ($counts['pending'] ?? 0);
+        $found = (int) ($counts['found'] ?? 0);
+        $expected = $pending + $found;
+
+        $contributors = $stockOpname->items()
+            ->whereNotNull('scanned_by')
+            ->select('scanned_by')
+            ->distinct()
+            ->with('scannedBy:id,name')
+            ->get()
+            ->pluck('scannedBy')
+            ->filter()
+            ->values();
+
+        $recent = $withRecent
+            ? $stockOpname->items()
+                ->whereNotNull('scanned_at')
+                ->with(['modelBarang.merek:id,nama', 'modelBarang.kategori:id,nama', 'barang.lokasi:id,nama', 'scannedBy:id,name'])
+                ->latest('scanned_at')
+                ->limit(12)
+                ->get()
+                ->map(fn ($item) => $this->itemData($item))
+                ->values()
+            : [];
+
+        return [
+            'status' => $stockOpname->fresh()->status,
+            'expected' => $expected,
+            'found' => $found,
+            'pending' => $pending,
+            'wrong_location' => (int) ($counts['wrong_location'] ?? 0),
+            'unexpected' => (int) ($counts['unexpected'] ?? 0),
+            'unknown' => (int) ($counts['unknown'] ?? 0),
+            'percent' => $expected ? (int) round(($found / $expected) * 100) : 100,
+            'contributors' => $contributors,
+            'recent' => $recent,
+        ];
+    }
+
+    private function itemData(StockOpnameItem $item): array
+    {
+        return [
+            'id' => $item->id,
+            'serial_number' => $item->serial_number,
+            'state' => $item->state,
+            'status_snapshot' => $item->status_snapshot,
+            'scanned_at' => $item->scanned_at?->toIso8601String(),
+            'model' => $item->modelBarang ? [
+                'nama' => $item->modelBarang->nama,
+                'merek' => $item->modelBarang->merek?->nama,
+                'kategori' => $item->modelBarang->kategori?->nama,
+            ] : null,
+            'lokasi_sistem' => $item->barang?->lokasi?->nama,
+            'scanned_by' => $item->scannedBy ? [
+                'id' => $item->scannedBy->id,
+                'name' => $item->scannedBy->name,
+            ] : null,
+        ];
+    }
+
+    private static function normalizeSerial(string $serial): string
+    {
+        return mb_strtoupper(trim($serial));
+    }
 }

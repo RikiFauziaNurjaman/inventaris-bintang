@@ -193,7 +193,11 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
                             {item.kembali_info.filter((i) => i.serial_number.trim()).length} unit
                         </span>
                     </label>
-                    <BulkSerialInput existingSerials={item.kembali_info.map((i) => i.serial_number)} onSerialsParsed={handleBulkSerials} />
+                    <BulkSerialInput
+                        existingSerials={item.kembali_info.map((i) => i.serial_number)}
+                        allowedSerials={serialOptions}
+                        onSerialsParsed={handleBulkSerials}
+                    />
                 </div>
                 {item.kembali_info.map((info, infoIndex) => (
                     <div key={infoIndex} className="mb-2 grid grid-cols-1 gap-3 md:grid-cols-2">

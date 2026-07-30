@@ -1,6 +1,7 @@
 // File: resources/js/Pages/transaksi/barang-kembali/BarangKembaliEdit.tsx
 
 import { TransactionFormPage } from '@/components/transaction-page';
+import { BulkSerialInput } from '@/components/transaksi/BulkSerialInput';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -163,6 +164,19 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
 
             <div className="mt-4">
                 <label className="mb-2 block text-sm font-semibold text-red-700">Serial Number & Kondisi</label>
+                <BulkSerialInput
+                    existingSerials={item.kembali_info.map((info) => info.serial_number)}
+                    allowedSerials={serialOptions}
+                    onSerialsParsed={(serials) =>
+                        onItemChange(index, {
+                            ...item,
+                            kembali_info: [
+                                ...item.kembali_info.filter((info) => info.serial_number.trim()),
+                                ...serials.map((serial_number) => ({ serial_number, kondisi: 'bagus' })),
+                            ],
+                        })
+                    }
+                />
                 {item.kembali_info.map((info, infoIndex) => (
                     <div key={infoIndex} className="mb-2 grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="flex items-center gap-2">

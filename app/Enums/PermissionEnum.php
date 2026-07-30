@@ -87,6 +87,8 @@ enum PermissionEnum: string
     case CREATE_STOCK_OPNAME = 'create-stock-opname';
     case EDIT_STOCK_OPNAME = 'edit-stock-opname';
     case DELETE_STOCK_OPNAME = 'delete-stock-opname';
+    case PARTICIPATE_STOCK_OPNAME = 'participate-stock-opname';
+    case APPROVE_STOCK_OPNAME = 'approve-stock-opname';
 
     // Laporan
     case VIEW_DASHBOARD_LAPORAN = 'view-dashboard-laporan';

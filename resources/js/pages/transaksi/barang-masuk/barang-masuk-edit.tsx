@@ -1,4 +1,5 @@
 import { TransactionFormPage } from '@/components/transaction-page';
+import { BulkSerialInput } from '@/components/transaksi/BulkSerialInput';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -195,6 +196,12 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
             {/* Serial Numbers */}
             <div className="mt-4">
                 <label className="mb-2 block text-sm font-semibold text-red-700">Serial Number</label>
+                <BulkSerialInput
+                    existingSerials={item.serial_numbers}
+                    onSerialsParsed={(serials) =>
+                        handleFieldChange('serial_numbers', [...item.serial_numbers.filter((value) => value.trim()), ...serials])
+                    }
+                />
                 {item.serial_numbers.map((serial, serialIndex) => (
                     <div key={serialIndex} className="mb-2 flex items-center gap-2">
                         <input

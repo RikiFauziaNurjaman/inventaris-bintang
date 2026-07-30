@@ -1,5 +1,6 @@
+import { BarcodeScannerDialog, ScannerFeedback } from '@/components/barcode-scanner-dialog';
 import { Input } from '@/components/ui/input';
-import { LoaderCircle, Search } from 'lucide-react';
+import { Camera, LoaderCircle, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Modal from './modal-search-fast';
 
@@ -37,6 +38,7 @@ export default function FastSearch() {
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [scannerOpen, setScannerOpen] = useState(false);
 
     useEffect(() => {
         const keyword = query.trim();
@@ -93,6 +95,19 @@ export default function FastSearch() {
         }
     };
 
+    const handleScan = async (serial: string): Promise<ScannerFeedback> => {
+        const response = await fetch(route('dashboard.fast-search', { q: serial }), {
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error();
+        const result: { data?: SuggestionItem[] } = await response.json();
+        const match = (result.data ?? []).find((item) => item.serial_number.toUpperCase() === serial.trim().toUpperCase());
+        setQuery(serial);
+        if (!match) return { message: `${serial} tidak ditemukan di sistem.`, tone: 'danger' };
+        await handleSelect(match.id);
+        return { message: `${match.serial_number} ditemukan.`, tone: 'success' };
+    };
+
     return (
         <div className="relative w-full">
             <Input
@@ -102,17 +117,25 @@ export default function FastSearch() {
                 aria-expanded={isFocused && query.trim().length > 0}
                 aria-controls="fast-search-results"
                 autoComplete="off"
-                className="h-11 bg-background pr-10"
+                className="h-11 bg-background pr-20"
                 placeholder="Serial number, merek, atau model..."
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => window.setTimeout(() => setIsFocused(false), 150)}
             />
+            <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="absolute top-1/2 right-2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                aria-label="Pindai serial dengan kamera"
+            >
+                <Camera className="size-4" />
+            </button>
             {isLoading ? (
-                <LoaderCircle className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-primary" />
+                <LoaderCircle className="absolute top-1/2 right-11 size-4 -translate-y-1/2 animate-spin text-primary" />
             ) : (
-                <Search className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute top-1/2 right-11 size-4 -translate-y-1/2 text-muted-foreground" />
             )}
 
             {isFocused && query.trim().length > 0 && (
@@ -189,6 +212,7 @@ export default function FastSearch() {
                     )}
                 </div>
             </Modal>
+            <BarcodeScannerDialog open={scannerOpen} onOpenChange={setScannerOpen} onDetected={handleScan} title="Pindai serial barang" />
         </div>
     );
 }

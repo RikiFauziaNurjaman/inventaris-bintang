@@ -27,6 +27,7 @@ import {
     Package,
     PackagePlus,
     PackageSearch,
+    ScanLine,
     Shapes,
     ShieldCheck,
     ShoppingCart,
@@ -42,7 +43,7 @@ import {
 import AppLogo from './app-logo';
 
 type MenuItem = NavItem & {
-    permission?: string;
+    permission?: string | string[];
     children?: MenuItem[];
 };
 
@@ -55,7 +56,11 @@ function filterMenuByPermissions(menuItems: MenuItem[], userPermissions: string[
             }
         } else if (!item.permission) {
             acc.push(item);
-        } else if (userPermissions.includes(item.permission)) {
+        } else if (
+            Array.isArray(item.permission)
+                ? item.permission.some((permission) => userPermissions.includes(permission))
+                : userPermissions.includes(item.permission)
+        ) {
             acc.push(item);
         }
 
@@ -111,7 +116,13 @@ export function AppSidebar() {
                 { title: 'Stok Terjual', href: '/stok-terjual', icon: ShoppingCart, permission: PERMISSIONS.VIEW_STOK_TERJUAL },
                 { title: 'Stok Rusak', href: '/stock-rusak', icon: TriangleAlert, permission: PERMISSIONS.VIEW_STOK_RUSAK },
                 { title: 'Dalam Perbaikan', href: '/perbaikan', icon: Wrench, permission: PERMISSIONS.VIEW_STOK_DIPERBAIKI },
-                { title: 'Stock Opname', href: '/stock-opname', icon: ClipboardList, permission: PERMISSIONS.VIEW_STOCK_OPNAME },
+                { title: 'Cek Aset', href: '/cek-aset', icon: ScanLine, permission: PERMISSIONS.VIEW_BARANG_INVENTARIS },
+                {
+                    title: 'Stock Opname',
+                    href: '/stock-opname',
+                    icon: ClipboardList,
+                    permission: [PERMISSIONS.VIEW_STOCK_OPNAME, PERMISSIONS.PARTICIPATE_STOCK_OPNAME],
+                },
             ],
         },
         {
@@ -182,7 +193,7 @@ export function AppSidebar() {
     const visibleSistemNavItems = filterMenuByPermissions(sistemNavItems, userPermissions);
 
     return (
-        <Sidebar collapsible="icon" variant="sidebar">
+        <Sidebar collapsible="icon" variant="sidebar" className="print:hidden">
             <SidebarHeader className="border-b border-sidebar-border/80 p-3">
                 <SidebarMenu>
                     <SidebarMenuItem>

@@ -16,10 +16,20 @@ class StockOpname extends Model
         'lokasi_id',
         'user_id',
         'catatan',
+        'status',
+        'started_at',
+        'submitted_at',
+        'approved_by',
+        'approved_at',
+        'workflow_version',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
+        'started_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'workflow_version' => 'integer',
     ];
 
     // Relasi ke lokasi
@@ -37,5 +47,15 @@ class StockOpname extends Model
     public function details()
     {
         return $this->hasMany(StockOpnameDetail::class, 'stock_opname_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(StockOpnameItem::class, 'stock_opname_id');
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

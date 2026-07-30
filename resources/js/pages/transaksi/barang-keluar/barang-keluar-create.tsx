@@ -176,7 +176,11 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                             {item.keluar_info.filter((i) => i.serial_number.trim()).length} unit
                         </span>
                     </label>
-                    <BulkSerialInput existingSerials={item.keluar_info.map((i) => i.serial_number)} onSerialsParsed={handleBulkSerials} />
+                    <BulkSerialInput
+                        existingSerials={item.keluar_info.map((i) => i.serial_number)}
+                        allowedSerials={allAvailableSerials}
+                        onSerialsParsed={handleBulkSerials}
+                    />
                 </div>
                 {item.keluar_info.map((info, infoIndex) => (
                     <div key={infoIndex} className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">

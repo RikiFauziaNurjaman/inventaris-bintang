@@ -87,6 +87,8 @@ export const PERMISSIONS = {
     CREATE_STOCK_OPNAME: 'create-stock-opname',
     EDIT_STOCK_OPNAME: 'edit-stock-opname',
     DELETE_STOCK_OPNAME: 'delete-stock-opname',
+    PARTICIPATE_STOCK_OPNAME: 'participate-stock-opname',
+    APPROVE_STOCK_OPNAME: 'approve-stock-opname',
 
     // Laporan
     VIEW_DASHBOARD_LAPORAN: 'view-dashboard-laporan',

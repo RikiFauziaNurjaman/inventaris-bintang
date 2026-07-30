@@ -9,7 +9,7 @@ import { PERMISSIONS } from '@/constants/permission';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { cn } from '@/lib/utils';
 import { router, useForm, usePage } from '@inertiajs/react';
-import { Edit3, RotateCcw, Trash2 } from 'lucide-react';
+import { Camera, Edit3, RotateCcw, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 type NamedItem = { id: number; nama: string };
@@ -104,6 +104,7 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
     const [editing, setEditing] = useState<Barang | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [pendingDelete, setPendingDelete] = useState<Barang | null>(null);
+    const [scannerOpen, setScannerOpen] = useState(false);
     const [activeFilters, setActiveFilters] = useState({
         kategori: filters.kategori ?? '',
         lokasi: filters.lokasi ?? '',
@@ -352,14 +353,19 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
 
                         <div className="space-y-2">
                             <Label htmlFor="serial-barang">Serial number</Label>
-                            <Input
-                                id="serial-barang"
-                                value={form.data.serial_number}
-                                onChange={(event) => form.setData('serial_number', event.target.value)}
-                                placeholder="Masukkan serial number"
-                                aria-invalid={Boolean(form.errors.serial_number)}
-                                required
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    id="serial-barang"
+                                    value={form.data.serial_number}
+                                    onChange={(event) => form.setData('serial_number', event.target.value)}
+                                    placeholder="Masukkan serial number"
+                                    aria-invalid={Boolean(form.errors.serial_number)}
+                                    required
+                                />
+                                <Button type="button" variant="outline" size="icon" onClick={() => setScannerOpen(true)} aria-label="Pindai serial">
+                                    <Camera />
+                                </Button>
+                            </div>
                             {form.errors.serial_number && <p className="text-sm text-destructive">{form.errors.serial_number}</p>}
                         </div>
                         <div className="space-y-2">
@@ -542,6 +548,16 @@ export default function BarangIndex({ barangList, filters, filterOptions }: Prop
                     form.delete(route('barang.destroy', pendingDelete.id), { preserveScroll: true, onSuccess: () => setPendingDelete(null) });
                 }}
             />
+            <BarcodeScannerDialog
+                open={scannerOpen}
+                onOpenChange={setScannerOpen}
+                onDetected={(serial) => {
+                    form.setData('serial_number', serial);
+                    return { message: `${serial} dimasukkan ke form.`, tone: 'success' };
+                }}
+                title="Pindai serial barang"
+            />
         </MasterDataPage>
     );
 }
+import { BarcodeScannerDialog } from '@/components/barcode-scanner-dialog';
