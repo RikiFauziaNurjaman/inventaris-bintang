@@ -22,6 +22,7 @@ type DetailBarang = {
     id: number;
     serial_number: string;
     kondisi_awal: string;
+    keterangan?: string;
 };
 type Props = {
     stokPerbaikan: Omit<StokPerbaikan, 'id'>[];
@@ -159,6 +160,7 @@ export default function StokPerbaikanIndex({ stokPerbaikan }: Props) {
                                         </TableHead>
                                         <TableHead>Serial Number</TableHead>
                                         <TableHead>Kondisi Awal</TableHead>
+                                        <TableHead>Keterangan</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -179,11 +181,12 @@ export default function StokPerbaikanIndex({ stokPerbaikan }: Props) {
                                                     {item.kondisi_awal}
                                                 </span>
                                             </TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">{item.keterangan || '-'}</TableCell>
                                         </TableRow>
                                     ))}
                                     {!detailItems.length && (
                                         <TableRow>
-                                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                            <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                                                 Tidak ada unit dalam perbaikan.
                                             </TableCell>
                                         </TableRow>

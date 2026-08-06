@@ -19,7 +19,7 @@ type StokRusak = {
     nama_barang: string;
     jumlah_rusak: number;
 };
-type DetailBarang = { id: number; serial_number: string };
+type DetailBarang = { id: number; serial_number: string; keterangan?: string };
 type Props = { stokRusak: Omit<StokRusak, 'id'>[] };
 
 export default function StokRusakIndex({ stokRusak }: Props) {
@@ -172,6 +172,7 @@ export default function StokRusakIndex({ stokRusak }: Props) {
                                                 />
                                             </TableHead>
                                             <TableHead>Serial Number</TableHead>
+                                            <TableHead>Keterangan</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -187,11 +188,12 @@ export default function StokRusakIndex({ stokRusak }: Props) {
                                                     />
                                                 </TableCell>
                                                 <TableCell className="font-mono text-xs">{item.serial_number}</TableCell>
+                                                <TableCell className="text-xs text-muted-foreground">{item.keterangan || '-'}</TableCell>
                                             </TableRow>
                                         ))}
                                         {!detailItems.length && (
                                             <TableRow>
-                                                <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
+                                                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                                     Tidak ada unit rusak.
                                                 </TableCell>
                                             </TableRow>

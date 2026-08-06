@@ -49,7 +49,7 @@ class StockRusakController extends Controller
         $detailBarang = Barang::where('model_id', $request->model_id)
             ->where('lokasi_id', $request->lokasi_id)
             ->where('status', 'rusak')
-            ->select('id', 'serial_number')
+            ->select('id', 'serial_number', 'catatan as keterangan')
             ->get();
 
         return response()->json($detailBarang);

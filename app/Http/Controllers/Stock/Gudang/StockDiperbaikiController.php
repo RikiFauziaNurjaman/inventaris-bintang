@@ -46,7 +46,7 @@ class StockDiperbaikiController extends Controller
         $detailBarang = Barang::where('model_id', $request->model_id)
             ->where('lokasi_id', $request->lokasi_id)
             ->where('status', 'diperbaiki')
-            ->select('id', 'serial_number', 'kondisi_awal')
+            ->select('id', 'serial_number', 'kondisi_awal', 'catatan as keterangan')
             ->get();
 
         return response()->json($detailBarang);

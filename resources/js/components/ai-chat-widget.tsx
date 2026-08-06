@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, Loader2, Send, Sparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 
 interface Message {
@@ -133,39 +134,33 @@ export default function AiChatWidget() {
 
     return (
         <>
-            {/* Floating Action Button */}
-            <AnimatePresence>
-                {!isOpen && (
-                    <motion.button
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setIsOpen(true)}
-                        className="fixed right-6 bottom-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-shadow duration-300 hover:shadow-blue-500/25"
-                        style={{
-                            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #6366f1 100%)',
-                        }}
-                        id="ai-chat-fab"
-                        aria-label="Buka AI Assistant"
-                    >
-                        <Sparkles className="h-6 w-6 text-white" />
-                        {/* Pulse ring */}
-                        <span className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-20" />
-                        <span
-                            className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
-                        >
-                            AI
-                        </span>
-                    </motion.button>
-                )}
-            </AnimatePresence>
+            {/* Header Icon Button */}
+            <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsOpen((prev) => !prev)}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-all duration-300 hover:shadow-md"
+                style={{
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #6366f1 100%)',
+                }}
+                id="ai-chat-btn"
+                aria-label="Toggle AI Assistant"
+            >
+                <Sparkles className="h-4 w-4 text-white" />
+                {/* Pulse ring (optional, can be kept subtle) */}
+                {!isOpen && <span className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-20" />}
+                <span
+                    className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white ring-2 ring-background"
+                    style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                >
+                    AI
+                </span>
+            </motion.button>
 
             {/* Chat Panel */}
-            <AnimatePresence>
-                {isOpen && (
+            {typeof window !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {isOpen && (
                     <motion.div
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -475,7 +470,9 @@ export default function AiChatWidget() {
                         </div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+                </AnimatePresence>,
+                document.body
+            )}
         </>
     );
 }
