@@ -202,6 +202,7 @@ class BarangKembaliController extends Controller
             'items.*.kembali_info' => 'required|array|min:1',
             'items.*.kembali_info.*.serial_number' => 'required|string|distinct|exists:barang,serial_number',
             'items.*.kembali_info.*.kondisi' => 'required|string|in:bagus,rusak,diperbaiki',
+            'items.*.kembali_info.*.keterangan' => 'nullable|string|max:500',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -262,6 +263,7 @@ class BarangKembaliController extends Controller
                         'barang_kembali_id' => $barangKembali->id,
                         'barang_id' => $barang->id,
                         'status_saat_kembali' => $kondisi,
+                        'keterangan' => $info['keterangan'] ?? null,
                     ];
 
                     // Track stock updates
@@ -329,6 +331,7 @@ class BarangKembaliController extends Controller
                 return [
                     'serial_number' => $detail->barang->serial_number,
                     'kondisi' => $detail->status_saat_kembali,
+                    'keterangan' => $detail->keterangan ?? '',
                 ];
             });
 
@@ -392,6 +395,7 @@ class BarangKembaliController extends Controller
             'items.*.kembali_info' => 'required|array|min:1',
             'items.*.kembali_info.*.serial_number' => 'required|string|distinct|exists:barang,serial_number',
             'items.*.kembali_info.*.kondisi' => 'required|string|in:bagus,rusak,diperbaiki',
+            'items.*.kembali_info.*.keterangan' => 'nullable|string|max:500',
         ]);
 
         DB::transaction(function () use ($request, $barangKembali) {
@@ -411,6 +415,7 @@ class BarangKembaliController extends Controller
             $newItemsCollection = collect($request->items)->pluck('kembali_info')->flatten(1);
             $newSerials = $newItemsCollection->pluck('serial_number')->all();
             $newKondisiMap = $newItemsCollection->pluck('kondisi', 'serial_number')->all();
+            $newKeteranganMap = $newItemsCollection->pluck('keterangan', 'serial_number')->all();
 
             // 1. Barang yang DIBATALKAN KEMBALI (dihapus dari form edit)
             $serialsToUndo = array_diff($oldSerials, $newSerials);
@@ -434,19 +439,25 @@ class BarangKembaliController extends Controller
             // 2. Barang BARU atau yang KONDISINYA BERUBAH
             foreach ($newSerials as $serial) {
                 $kondisi = $newKondisiMap[$serial];
+                $keterangan = $newKeteranganMap[$serial] ?? null;
                 $detail = $oldDetails->firstWhere('barang.serial_number', $serial);
 
                 if ($detail) {
-                    // Barang sudah ada, cek perubahan kondisi
-                    if ($detail->status_saat_kembali !== $kondisi) {
+                    // Barang sudah ada, cek perubahan kondisi atau keterangan
+                    $kondisiBerubah = $detail->status_saat_kembali !== $kondisi;
+                    $keteranganBerubah = $detail->keterangan !== $keterangan;
+
+                    if ($kondisiBerubah) {
                         $barang = $detail->barang;
                         // Reverse stok kondisi LAMA, lalu tambah stok kondisi BARU
                         StockHelpers::kurangiStokKembali($barang->model_id, $lokasiGudang->id, $detail->status_saat_kembali);
                         StockHelpers::kembalikanStok($barang->model_id, $lokasiGudang->id, $kondisi);
-
-                        // Update detail dan status barang
-                        $detail->update(['status_saat_kembali' => $kondisi]);
                         $barang->update(['status' => $kondisi]);
+                    }
+
+                    if ($kondisiBerubah || $keteranganBerubah) {
+                        // Update detail dan status barang
+                        $detail->update(['status_saat_kembali' => $kondisi, 'keterangan' => $keterangan]);
                     }
                 } else {
                     // Barang baru ditambahkan ke transaksi kembali
@@ -459,6 +470,7 @@ class BarangKembaliController extends Controller
                         'barang_kembali_id' => $barangKembali->id,
                         'barang_id' => $barang->id,
                         'status_saat_kembali' => $kondisi,
+                        'keterangan' => $info['keterangan'] ?? null,
                     ]);
 
                     StockHelpers::kembalikanStok($barang->model_id, $lokasiGudang->id, $kondisi);
@@ -504,6 +516,7 @@ class BarangKembaliController extends Controller
                         'id' => $detail->id,
                         'serial_number' => $detail->barang->serial_number,
                         'status_saat_kembali' => $detail->status_saat_kembali,
+                        'keterangan' => $detail->keterangan ?? '',
                     ];
                 })->values()->all(),
             ];

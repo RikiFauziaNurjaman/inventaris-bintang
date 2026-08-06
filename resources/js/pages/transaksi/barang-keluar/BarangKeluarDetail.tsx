@@ -104,13 +104,16 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                 Sub Lokasi
                                             </th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                Keterangan
+                                            </th>
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
                                         {flatDetails.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="py-4 text-center text-sm text-gray-500">
+                                                <td colSpan={8} className="py-4 text-center text-sm text-gray-500">
                                                     Tidak ada data barang.
                                                 </td>
                                             </tr>
@@ -127,6 +130,7 @@ export default function BarangKeluarDetailModal({ show, barangKeluar, onClose })
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3 text-sm text-gray-600">{detail.sub_lokasi}</td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600">{detail.keterangan || '-'}</td>
                                                     <td className="px-4 py-3 text-sm">
                                                         <button
                                                             onClick={() =>

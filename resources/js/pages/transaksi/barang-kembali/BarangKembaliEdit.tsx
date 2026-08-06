@@ -10,6 +10,7 @@ import Swal from 'sweetalert2';
 interface KembaliInfo {
     serial_number: string;
     kondisi: 'bagus' | 'rusak' | 'diperbaiki';
+    keterangan: string;
 }
 
 interface Item {
@@ -83,12 +84,12 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
         if (field === 'kategori') {
             newItem.merek = '';
             newItem.model = '';
-            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus' }];
+            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus', keterangan: '' }];
         } else if (field === 'merek') {
             newItem.model = '';
-            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus' }];
+            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus', keterangan: '' }];
         } else if (field === 'model') {
-            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus' }];
+            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus', keterangan: '' }];
         }
         onItemChange(index, newItem);
     };
@@ -99,7 +100,7 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
         onItemChange(index, { ...item, kembali_info: newKembaliInfo });
     };
 
-    const addSerialField = () => onItemChange(index, { ...item, kembali_info: [...item.kembali_info, { serial_number: '', kondisi: 'bagus' }] });
+    const addSerialField = () => onItemChange(index, { ...item, kembali_info: [...item.kembali_info, { serial_number: '', kondisi: 'bagus', keterangan: '' }] });
     const removeSerialField = (infoIndex) => onItemChange(index, { ...item, kembali_info: item.kembali_info.filter((_, i) => i !== infoIndex) });
 
     return (
@@ -206,6 +207,16 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
                                 <option value="diperbaiki">Diperbaiki</option>
                             </select>
                         </div>
+                        {/* Keterangan per item */}
+                        <div className="md:col-span-2">
+                            <input
+                                type="text"
+                                className="w-full rounded border p-2"
+                                value={info.keterangan || ''}
+                                onChange={(e) => handleKembaliInfoChange(infoIndex, 'keterangan', e.target.value)}
+                                placeholder="Keterangan kerusakan/catatan (opsional)"
+                            />
+                        </div>
                     </div>
                 ))}
                 <datalist id={`serial-suggest-${index}`}>
@@ -238,7 +249,7 @@ export default function BarangKembaliEdit() {
     // Reset items jika lokasi utama diubah dari nilai aslinya
     useEffect(() => {
         if (data.lokasi !== barangKembali.lokasi) {
-            setData('items', [{ kategori: '', merek: '', model: '', kembali_info: [{ serial_number: '', kondisi: 'bagus' }] }]);
+            setData('items', [{ kategori: '', merek: '', model: '', kembali_info: [{ serial_number: '', kondisi: 'bagus', keterangan: '' }] }]);
         }
     }, [data.lokasi]);
 
@@ -250,7 +261,7 @@ export default function BarangKembaliEdit() {
     };
 
     const addItemRow = () => {
-        setData('items', [...data.items, { kategori: '', merek: '', model: '', kembali_info: [{ serial_number: '', kondisi: 'bagus' }] }]);
+        setData('items', [...data.items, { kategori: '', merek: '', model: '', kembali_info: [{ serial_number: '', kondisi: 'bagus', keterangan: '' }] }]);
     };
 
     const removeItemRow = (index: number) => {

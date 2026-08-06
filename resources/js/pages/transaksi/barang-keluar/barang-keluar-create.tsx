@@ -9,6 +9,7 @@ interface KeluarInfo {
     serial_number: string;
     status_keluar: 'dipinjamkan' | 'dijual' | 'maintenance';
     sub_lokasi: string;
+    keterangan: string;
 }
 
 interface Item {
@@ -59,10 +60,10 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
         if (field === 'kategori') {
             newItem.merek = '';
             newItem.model = '';
-            newItem.keluar_info = [{ serial_number: '', status_keluar: 'dipinjamkan' }];
+            newItem.keluar_info = [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }];
         } else if (field === 'merek') {
             newItem.model = '';
-            newItem.keluar_info = [{ serial_number: '', status_keluar: 'dipinjamkan' }];
+            newItem.keluar_info = [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }];
         }
         onItemChange(index, newItem);
     };
@@ -74,7 +75,7 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
     };
 
     const addSerialField = () => {
-        const newKeluarInfo = [...item.keluar_info, { serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }];
+        const newKeluarInfo = [...item.keluar_info, { serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }];
         onItemChange(index, { ...item, keluar_info: newKeluarInfo });
     };
 
@@ -86,11 +87,11 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
     const handleBulkSerials = (serials: string[]) => {
         const newKeluarInfo = [
             ...item.keluar_info.filter((info) => info.serial_number.trim()),
-            ...serials.map((sn) => ({ serial_number: sn, status_keluar: 'dipinjamkan' as const, sub_lokasi: '' })),
+            ...serials.map((sn) => ({ serial_number: sn, status_keluar: 'dipinjamkan' as const, sub_lokasi: '', keterangan: '' })),
         ];
         onItemChange(index, {
             ...item,
-            keluar_info: newKeluarInfo.length > 0 ? newKeluarInfo : [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }],
+            keluar_info: newKeluarInfo.length > 0 ? newKeluarInfo : [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }],
         });
     };
 
@@ -250,6 +251,19 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                                 )}
                             </div>
                         </div>
+                        {/* Keterangan */}
+                        <div className="md:col-span-3">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Keterangan</label>
+                                <input
+                                    type="text"
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                                    value={info.keterangan || ''}
+                                    onChange={(e) => handleKeluarInfoChange(infoIndex, 'keterangan', e.target.value)}
+                                    placeholder="Keterangan (opsional)"
+                                />
+                            </div>
+                        </div>
                     </div>
                 ))}
                 <button
@@ -282,7 +296,7 @@ export default function BarangKeluarCreate() {
                 kategori: '',
                 merek: '',
                 model: '',
-                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }],
+                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }],
             },
         ] as Item[],
     });
@@ -320,7 +334,7 @@ export default function BarangKeluarCreate() {
                 kategori: '',
                 merek: '',
                 model: '',
-                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }],
+                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }],
             },
         ]);
     };

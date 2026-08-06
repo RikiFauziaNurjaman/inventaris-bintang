@@ -165,6 +165,7 @@ class BarangKeluarController extends Controller
             ],
             'items.*.keluar_info.*.status_keluar' => 'required|string|in:dipinjamkan,dijual,maintenance',
             'items.*.keluar_info.*.sub_lokasi' => 'nullable|string|max:100',
+            'items.*.keluar_info.*.keterangan' => 'nullable|string|max:500',
         ]);
 
         $barangKeluar = null;
@@ -236,6 +237,7 @@ class BarangKeluarController extends Controller
                         'barang_keluar_id' => $barangKeluar->id,
                         'barang_id' => $barang->id,
                         'status_keluar' => $status,
+                        'keterangan' => $info['keterangan'] ?? null,
                     ];
 
                     // Collect stock updates untuk batch processing
@@ -319,6 +321,7 @@ class BarangKeluarController extends Controller
                     'serial_number' => $detail->barang->serial_number,
                     'status_keluar' => $detail->status_keluar,
                     'sub_lokasi' => $detail->barang->subLokasi->nama ?? '',
+                    'keterangan' => $detail->keterangan ?? '',
                 ];
             });
 
@@ -376,6 +379,7 @@ class BarangKeluarController extends Controller
             'items.*.keluar_info.*.serial_number' => 'required|string|exists:barang,serial_number',
             'items.*.keluar_info.*.status_keluar' => 'required|string|in:dipinjamkan,dijual,maintenance',
             'items.*.keluar_info.*.sub_lokasi' => 'nullable|string|max:100',
+            'items.*.keluar_info.*.keterangan' => 'nullable|string|max:500',
         ]);
 
         $barangKeluar = BarangKeluar::with('details.barang')->findOrFail($id);
@@ -460,7 +464,7 @@ class BarangKeluarController extends Controller
                                 StockHelpers::pindahkanStok($barang->model_id, $lokasiGudang->id, $lokasiTujuan->id, 1);
                             }
 
-                            $detail->update(['status_keluar' => $status]);
+                            $detail->update(['status_keluar' => $status, 'keterangan' => $info['keterangan'] ?? null]);
                         }
                     } else {
                         // Add new detail
@@ -472,7 +476,8 @@ class BarangKeluarController extends Controller
 
                         $barangKeluar->details()->create([
                             'barang_id' => $barang->id,
-                            'status_keluar' => $status
+                            'status_keluar' => $status,
+                            'keterangan' => $info['keterangan'] ?? null,
                         ]);
                     }
 
@@ -519,6 +524,7 @@ class BarangKeluarController extends Controller
                         'status_keluar' => $detail->status_keluar,
                         'sub_lokasi' => $detail->barang->subLokasi->nama ?? '-',
                         'pic' => $detail->barang->pic ?? '-',
+                        'keterangan' => $detail->keterangan ?? '',
                     ];
                 })->values()->all(),
             ];

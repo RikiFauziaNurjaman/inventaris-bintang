@@ -9,7 +9,7 @@ class BarangKeluarDetail extends Model
     public $timestamps = false;
     protected $table = 'barang_keluar_detail';
 
-    protected $fillable = ['barang_keluar_id', 'barang_id', 'status_keluar'];
+    protected $fillable = ['barang_keluar_id', 'barang_id', 'status_keluar', 'keterangan'];
 
     public function barangKeluar()
     {

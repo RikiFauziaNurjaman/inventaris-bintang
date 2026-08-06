@@ -1,0 +1,1 @@
+import{j as r}from"./app-D0fVvVMz.js";import o from"./permission-form-B1VKFNfZ.js";/* empty css            */import"./app-layout-Ciq6E78c.js";import"./button-NIdrx84A.js";import"./createLucideIcon-8EHDISFq.js";import"./index-DQfnhY5S.js";import"./index-C0P6O-Xt.js";import"./x-CyoGuiXm.js";function u(){return r.jsx(o,{})}export{u as default};

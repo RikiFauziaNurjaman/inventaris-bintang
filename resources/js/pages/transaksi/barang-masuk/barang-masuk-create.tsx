@@ -15,6 +15,7 @@ interface Item {
     rak_id: number | null;
     kondisi: string;
     serial_numbers: string[];
+    keterangan_list: string[];
 }
 
 const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModels }) => {
@@ -95,13 +96,20 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
         onItemChange(index, { ...item, serial_numbers: newSerials });
     };
 
+    const handleKeteranganChange = (serialIndex, value) => {
+        const newKeterangan = [...(item.keterangan_list || [])];
+        newKeterangan[serialIndex] = value;
+        onItemChange(index, { ...item, keterangan_list: newKeterangan });
+    };
+
     const addSerialField = () => {
-        onItemChange(index, { ...item, serial_numbers: [...item.serial_numbers, ''] });
+        onItemChange(index, { ...item, serial_numbers: [...item.serial_numbers, ''], keterangan_list: [...(item.keterangan_list || []), ''] });
     };
 
     const removeSerialField = (serialIndex) => {
         const newSerials = item.serial_numbers.filter((_, i) => i !== serialIndex);
-        onItemChange(index, { ...item, serial_numbers: newSerials });
+        const newKeterangan = (item.keterangan_list || []).filter((_, i) => i !== serialIndex);
+        onItemChange(index, { ...item, serial_numbers: newSerials, keterangan_list: newKeterangan });
     };
 
     // Dapatkan error untuk item spesifik ini
@@ -273,7 +281,9 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                         existingSerials={item.serial_numbers}
                         onSerialsParsed={(serials) => {
                             const newSerials = [...item.serial_numbers.filter((s) => s.trim()), ...serials];
-                            onItemChange(index, { ...item, serial_numbers: newSerials.length > 0 ? newSerials : [''] });
+                            const existingKeterangan = (item.keterangan_list || []).slice(0, item.serial_numbers.filter((s) => s.trim()).length);
+                            const newKeterangan = [...existingKeterangan, ...serials.map(() => '')];
+                            onItemChange(index, { ...item, serial_numbers: newSerials.length > 0 ? newSerials : [''], keterangan_list: newKeterangan.length > 0 ? newKeterangan : [''] });
                         }}
                     />
                 </div>
@@ -299,6 +309,13 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, usedModel
                                     </button>
                                 )}
                             </div>
+                            <input
+                                type="text"
+                                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                                value={(item.keterangan_list || [])[serialIndex] || ''}
+                                onChange={(e) => handleKeteranganChange(serialIndex, e.target.value)}
+                                placeholder="Keterangan (opsional)"
+                            />
                             {serialError && <p className="mt-1 text-xs text-red-500">{serialError}</p>}
                         </div>
                     );
@@ -332,6 +349,7 @@ export default function BarangMasukCreate() {
         rak_id: null, // field baru
         kondisi: 'baru',
         serial_numbers: [''],
+        keterangan_list: [''],
     };
 
     const { data, setData, post, processing, errors, reset } = useForm({

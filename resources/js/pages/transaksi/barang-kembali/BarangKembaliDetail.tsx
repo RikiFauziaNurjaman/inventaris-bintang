@@ -89,12 +89,15 @@ export default function BarangKembaliDetailModal({ show, barangKembali, onClose 
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                 Kondisi Saat Kembali
                                             </th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                Keterangan
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
                                         {flatDetails.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="py-4 text-center text-sm text-gray-500">
+                                                <td colSpan={6} className="py-4 text-center text-sm text-gray-500">
                                                     Tidak ada data barang.
                                                 </td>
                                             </tr>
@@ -117,6 +120,9 @@ export default function BarangKembaliDetailModal({ show, barangKembali, onClose 
                                                         >
                                                             {detail.status_saat_kembali}
                                                         </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                                        {detail.keterangan || '-'}
                                                     </td>
                                                 </tr>
                                             ))

@@ -13,6 +13,7 @@ interface Item {
     rak_baris: string;
     rak_id: number | null;
     serial_numbers: string[];
+    keterangan_list: string[];
 }
 
 const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
@@ -80,7 +81,14 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
 
     const removeSerialField = (serialIndex: number) => {
         const newSerials = item.serial_numbers.filter((_, i) => i !== serialIndex);
-        handleFieldChange('serial_numbers', newSerials);
+        const newKeterangan = (item.keterangan_list || []).filter((_, i) => i !== serialIndex);
+        onItemChange(index, { ...item, serial_numbers: newSerials, keterangan_list: newKeterangan });
+    };
+
+    const handleKeteranganChange = (serialIndex: number, value: string) => {
+        const newKeterangan = [...(item.keterangan_list || [])];
+        newKeterangan[serialIndex] = value;
+        onItemChange(index, { ...item, keterangan_list: newKeterangan });
     };
 
     return (
@@ -203,19 +211,28 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists }) => {
                     }
                 />
                 {item.serial_numbers.map((serial, serialIndex) => (
-                    <div key={serialIndex} className="mb-2 flex items-center gap-2">
+                    <div key={serialIndex} className="mb-2">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                className="flex-1 rounded border-2 border-red-400 bg-red-50 p-2"
+                                value={serial}
+                                onChange={(e) => handleSerialChange(serialIndex, e.target.value)}
+                                placeholder={`Serial #${serialIndex + 1}`}
+                            />
+                            {item.serial_numbers.length > 1 && (
+                                <button type="button" className="text-sm text-red-600 hover:underline" onClick={() => removeSerialField(serialIndex)}>
+                                    Hapus
+                                </button>
+                            )}
+                        </div>
                         <input
                             type="text"
-                            className="flex-1 rounded border-2 border-red-400 bg-red-50 p-2"
-                            value={serial}
-                            onChange={(e) => handleSerialChange(serialIndex, e.target.value)}
-                            placeholder={`Serial #${serialIndex + 1}`}
+                            className="mt-1 w-full rounded border border-gray-200 px-3 py-1.5 text-sm"
+                            value={(item.keterangan_list || [])[serialIndex] || ''}
+                            onChange={(e) => handleKeteranganChange(serialIndex, e.target.value)}
+                            placeholder="Keterangan (opsional)"
                         />
-                        {item.serial_numbers.length > 1 && (
-                            <button type="button" className="text-sm text-red-600 hover:underline" onClick={() => removeSerialField(serialIndex)}>
-                                Hapus
-                            </button>
-                        )}
                     </div>
                 ))}
                 <button type="button" className="mt-1 text-sm text-blue-600 hover:underline" onClick={addSerialField}>
@@ -252,6 +269,7 @@ export default function BarangMasukEdit() {
             rak_baris: '',
             rak_id: null,
             serial_numbers: [''],
+            keterangan_list: [''],
         };
         setData('items', [...data.items, newItem]);
     };

@@ -10,7 +10,7 @@ class BarangMasukDetail extends Model
 
     protected $table = 'barang_masuk_detail';
 
-    protected $fillable = ['barang_masuk_id', 'barang_id'];
+    protected $fillable = ['barang_masuk_id', 'barang_id', 'keterangan'];
 
     public function barangMasuk()
     {

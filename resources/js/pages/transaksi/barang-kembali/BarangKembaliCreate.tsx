@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 interface KembaliInfo {
     serial_number: string;
     kondisi: 'bagus' | 'rusak' | 'diperbaiki';
+    keterangan: string;
 }
 
 interface Item {
@@ -77,12 +78,12 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
         if (field === 'kategori') {
             newItem.merek = '';
             newItem.model = '';
-            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus' }];
+            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus', keterangan: '' }];
         } else if (field === 'merek') {
             newItem.model = '';
-            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus' }];
+            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus', keterangan: '' }];
         } else if (field === 'model') {
-            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus' }];
+            newItem.kembali_info = [{ serial_number: '', kondisi: 'bagus', keterangan: '' }];
         }
         onItemChange(index, newItem);
     };
@@ -93,15 +94,15 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
         onItemChange(index, { ...item, kembali_info: newKembaliInfo });
     };
 
-    const addSerialField = () => onItemChange(index, { ...item, kembali_info: [...item.kembali_info, { serial_number: '', kondisi: 'bagus' }] });
+    const addSerialField = () => onItemChange(index, { ...item, kembali_info: [...item.kembali_info, { serial_number: '', kondisi: 'bagus', keterangan: '' }] });
     const removeSerialField = (infoIndex) => onItemChange(index, { ...item, kembali_info: item.kembali_info.filter((_, i) => i !== infoIndex) });
 
     const handleBulkSerials = (serials: string[]) => {
         const newKembaliInfo = [
             ...item.kembali_info.filter((info) => info.serial_number.trim()),
-            ...serials.map((sn) => ({ serial_number: sn, kondisi: 'bagus' as const })),
+            ...serials.map((sn) => ({ serial_number: sn, kondisi: 'bagus' as const, keterangan: '' })),
         ];
-        onItemChange(index, { ...item, kembali_info: newKembaliInfo.length > 0 ? newKembaliInfo : [{ serial_number: '', kondisi: 'bagus' }] });
+        onItemChange(index, { ...item, kembali_info: newKembaliInfo.length > 0 ? newKembaliInfo : [{ serial_number: '', kondisi: 'bagus', keterangan: '' }] });
     };
 
     return (
@@ -232,6 +233,16 @@ const ItemRow = ({ item, index, onItemChange, onRemove, lokasiId }) => {
                                 <option value="diperbaiki">Diperbaiki</option>
                             </select>
                         </div>
+                        {/* Keterangan per item */}
+                        <div className="md:col-span-2">
+                            <input
+                                type="text"
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                                value={info.keterangan || ''}
+                                onChange={(e) => handleKembaliInfoChange(infoIndex, 'keterangan', e.target.value)}
+                                placeholder="Keterangan kerusakan/catatan (opsional)"
+                            />
+                        </div>
                     </div>
                 ))}
                 <datalist id={`serial-suggest-${index}`}>
@@ -268,7 +279,7 @@ export default function BarangKembaliCreate() {
                 kategori: '',
                 merek: '',
                 model: '',
-                kembali_info: [{ serial_number: '', kondisi: 'bagus' }],
+                kembali_info: [{ serial_number: '', kondisi: 'bagus', keterangan: '' }],
             },
         ] as Item[],
     });
@@ -276,7 +287,7 @@ export default function BarangKembaliCreate() {
     const selectedLokasiId = lokasiList.find((l) => l.nama === data.lokasi)?.id || null;
 
     useEffect(() => {
-        setData('items', [{ kategori: '', merek: '', model: '', kembali_info: [{ serial_number: '', kondisi: 'bagus' }] }]);
+        setData('items', [{ kategori: '', merek: '', model: '', kembali_info: [{ serial_number: '', kondisi: 'bagus', keterangan: '' }] }]);
     }, [data.lokasi]);
 
     const handleItemChange = (index, updatedItem) => {
@@ -287,7 +298,7 @@ export default function BarangKembaliCreate() {
     };
 
     const addItemRow = () => {
-        setData('items', [...data.items, { kategori: '', merek: '', model: '', kembali_info: [{ serial_number: '', kondisi: 'bagus' }] }]);
+        setData('items', [...data.items, { kategori: '', merek: '', model: '', kembali_info: [{ serial_number: '', kondisi: 'bagus', keterangan: '' }] }]);
     };
 
     const removeItemRow = (index) => {

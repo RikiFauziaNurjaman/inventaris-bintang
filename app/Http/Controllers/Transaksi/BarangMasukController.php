@@ -206,6 +206,8 @@ class BarangMasukController extends Controller
             'items.*.kondisi' => 'required|string|in:baru,second',
             'items.*.serial_numbers' => 'required|array|min:1',
             'items.*.serial_numbers.*' => 'required|string|distinct|unique:barang,serial_number',
+            'items.*.keterangan_list' => 'nullable|array',
+            'items.*.keterangan_list.*' => 'nullable|string|max:500',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -252,7 +254,7 @@ class BarangMasukController extends Controller
                     ];
                 }
 
-                foreach ($item['serial_numbers'] as $serial) {
+                foreach ($item['serial_numbers'] as $serialIndex => $serial) {
                     $barang = Barang::create([
                         'model_id' => $model->id,
                         'jenis_barang_id' => $jenis->id,
@@ -267,6 +269,7 @@ class BarangMasukController extends Controller
                     $detailsToInsert[] = [
                         'barang_masuk_id' => $barangMasuk->id,
                         'barang_id' => $barang->id,
+                        'keterangan' => $item['keterangan_list'][$serialIndex] ?? null,
                     ];
 
                     $mutasiToInsert[] = [
@@ -326,6 +329,7 @@ class BarangMasukController extends Controller
                 'rak' => $firstDetail->barang->rak?->nama,
                 // Ambil semua serial number untuk grup model ini
                 'serial_numbers' => $details->pluck('barang.serial_number')->all(),
+                'keterangan_list' => $details->pluck('keterangan')->all(),
             ];
         }
 
@@ -360,6 +364,8 @@ class BarangMasukController extends Controller
             'items.*.rak_id' => 'nullable|integer|exists:rak_barang,id',
             'items.*.kondisi' => 'required|string|in:baru,second',
             'items.*.serial_numbers' => 'required|array|min:1',
+            'items.*.keterangan_list' => 'nullable|array',
+            'items.*.keterangan_list.*' => 'nullable|string|max:500',
             'items.*.serial_numbers.*' => [
                 'required',
                 'string',
@@ -405,7 +411,7 @@ class BarangMasukController extends Controller
                 $rak = ! empty($item['rak']) ? RakBarang::firstOrCreate(['nama' => $item['rak']]) : null;
 
                 // Loop untuk setiap serial number
-                foreach ($item['serial_numbers'] as $serial) {
+                foreach ($item['serial_numbers'] as $serialIndex => $serial) {
                     $barang = Barang::create([
                         'model_id' => $model->id,
                         'jenis_barang_id' => $jenis->id,
@@ -420,6 +426,7 @@ class BarangMasukController extends Controller
                     BarangMasukDetail::create([
                         'barang_masuk_id' => $barangMasuk->id,
                         'barang_id' => $barang->id,
+                        'keterangan' => $item['keterangan_list'][$serialIndex] ?? null,
                     ]);
 
                     MutasiBarang::create([
@@ -462,6 +469,7 @@ class BarangMasukController extends Controller
                 'merek' => $modelBarang->merek->nama,
                 'model' => $modelBarang->nama,
                 'serial_numbers' => $details->pluck('barang.serial_number')->all(),
+                'keterangan_list' => $details->pluck('keterangan')->all(),
             ];
         });
 

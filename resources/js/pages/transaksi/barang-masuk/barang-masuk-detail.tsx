@@ -45,6 +45,9 @@ export default function DetailBarangMasukModal({ show, onClose, barang }) {
                                         <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
                                             Serial Number
                                         </th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                            Keterangan
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
@@ -55,10 +58,19 @@ export default function DetailBarangMasukModal({ show, onClose, barang }) {
                                                 <span className="block text-xs font-normal text-gray-500">{item.kategori}</span>
                                             </td>
                                             <td className="px-4 py-3 align-top text-sm text-gray-500">
-                                                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                                    {item.serial_numbers.map((sn) => (
-                                                        <span key={sn} className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs">
+                                                <div className="space-y-1">
+                                                    {item.serial_numbers.map((sn, snIdx) => (
+                                                        <span key={sn} className="block rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs">
                                                             {sn}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 align-top text-sm text-gray-500">
+                                                <div className="space-y-1">
+                                                    {(item.keterangan_list || []).map((ket, ketIdx) => (
+                                                        <span key={ketIdx} className="block py-0.5 text-xs text-gray-600">
+                                                            {ket || '-'}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -67,7 +79,7 @@ export default function DetailBarangMasukModal({ show, onClose, barang }) {
                                     ))}
                                     {(!barang?.items || barang.items.length === 0) && (
                                         <tr>
-                                            <td colSpan={2} className="px-4 py-3 text-center text-sm text-gray-500">
+                                            <td colSpan={3} className="px-4 py-3 text-center text-sm text-gray-500">
                                                 Tidak ada detail item.
                                             </td>
                                         </tr>

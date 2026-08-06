@@ -11,6 +11,7 @@ interface KeluarInfo {
     serial_number: string;
     status_keluar: 'dipinjamkan' | 'dijual' | 'maintenance';
     sub_lokasi: string;
+    keterangan: string;
 }
 
 interface Item {
@@ -78,10 +79,10 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, subLokasi
         if (field === 'kategori') {
             newItem.merek = '';
             newItem.model = '';
-            newItem.keluar_info = [{ serial_number: '', status_keluar: 'dipinjamkan' }];
+            newItem.keluar_info = [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }];
         } else if (field === 'merek') {
             newItem.model = '';
-            newItem.keluar_info = [{ serial_number: '', status_keluar: 'dipinjamkan' }];
+            newItem.keluar_info = [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }];
         }
         onItemChange(index, newItem);
     };
@@ -93,7 +94,7 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, subLokasi
     };
 
     const addSerialField = () => {
-        const newKeluarInfo = [...item.keluar_info, { serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }];
+        const newKeluarInfo = [...item.keluar_info, { serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }];
         onItemChange(index, { ...item, keluar_info: newKeluarInfo });
     };
 
@@ -243,6 +244,19 @@ const ItemRow = ({ item, index, onItemChange, onRemove, errors, lists, subLokasi
                                 )}
                             </div>
                         </div>
+                        {/* Keterangan */}
+                        <div className="md:col-span-3">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase">Keterangan</label>
+                                <input
+                                    type="text"
+                                    className="w-full rounded border p-2"
+                                    value={info.keterangan || ''}
+                                    onChange={(e) => handleKeluarInfoChange(infoIndex, 'keterangan', e.target.value)}
+                                    placeholder="Keterangan (opsional)"
+                                />
+                            </div>
+                        </div>
                     </div>
                 ))}
                 <button type="button" className="mt-1 text-sm text-blue-600 hover:underline" onClick={addSerialField}>
@@ -300,7 +314,7 @@ export default function BarangKeluarEdit() {
                 kategori: '',
                 merek: '',
                 model: '',
-                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '' }],
+                keluar_info: [{ serial_number: '', status_keluar: 'dipinjamkan', sub_lokasi: '', keterangan: '' }],
             },
         ]);
     };
