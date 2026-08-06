@@ -251,11 +251,12 @@ class BarangKembaliController extends Controller
                         ]);
                     }
 
-                    // Update kondisi & pindahkan lokasi barang ke gudang
+                    // Update kondisi, lokasi barang, dan catatan
                     $barang->update([
                         'status' => $kondisi,
                         'kondisi_awal' => 'second',
                         'lokasi_id' => $lokasiGudang->id,
+                        'catatan' => $info['keterangan'] ?? $barang->catatan,
                     ]);
 
                     // Collect detail transaksi
@@ -458,19 +459,25 @@ class BarangKembaliController extends Controller
                     if ($kondisiBerubah || $keteranganBerubah) {
                         // Update detail dan status barang
                         $detail->update(['status_saat_kembali' => $kondisi, 'keterangan' => $keterangan]);
+                        $detail->barang->update(['catatan' => $keterangan ?? $detail->barang->catatan]);
                     }
                 } else {
                     // Barang baru ditambahkan ke transaksi kembali
                     $barang = Barang::where('serial_number', $serial)->firstOrFail();
 
                     // Proses seperti di fungsi store
-                    $barang->update(['status' => $kondisi, 'kondisi_awal' => 'second', 'lokasi_id' => $lokasiGudang->id]);
+                    $barang->update([
+                        'status' => $kondisi, 
+                        'kondisi_awal' => 'second', 
+                        'lokasi_id' => $lokasiGudang->id,
+                        'catatan' => $keterangan ?? $barang->catatan,
+                    ]);
 
                     BarangKembaliDetail::create([
                         'barang_kembali_id' => $barangKembali->id,
                         'barang_id' => $barang->id,
                         'status_saat_kembali' => $kondisi,
-                        'keterangan' => $info['keterangan'] ?? null,
+                        'keterangan' => $keterangan,
                     ]);
 
                     StockHelpers::kembalikanStok($barang->model_id, $lokasiGudang->id, $kondisi);
