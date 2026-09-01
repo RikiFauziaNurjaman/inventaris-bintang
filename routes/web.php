@@ -20,6 +20,7 @@ use App\Http\Controllers\MasterData\MerekBarangController;
 use App\Http\Controllers\MasterData\ModelBarangController;
 use App\Http\Controllers\MasterData\RakBarangController;
 use App\Http\Controllers\Settings\DatabaseController;
+use App\Http\Controllers\Settings\DriverController;
 use App\Http\Controllers\Stock\Distribusi\StokDistribusiController;
 use App\Http\Controllers\Stock\Gudang\StockDiperbaikiController;
 use App\Http\Controllers\Stock\Gudang\StockOpnameController;
@@ -178,6 +179,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/database/import', [DatabaseController::class, 'import'])->name('database.import');
     Route::get('/database/download/{filename}', [DatabaseController::class, 'download'])->name('database.download');
     Route::delete('/database/{filename}', [DatabaseController::class, 'destroy'])->name('database.destroy');
+
+    // Driver Download
+    Route::get('/driver', [DriverController::class, 'index'])->name('driver.index');
 
     // Laporan routes — dipindah ke dalam K6BypassAuth middleware group
     Route::prefix('laporan')->name('laporan.')->group(function () {

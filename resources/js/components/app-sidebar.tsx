@@ -18,6 +18,7 @@ import {
     Boxes,
     Building2,
     ClipboardList,
+    Download,
     FileText,
     HardDrive,
     Layers,
@@ -183,6 +184,11 @@ export function AppSidebar() {
             href: '/database',
             icon: HardDrive,
             permission: PERMISSIONS.BACKUP_DATABASE,
+        },
+        {
+            title: 'Driver',
+            href: '/driver',
+            icon: Download,
         },
     ];
 
