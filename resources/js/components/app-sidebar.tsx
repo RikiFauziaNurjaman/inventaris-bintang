@@ -17,6 +17,7 @@ import {
     ArrowLeftRight,
     Boxes,
     Building2,
+    CalendarCheck,
     ClipboardList,
     Download,
     FileText,
@@ -131,6 +132,11 @@ export function AppSidebar() {
             href: '/monitoring',
             icon: MapPin,
             permission: PERMISSIONS.VIEW_STOK_DASHBOARD,
+        },
+        {
+            title: 'Kunjungan & Maintenance',
+            href: '/kunjungan-maintenance',
+            icon: CalendarCheck,
         },
     ];
 

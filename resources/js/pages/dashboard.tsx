@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PERMISSIONS } from '@/constants/permission';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowDownToLine,
     ArrowRight,
     ArrowUpFromLine,
     Boxes,
+    CalendarPlus,
     PackageCheck,
     PackagePlus,
     Search,
@@ -171,7 +172,8 @@ export default function Dashboard() {
         stokBaruSecondGudang,
         totalKategori,
         totalJenisBarang,
-    } = usePage<DashboardProps>().props;
+        maintenanceNotifications,
+    } = usePage<SharedData & DashboardProps>().props;
     const permissions = auth.permissions ?? [];
     const visibleStockMetrics = stockMetrics.filter((item) => permissions.includes(item.permission));
     const visibleTransactionMetrics = transactionMetrics.filter((item) => permissions.includes(item.permission));
@@ -195,6 +197,56 @@ export default function Dashboard() {
                         Pantau posisi stok, aktivitas transaksi, dan kondisi inventaris dari satu halaman.
                     </p>
                 </header>
+
+                {/* Alert Banner Notifikasi Maintenance */}
+                {maintenanceNotifications && (maintenanceNotifications.overdue_count > 0 || maintenanceNotifications.due_soon_count > 0) && (
+                    <div className="relative overflow-hidden rounded-xl border border-rose-200/80 dark:border-rose-900/60 bg-gradient-to-r from-rose-500/10 via-amber-500/5 to-transparent p-4 sm:p-5 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-start sm:items-center gap-3.5">
+                                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400">
+                                    <Wrench className="size-5" />
+                                </div>
+                                <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h3 className="text-sm sm:text-base font-semibold text-foreground">
+                                            Pengingat: Kunjungan Maintenance Printer Pelanggan
+                                        </h3>
+                                        {maintenanceNotifications.overdue_count > 0 && (
+                                            <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                                                {maintenanceNotifications.overdue_count} Lokasi Jatuh Tempo
+                                            </Badge>
+                                        )}
+                                        {maintenanceNotifications.due_soon_count > 0 && (
+                                            <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2 py-0.5">
+                                                {maintenanceNotifications.due_soon_count} Lokasi Mendekati
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                                        Terdapat lokasi pelanggan yang telah melewati batas siklus perawatan berkala (3/6 bulan). Segera jadwalkan teknisi untuk inspeksi.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2.5 shrink-0 sm:self-center self-end">
+                                <Link
+                                    href="/kunjungan-maintenance/create"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+                                >
+                                    <CalendarPlus className="size-3.5" />
+                                    Catat Kunjungan
+                                </Link>
+                                <Link
+                                    href="/kunjungan-maintenance?tab=jadwal"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-border bg-background hover:bg-muted transition-colors text-foreground"
+                                >
+                                    Lihat Jadwal
+                                    <ArrowRight className="size-3.5" />
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <Card className="gap-4 py-4 shadow-none">
                     <CardContent className="flex flex-col gap-4 px-4 lg:flex-row lg:items-center lg:justify-between">

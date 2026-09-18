@@ -23,10 +23,30 @@ export interface NavItem {
     children?: NavItem[]; // ✅ tambahkan ini
 }
 
+export interface MaintenanceNotificationItem {
+    lokasi_id: number;
+    lokasi_nama: string;
+    total_printer: number;
+    type: 'overdue' | 'due_soon';
+    diff_in_days: number;
+    jadwal_berikutnya: string;
+    kunjungan_terakhir: string | null;
+    title: string;
+    message: string;
+}
+
+export interface MaintenanceNotificationSummary {
+    unread_count: number;
+    overdue_count: number;
+    due_soon_count: number;
+    items: MaintenanceNotificationItem[];
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    maintenanceNotifications?: MaintenanceNotificationSummary;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
     [key: string]: unknown;

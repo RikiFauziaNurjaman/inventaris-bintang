@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barang;
+use App\Models\KategoriBarang;
+use App\Models\KunjunganMaintenance;
 use App\Models\Lokasi;
 use App\Models\SubLokasi;
-use App\Models\KategoriBarang;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -194,6 +195,14 @@ class MonitoringController extends Controller
         // Kategori (untuk filter)
         $kategoriList = KategoriBarang::select('id', 'nama')->orderBy('nama')->get();
 
+        // Riwayat Kunjungan Maintenance di Lokasi Ini
+        $riwayatKunjungan = KunjunganMaintenance::where('lokasi_id', $lokasi->id)
+            ->with(['user:id,name', 'details'])
+            ->orderByDesc('tanggal_kunjungan')
+            ->orderByDesc('id')
+            ->take(10)
+            ->get();
+
         return Inertia::render('monitoring/lokasi-detail', [
             'lokasi' => $lokasi,
             'barang' => $barang,
@@ -202,6 +211,7 @@ class MonitoringController extends Controller
             'subLokasiList' => $subLokasiList,
             'kategoriList' => $kategoriList,
             'filters' => $request->only(['sub_lokasi_id', 'status', 'kategori_id', 'search']),
+            'riwayatKunjungan' => $riwayatKunjungan,
         ]);
     }
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\Roles\RoleController;
 use App\Http\Controllers\Auth\Roles\UserController;
 use App\Http\Controllers\CekAsetController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\KunjunganMaintenanceController;
 use App\Http\Controllers\Laporan\LaporanBarangKeluarController;
 use App\Http\Controllers\Laporan\LaporanBarangKembaliController;
 use App\Http\Controllers\Laporan\LaporanBarangMasukController;
@@ -136,6 +137,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/merek-by-kategori/{lokasiId}/{kategoriNama}', [BarangKembaliController::class, 'getMerekByKategoriDanLokasi']);
     Route::get('/api/model-by-merek/{lokasiId}/{merekNama}', [BarangKembaliController::class, 'getModelByMerekDanLokasi']);
     Route::get('/api/serial-by-model/{lokasiId}/{modelNama}', [BarangKembaliController::class, 'getSerialByModelDanLokasi']);
+
+    // Kunjungan & Maintenance Rutin Printer
+    Route::get('/kunjungan-maintenance/api/printers/{lokasiId}', [KunjunganMaintenanceController::class, 'getPrintersByLokasi'])
+        ->name('kunjungan-maintenance.printers');
+    Route::get('/kunjungan-maintenance/{kunjunganMaintenance}/export-pdf', [KunjunganMaintenanceController::class, 'exportPdf'])
+        ->name('kunjungan-maintenance.export-pdf');
+    Route::resource('kunjungan-maintenance', KunjunganMaintenanceController::class)
+        ->parameters(['kunjungan-maintenance' => 'kunjunganMaintenance']);
 
     Route::redirect('/stok', '/dashboard')->name('stok.index');
 

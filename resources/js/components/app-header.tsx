@@ -4,6 +4,7 @@ import { UserMenu } from '@/components/user-menu';
 import { type BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 import AiChatWidget from '@/components/ai-chat-widget';
+import NotificationBell from '@/components/notification-bell';
 
 export function AppHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemType[] }) {
     return (
@@ -13,6 +14,7 @@ export function AppHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemTy
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
             <div className="flex items-center gap-2">
+                <NotificationBell />
                 <AiChatWidget />
                 <UserMenu />
             </div>

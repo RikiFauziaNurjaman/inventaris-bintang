@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, ArrowLeft, Boxes, ChevronDown, ChevronUp, Filter, MapPin, Package, Printer, Search, Wrench } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Boxes, CalendarCheck, CheckCircle2, ChevronDown, ChevronUp, Clock, Filter, MapPin, Package, Printer, Search, Wrench } from 'lucide-react';
 import { useState } from 'react';
 
 type SubLokasi = { id: number; nama: string; kode: string | null; lantai: string | null };
@@ -49,9 +49,19 @@ type Props = {
     subLokasiList: SubLokasi[];
     kategoriList: Kategori[];
     filters: { sub_lokasi_id: string; status: string; kategori_id: string; search: string };
+    riwayatKunjungan?: Array<{
+        id: number;
+        nomor_kunjungan: string;
+        nama_teknisi: string;
+        tanggal_kunjungan: string;
+        periode_bulan: number;
+        jadwal_berikutnya?: string | null;
+        status: string;
+        details?: Array<unknown>;
+    }>;
 };
 
-export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subLokasiList, kategoriList, filters }: Props) {
+export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subLokasiList, kategoriList, filters, riwayatKunjungan = [] }: Props) {
     const [localFilters, setLocalFilters] = useState(filters);
     const [showSummary, setShowSummary] = useState(true);
     const [isFilterOpen, setIsFilterOpen] = useState(true);
@@ -124,6 +134,13 @@ export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subL
                                 {lokasi.alamat && <p className="text-sm text-gray-500 dark:text-gray-400">{lokasi.alamat}</p>}
                             </div>
                             <div className="ml-auto flex items-center gap-2">
+                                <Link
+                                    href={route('kunjungan-maintenance.create', { lokasi_id: lokasi.id })}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+                                >
+                                    <CalendarCheck size={16} />
+                                    Catat Kunjungan
+                                </Link>
                                 <button
                                     onClick={() => {
                                         const queryParams = new URLSearchParams(filters as any).toString();
@@ -137,6 +154,44 @@ export default function LokasiDetail({ lokasi, barang, stats, modelSummary, subL
                             </div>
                         </div>
                     </div>
+
+                    {/* Informasi Maintenance Terakhir */}
+                    {riwayatKunjungan.length > 0 && (
+                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-50/50 p-4 dark:bg-emerald-950/20">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                                        <CalendarCheck size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">
+                                            Kunjungan Maintenance Terakhir
+                                        </p>
+                                        <p className="text-sm font-medium text-foreground">
+                                            {new Date(riwayatKunjungan[0].tanggal_kunjungan).toLocaleDateString('id-ID', {
+                                                day: 'numeric',
+                                                month: 'long',
+                                                year: 'numeric',
+                                            })}{' '}
+                                            oleh <span className="font-semibold">{riwayatKunjungan[0].nama_teknisi}</span> ({riwayatKunjungan[0].nomor_kunjungan})
+                                        </p>
+                                    </div>
+                                </div>
+                                {riwayatKunjungan[0].jadwal_berikutnya && (
+                                    <div className="text-right text-xs">
+                                        <span className="text-muted-foreground block">Target Berikutnya (Interval {riwayatKunjungan[0].periode_bulan} Bln):</span>
+                                        <span className="font-bold text-primary">
+                                            {new Date(riwayatKunjungan[0].jadwal_berikutnya).toLocaleDateString('id-ID', {
+                                                day: 'numeric',
+                                                month: 'long',
+                                                year: 'numeric',
+                                            })}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

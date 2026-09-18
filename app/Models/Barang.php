@@ -58,5 +58,9 @@ class Barang extends Model
         return $this->hasMany(MutasiBarang::class, 'barang_id');
     }
 
+    public function kunjunganDetails()
+    {
+        return $this->hasMany(KunjunganMaintenanceDetail::class, 'barang_id');
+    }
 }
 

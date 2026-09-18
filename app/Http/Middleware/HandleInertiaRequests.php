@@ -52,6 +52,9 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'permissions' => $request->user() ? $request->user()->getAllPermissions()->pluck('name') : [],
             ],
+            'maintenanceNotifications' => fn () => $request->user()
+                ? \App\Helpers\MaintenanceNotificationHelper::getNotifications()
+                : null,
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
                 'success' => fn () => $request->session()->get('success'),
