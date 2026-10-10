@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('barang', function (Blueprint $table) {
-            $table->foreignId('rak_id')->nullable()->constrained('rak_barang');
-        });
+        if (!Schema::hasColumn('barang', 'rak_id')) {
+            Schema::table('barang', function (Blueprint $table) {
+                $table->foreignId('rak_id')->nullable()->constrained('rak_barang');
+            });
+        }
     }
 
     /**
@@ -21,9 +23,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('barang', function (Blueprint $table) {
-            $table->dropForeign(['rak_id']);
-            $table->dropColumn('rak_id');
-        });
+        if (Schema::hasColumn('barang', 'rak_id')) {
+            Schema::table('barang', function (Blueprint $table) {
+                $table->dropForeign(['rak_id']);
+                $table->dropColumn('rak_id');
+            });
+        }
     }
 };

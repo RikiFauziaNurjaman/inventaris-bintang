@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('rekap_stok_barang', function (Blueprint $table) {
-            $table->integer('jumlah_terjual')->default(0);
-        });
+        if (!Schema::hasColumn('rekap_stok_barang', 'jumlah_terjual')) {
+            Schema::table('rekap_stok_barang', function (Blueprint $table) {
+                $table->integer('jumlah_terjual')->default(0);
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('rekap_stok_barang', function (Blueprint $table) {
-            $table->dropColumn('jumlah_terjual');
-        });
+        if (Schema::hasColumn('rekap_stok_barang', 'jumlah_terjual')) {
+            Schema::table('rekap_stok_barang', function (Blueprint $table) {
+                $table->dropColumn('jumlah_terjual');
+            });
+        }
     }
 };

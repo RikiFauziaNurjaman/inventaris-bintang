@@ -19,20 +19,20 @@ return new class extends Migration {
             $table->timestamps();
         });
 
+        Schema::create('jenis_barang', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama'); // Contoh: Inkjet, Dot Matrix, Laser
+            $table->foreignId('kategori_id')->nullable()->constrained('kategori_barang')->onDelete('cascade');
+            $table->timestamps();
+        });
+
         Schema::create('model_barang', function (Blueprint $table) {
             $table->id();
             $table->foreignId('kategori_id')->constrained('kategori_barang')->onDelete('cascade');
             $table->foreignId('merek_id')->constrained('merek_barang')->onDelete('cascade');
-            $table->foreignId('jenis_id')->nullable()->after('kategori_id')->constrained('jenis_barang')->onDelete('set null');
-            $table->string('deskripsi')->nullable()->after('model');
+            $table->foreignId('jenis_id')->nullable()->constrained('jenis_barang')->onDelete('set null');
+            $table->string('deskripsi')->nullable();
             $table->string('nama');
-            $table->timestamps();
-        });
-
-        Schema::create('jenis_barang', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama'); // Contoh: Inkjet, Dot Matrix, Laser
-            $table->foreignId('kategori_id')->nullable()->after('id')->constrained('kategori_barang')->onDelete('cascade');
             $table->timestamps();
         });
 
@@ -47,6 +47,15 @@ return new class extends Migration {
         Schema::create('asal_barang', function (Blueprint $table) {
             $table->id();
             $table->string('nama');
+            $table->timestamps();
+        });
+
+        Schema::create('rak_barang', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('lokasi_id')->constrained('lokasi')->onDelete('cascade');
+            $table->string('nama_rak');
+            $table->string('baris')->nullable();
+            $table->string('kode_rak');
             $table->timestamps();
         });
 
@@ -65,7 +74,7 @@ return new class extends Migration {
 
         Schema::create('rekap_stok_barang', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('model_id')->after('id')->constrained('model_barang')->onDelete('cascade');
+            $table->foreignId('model_id')->constrained('model_barang')->onDelete('cascade');
             $table->foreignId('lokasi_id')->constrained('lokasi')->onDelete('cascade');
             $table->integer('jumlah_total')->default(0);
             $table->integer('jumlah_tersedia')->default(0);
@@ -142,20 +151,10 @@ return new class extends Migration {
             $table->string('catatan')->nullable();
             $table->timestamps();
         });
-
-        Schema::create('rak_barang', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('lokasi_id')->constrained('lokasi')->onDelete('cascade');
-            $table->string('nama_rak');
-            $table->string('baris')->nullable();
-            $table->string('kode_rak');
-            $table->timestamps();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('rak_barang');
         Schema::dropIfExists('riwayat_status_barang');
         Schema::dropIfExists('mutasi_barang');
         Schema::dropIfExists('barang_kembali_detail');
@@ -166,10 +165,11 @@ return new class extends Migration {
         Schema::dropIfExists('barang_masuk');
         Schema::dropIfExists('rekap_stok_barang');
         Schema::dropIfExists('barang');
+        Schema::dropIfExists('rak_barang');
         Schema::dropIfExists('asal_barang');
         Schema::dropIfExists('lokasi');
-        Schema::dropIfExists('jenis_barang');
         Schema::dropIfExists('model_barang');
+        Schema::dropIfExists('jenis_barang');
         Schema::dropIfExists('merek_barang');
         Schema::dropIfExists('kategori_barang');
     }
