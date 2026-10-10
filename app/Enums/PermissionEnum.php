@@ -48,6 +48,7 @@ enum PermissionEnum: string
     case DELETE_BARANG_INVENTARIS = 'delete-barang-inventaris';
 
     // Transaksi
+    case VIEW_TRANSAKSI = 'view-transaksi';
     case VIEW_BARANG_MASUK = 'view-barang-masuk';
     case CREATE_BARANG_MASUK = 'create-barang-masuk';
     case EDIT_BARANG_MASUK = 'edit-barang-masuk';
@@ -64,6 +65,7 @@ enum PermissionEnum: string
     case DELETE_BARANG_KEMBALI = 'delete-barang-kembali';
 
     // Manajemen Stok
+    case VIEW_STOK_DASHBOARD = 'view-stock-dashboard';
     case VIEW_STOK_GUDANG = 'view-stok-gudang';
     case EDIT_STOK_GUDANG = 'edit-stok-gudang';
 
@@ -78,6 +80,7 @@ enum PermissionEnum: string
 
     case VIEW_STOK_RUSAK = 'view-stok-rusak';
     case EDIT_STOK_RUSAK = 'edit-stok-rusak';
+    case APPROVE_STOK_RUSAK = 'approve-stok-rusak';
 
     case VIEW_STOK_TOTAL = 'view-stok-total';
     case EDIT_STOK_TOTAL = 'edit-stok-total';
